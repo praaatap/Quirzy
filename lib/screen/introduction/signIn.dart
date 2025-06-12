@@ -1,16 +1,17 @@
 import 'package:flutter/material.dart';
-import 'package:quirzy/screen/signIn.dart';
+import 'package:quirzy/screen/mainScreen/homePage.dart';
+import 'package:quirzy/screen/introduction/signup.dart';
 import 'package:quirzy/widgets/textfiled.dart';
 
-class SignUpPage extends StatelessWidget {
-  const SignUpPage({super.key});
+class SignInPage extends StatelessWidget {
+  const SignInPage({super.key});
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
-        title: const Text("Sign Up", style: TextStyle(color: Colors.black)),
+        title: const Text("Sign In", style: TextStyle(color: Colors.black)),
         centerTitle: true,
         backgroundColor: Colors.white,
         elevation: 0,
@@ -24,19 +25,15 @@ class SignUpPage extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            const SizedBox(height: 8),
             const ReusableTextField(
-              label: "Username",
-              hintText: "Enter your username",
+              label: 'Email',
+              hintText: 'Enter your email',
             ),
             const SizedBox(height: 16),
             const ReusableTextField(
-              label: "Email",
-              hintText: "Enter your email",
-            ),
-            const SizedBox(height: 16),
-            const ReusableTextField(
-              label: "Password",
-              hintText: "Enter your password",
+              label: 'Password',
+              hintText: 'Enter your password',
               obscureText: true,
             ),
             const SizedBox(height: 32),
@@ -44,7 +41,12 @@ class SignUpPage extends StatelessWidget {
               width: double.infinity,
               height: 48,
               child: ElevatedButton(
-                onPressed: () {},
+                onPressed: () {
+                  Navigator.pushReplacement(
+                    context,
+                    MaterialPageRoute(builder: (context) => HomePage()),
+                  );
+                },
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.blue,
                   shape: RoundedRectangleBorder(
@@ -52,7 +54,7 @@ class SignUpPage extends StatelessWidget {
                   ),
                 ),
                 child: const Text(
-                  "Sign Up",
+                  "Sign In",
                   style: TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.w500,
@@ -67,18 +69,17 @@ class SignUpPage extends StatelessWidget {
                 onTap: () {
                   Navigator.push(
                     context,
-                    MaterialPageRoute(builder: (context) => const SignInPage()),
+                    MaterialPageRoute(builder: (_) => const SignUpPage()),
                   );
                 },
                 child: Text.rich(
                   TextSpan(
-                    text: 'Already have an account? ',
+                    text: "Don't have an account? ",
                     style: TextStyle(color: Colors.grey.shade700),
                     children: [
-                      TextSpan(
-                        text: 'Sign In',
+                      const TextSpan(
+                        text: 'Sign Up',
                         style: TextStyle(
-                          color: Colors.grey.shade700,
                           decoration: TextDecoration.underline,
                           fontWeight: FontWeight.w500,
                         ),

@@ -1,5 +1,5 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
-
+    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
     <!-- Required for querying activities that process text -->
     <queries>
         <!-- For text processing (used by Flutter engine) -->
