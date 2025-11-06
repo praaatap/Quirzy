@@ -1,25 +1,15 @@
 flutter_native_splash:
-  color: "#FFFFFF"
-  color_dark: "#0B1120"
+  color: "#FFFFFF"         # Matches light theme: Colors.white
+  color_dark: "#121212"    # Matches dark theme: Color(0xFF121212)
   fullscreen: true
 
   image: assets/splash/splash.png
-  image_dark: assets/splash/splash.png
-
-  branding: assets/icon/branding_white.png
-  branding_dark: assets/icon/branding_black.png
-  branding_mode: bottom
   branding_bottom_padding: 24
 
   android_12:
     color: "#FFFFFF"
-    color_dark: "#0B1120"
+    color_dark: "#121212"  # Also update for Android 12+
     fullscreen: true
     image: assets/splash/splash.png
-    image_dark: assets/splash/splash.png
-    branding: assets/icon/branding_white.png
-    branding_dark: assets/icon/branding_black.png
 
   android_gravity: center
-  ios_content_mode: scaleAspectFit
-  web_image_mode: cover

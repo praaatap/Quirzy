@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 const Color kPrimaryBlue = Color(0xFF1E88E5);
 const Color kTextDark = Colors.black87;
 const Color kTextLightGrey = Colors.grey;
 const Color kBackgroundWhite = Colors.white;
-const Color kOutlineGrey = Color(0xFFE0E0E0);  // Fixed this line
+const Color kOutlineGrey = Color(0xFFE0E0E0);  
 const Color kSuccessGreen = Color(0xFF4CAF50);
 const Color kErrorRed = Color(0xFFF44336);
 
@@ -22,6 +23,8 @@ const String kAppTitle = "QuizMaster";
 const String kQuizDescription = 
     "Describe your quiz idea or upload a document to generate a quiz.";
 const String kOnbordingStatus = "onboarding_done";
+
+final String kBackendApiUrl = "http://10.0.2.2:3000" ;
 
 
 const String kgeminiKey  = 'AIzaSyDHuDteHuXXHAWpRaYteoJwN4z-nkcrM2o';

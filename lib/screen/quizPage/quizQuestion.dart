@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:quirzy/providers/quiz_history_provider.dart';
 import 'package:quirzy/screen/quizPage/quizCompletedScreen.dart';
 import 'package:quirzy/utils/constant.dart';
 
@@ -90,12 +89,7 @@ class _QuizQuestionScreenState extends ConsumerState<QuizQuestionScreen>
           currentQuestionIndex++;
           _resetAnimation();
         } else {
-          ref.read(quizHistoryProvider.notifier).saveQuizResult(
-            quizTitle: widget.quizTitle,
-            score: correctAnswers,
-            totalQuestions: widget.questions.length,
-          );
-          
+  
           Navigator.pushReplacement(
             context,
             PageRouteBuilder(

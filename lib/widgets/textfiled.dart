@@ -15,7 +15,6 @@ class ReusableTextField extends StatelessWidget {
   final bool readOnly;
   final VoidCallback? onTap;
   final Color? BorderSideColour;
-
   const ReusableTextField({
     super.key,
     required this.label,
@@ -75,6 +74,7 @@ class ReusableTextField extends StatelessWidget {
           minLines: minLines,
           readOnly: readOnly,
           onTap: onTap,
+          
         ),
       ],
     );

@@ -47,12 +47,28 @@ dependencies:
   appwrite: ^17.0.1
   flutter_image_compress: ^2.4.0
   google_generative_ai: ^0.4.7
+  lottie: ^3.3.1
+  connectivity_plus: ^6.1.4
+  avatar_glow: ^3.0.1
+  dio: ^5.8.0+1
+  socket_io_client: ^3.1.2
+  firebase_messaging: ^15.2.7
+  jwt_decoder: ^2.0.1
+  google_sign_in: ^7.0.0
+  flutter_secure_storage: ^9.2.4
+  google_sign_in_android: ^7.0.1
+  firebase_auth: ^5.6.0
+  firebase_core: ^3.14.0
+  flutter_dotenv: ^5.2.1
+  flutter_local_notifications: ^19.5.0
+  timeago: ^3.7.1
 
-flutter_icons:
+flutter_launcher_icons:
   android: true
   ios: true
   image_path: "assets/icon/app_icon.png"
-  adaptive_icon_background: "#ffffff" 
+  adaptive_icon_background: "#ffffff"
+
 
 
 dev_dependencies:
@@ -80,7 +96,6 @@ flutter:
   # To add assets to your application, add an assets section, like this:
   assets:
     - assets/
-    - assets/images/
     - assets/icon/
     - assets/splash/
     - assets/google_logo.png

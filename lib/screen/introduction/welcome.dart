@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:quirzy/screen/introduction/signIn.dart';
+import 'package:quirzy/screen/introduction/signup.dart';
 import 'package:quirzy/widgets/Button.dart';
 
 class QuiryHome extends StatelessWidget {
@@ -6,66 +8,85 @@ class QuiryHome extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final textTheme = theme.textTheme;
+    final colorScheme = theme.colorScheme;
+    final size = MediaQuery.of(context).size;
+
     return Scaffold(
-      backgroundColor: Colors.white,
       body: SafeArea(
-        child: Column(
-          children: [
-            // Top Illustration
-            SizedBox(
-              height: 320,
-              width: double.infinity,
-              child: Image.asset('assets/welcome.png', fit: BoxFit.cover),
-            ),
-
-            const SizedBox(height: 24),
-
-            // Heading
-            const Text(
-              "Welcome to QuizMaster",
-              style: TextStyle(
-                fontWeight: FontWeight.w600,
-                fontSize: 26,
-                fontFamily: 'Roboto',
-              ),
-            ),
-
-            const SizedBox(height: 12),
-
-            // Subtitle Text
-            const Padding(
-              padding: EdgeInsets.symmetric(horizontal: 32.0),
-              child: Text(
-                "Challenge yourself with AI-generated quizzes, track your progress, and compete with friends.\nSign in or sign up to get started!",
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  fontSize: 15,
-                  fontFamily: 'Roboto',
-                  color: Colors.black87,
+        child: SingleChildScrollView(
+          child: Padding(
+            padding: EdgeInsets.symmetric(horizontal: size.width * 0.05),
+            child: Column(
+              children: [
+                SizedBox(
+                  height: size.height * 0.35, // Responsive height
+                  width: double.infinity,
+                  child: Image.asset('assets/welcome.png', fit: BoxFit.cover),
                 ),
-              ),
+                SizedBox(height: size.height * 0.03),
+
+                // Heading
+                Text(
+                  "Welcome to Quirzy",
+                  style: textTheme.headlineMedium?.copyWith(
+                    fontSize: size.width * 0.08, // Responsive font size
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+
+                SizedBox(height: size.height * 0.02),
+
+                // Subtitle
+                Text(
+                  "Challenge yourself with AI-generated quizzes, track your progress, and compete with friends.\nSign in or sign up to get started!",
+                  textAlign: TextAlign.center,
+                  style: textTheme.bodyMedium?.copyWith(
+                    fontSize: size.width * 0.04, // Responsive font size
+                  ),
+                ),
+
+                SizedBox(height: size.height * 0.05),
+
+                // Buttons placed right after text
+                SizedBox(
+                  width: double.infinity,
+                  child: ReusableButton(
+                    label: 'Sign in',
+                    onPressed: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => const SignInPage(),
+                        ),
+                      );
+                    },
+                  ),
+                ),
+
+                SizedBox(height: size.height * 0.02),
+
+                SizedBox(
+                  width: double.infinity,
+                  child: ReusableButton(
+                    label: "Sign Up",
+                    onPressed: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => const SignUpPage(),
+                        ),
+                      );
+                    },
+                  ),
+                ),
+
+                // Add additional space at bottom if needed
+                SizedBox(height: size.height * 0.05),
+              ],
             ),
-
-            const SizedBox(height: 32),
-
-            ReusableButton(
-              backgroundColor: Colors.blue.shade500,
-              label: 'Sign in',
-              onPressed: () {
-                Navigator.pushNamed(context, '/signin');
-              },
-            ),
-
-            const SizedBox(height: 16),
-
-            ReusableButton(
-              label: "Sign Up",
-              onPressed: () {
-                Navigator.pushNamed(context, '/signup');
-              },
-              backgroundColor: Colors.black38,
-            ),
-          ],
+          ),
         ),
       ),
     );

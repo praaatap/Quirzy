@@ -12,6 +12,7 @@ class OnboardingScreen extends StatelessWidget {
       title: "Welcome",
       body: "Challenge yourself with AI-generated quizzes.",
       image: Image.asset('assets/animation1.png', height: 200),
+
     ),
     PageViewModel(
       title: "Compete",

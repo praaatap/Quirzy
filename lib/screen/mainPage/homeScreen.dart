@@ -1,106 +1,50 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:quirzy/providers/ai_provider.dart';
-import 'package:quirzy/screen/mainPage/settingsPage.dart';
-import 'package:quirzy/screen/quizPage/startQuiz.dart';
+import 'package:google_fonts/google_fonts.dart';
+import 'package:quirzy/screen/mainPage/settings/settingsPage.dart';
 
-class HomeScreen extends ConsumerStatefulWidget {
+class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
 
   @override
-  ConsumerState<HomeScreen> createState() => _HomeScreenState();
-}
-
-class _HomeScreenState extends ConsumerState<HomeScreen> {
-  final TextEditingController _quizPromptController = TextEditingController();
-  bool _isGenerating = false;
-
-  @override
-  void dispose() {
-    _quizPromptController.dispose();
-    super.dispose();
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final textTheme = theme.textTheme;
+    
+    return Scaffold(
+      appBar: _buildAppBar(theme, textTheme, context),
+      body: _buildBody(theme, textTheme),
+    );
   }
 
-  Future<void> _generateQuiz() async {
-    if (_quizPromptController.text.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please enter a quiz prompt')),
-      );
-      return;
-    }
-    
-    setState(() => _isGenerating = true);
-    
-    try {
-      final ai = ref.read(aiProvider);
-      final quizData = await ai.generateQuiz(_quizPromptController.text);
-      
-      if (quizData['questions'] == null || (quizData['questions'] as List).isEmpty) {
-        if (!mounted) return;
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Failed to generate questions. Please try again.')),
-        );
-        return;
-      }
-
-      if (!mounted) return;
-      
-      Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (context) => StartQuizScreen(
-            quizTitle: quizData['title'] ?? 'Generated Quiz',
-            questions: List<Map<String, dynamic>>.from(quizData['questions']),
+  PreferredSizeWidget _buildAppBar(ThemeData theme, TextTheme textTheme, BuildContext context) {
+    return AppBar(
+      automaticallyImplyLeading: false,
+      elevation: 0,
+      centerTitle: true,
+      title: Text(
+        'QuizMaster',
+        style: GoogleFonts.roboto(
+          fontSize: 22,
+          fontWeight: FontWeight.bold,
+          color: theme.colorScheme.onPrimary,
+        ),
+      ),
+      actions: [
+        IconButton(
+          padding: const EdgeInsets.only(right: 16),
+          onPressed: () => _navigateToSettings(context),
+          icon: Icon(
+            Icons.settings,
+            color: theme.colorScheme.onPrimary,
           ),
         ),
-      );
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error: ${e.toString()}')),
-        );
-      }
-    } finally {
-      if (mounted) {
-        setState(() => _isGenerating = false);
-      }
-    }
+      ],
+    );
   }
 
-  @override
-  Widget build(BuildContext context) {
-    final textTheme = Theme.of(context).textTheme;
-
-    return Scaffold(
-      appBar: AppBar(
-        automaticallyImplyLeading: false,
-        title: const Text('QuizMaster'),
-        actions: [
-          Padding(
-            padding: const EdgeInsets.only(right: 16),
-            child: IconButton(
-              onPressed: () {
-                Navigator.push(
-                  context,
-                  PageRouteBuilder(
-                    pageBuilder: (context, animation, secondaryAnimation) => const SettingsPage(),
-                    transitionsBuilder: (context, animation, secondaryAnimation, child) {
-                      const begin = Offset(1.0, 0.0);
-                      const end = Offset.zero;
-                      final tween = Tween(begin: begin, end: end).chain(CurveTween(curve: Curves.easeInOut));
-                      final offsetAnimation = animation.drive(tween);
-                      return SlideTransition(position: offsetAnimation, child: child);
-                    },
-                    transitionDuration: const Duration(milliseconds: 400),
-                  ),
-                );
-              },
-              icon: const Icon(Icons.settings),
-            ),
-          ),
-        ],
-      ),
-      body: Padding(
+  Widget _buildBody(ThemeData theme, TextTheme textTheme) {
+    return SingleChildScrollView(
+      child: Padding(
         padding: const EdgeInsets.all(20.0),
         child: Column(
           children: [
@@ -108,32 +52,76 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             Text(
               'Describe your quiz idea or upload a document to generate a quiz.',
               textAlign: TextAlign.center,
-              style: textTheme.bodyMedium,
-            ),
-            const SizedBox(height: 20),
-            TextField(
-              controller: _quizPromptController,
-              maxLines: 5,
-              decoration: const InputDecoration(
-                hintText: 'Enter quiz idea or instructions...',
-                contentPadding: EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 12,
-                ),
+              style: GoogleFonts.roboto(
+                fontSize: 16,
+                color: textTheme.bodyMedium?.color,
               ),
             ),
             const SizedBox(height: 20),
+            ConstrainedBox(
+              constraints: const BoxConstraints(
+                minHeight: 80,
+                maxHeight: 95,
+              ),
+              child: TextField(
+                maxLines: null,
+                decoration: InputDecoration(
+                  hintText: "Enter your quiz idea here...",
+                  hintStyle: GoogleFonts.roboto(
+                    fontSize: 16,
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  filled: true,
+                  fillColor: theme.colorScheme.surfaceVariant,
+                ),
+              ),
+            ),
+            SizedBox(height: 15,),
             ElevatedButton(
-              onPressed: _isGenerating ? null : _generateQuiz,
-              child: _isGenerating
-                  ? const CircularProgressIndicator()
-                  : const Text(
-                      "Generate Quiz",
-                      style: TextStyle(fontSize: 18),
-                    ),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: theme.colorScheme.primary,
+                foregroundColor: theme.colorScheme.onPrimary,
+                minimumSize: const Size(double.infinity, 50),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+              onPressed: () {},
+              child: Text(
+                "Generate Quiz",
+                style: GoogleFonts.roboto(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  void _navigateToSettings(BuildContext context) {
+    Navigator.push(
+      context,
+      PageRouteBuilder(
+        pageBuilder: (context, animation, secondaryAnimation) => const SettingsPage(),
+        transitionsBuilder: (context, animation, secondaryAnimation, child) {
+          return SlideTransition(
+            position: Tween<Offset>(
+              begin: const Offset(1.0, 0.0),
+              end: Offset.zero,
+            ).animate(CurvedAnimation(
+              parent: animation,
+              curve: Curves.easeInOut,
+            )),
+            child: child,
+          );
+        },
+        transitionDuration: const Duration(milliseconds: 300),
       ),
     );
   }

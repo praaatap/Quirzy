@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "58516626621",
+    "project_id": "quirzy-bd6c3",
+    "storage_bucket": "quirzy-bd6c3.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:58516626621:android:002d1e84249db5aa59ebd4",
+        "android_client_info": {
+          "package_name": "com.example.quirzy"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAyupSqbHcx1SqefowFd7LTWhuCHU_MpTI"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
