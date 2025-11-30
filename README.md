@@ -1,4 +1,4 @@
-
+<img width="1080" height="2400" alt="Screenshot_1764487236" src="https://github.com/user-attachments/assets/325e4c4a-c97e-41c0-a849-207c87b35fb9" />
 # Quirzy - AI-Powered Quiz App 🚀
 
 [![Flutter](https://img.shields.io/badge/Flutter-3.24-blue.svg)](https://flutter.dev) [![Firebase](https://img.shields.io/badge/Firebase-Firebase-orange.svg)](https://firebase.google.com) [![Google Play](https://img.shields.io/badge/Google_Play-Ready-green.svg)](https://play.google.com/store) [![Dart](https://img.shields.io/badge/Dart-3.5-blue.svg)](https://dart.dev)
@@ -6,6 +6,12 @@
 **Quirzy** is a modern, AI-powered mobile quiz app that generates personalized quizzes from any topic. Perfect for students, professionals, and lifelong learners. Generate quizzes instantly using Google Gemini AI, track progress, challenge friends, and master any subject!
 
 ## ✨ **Key Features**
+
+
+## Screen Shots
+<img width="1080" height="2400" alt="Screenshot_1764487210" src="https://github.com/user-attachments/assets/f70516a5-f62f-4ef8-bfee-344848539de3" />
+
+<img width="1080" height="2400" alt="Screenshot_1764487236" src="https://github.com/user-attachments/assets/23d4cc67-a29a-4390-8ccf-90f305a3754d" />
 
 ### 🎯 **AI Quiz Generation**
 - Enter any topic → AI generates 5-45 questions instantly
@@ -199,3 +205,4 @@ Firebase (Production)
 Google Gemini AI
 AdMob (Monetized)
 ```
+
