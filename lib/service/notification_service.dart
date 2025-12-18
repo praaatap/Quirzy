@@ -3,294 +3,289 @@ import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/legacy.dart';
 import 'package:quirzy/service/api_service.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:flutter_riverpod/legacy.dart';
 
-// ==================== NOTIFICATION STATE ====================
+final notificationProvider =
+    StateNotifierProvider<NotificationService, NotificationState>((ref) {
+  return NotificationService(ref);
+});
 
 class NotificationState {
   final String? fcmToken;
+  final bool isInitialized;
+  final RemoteMessage? lastMessage;
   final List<RemoteMessage> notifications;
   final int unreadCount;
 
   NotificationState({
     this.fcmToken,
+    this.isInitialized = false,
+    this.lastMessage,
     this.notifications = const [],
     this.unreadCount = 0,
   });
 
   NotificationState copyWith({
     String? fcmToken,
+    bool? isInitialized,
+    RemoteMessage? lastMessage,
     List<RemoteMessage>? notifications,
     int? unreadCount,
   }) {
     return NotificationState(
       fcmToken: fcmToken ?? this.fcmToken,
+      isInitialized: isInitialized ?? this.isInitialized,
+      lastMessage: lastMessage ?? this.lastMessage,
       notifications: notifications ?? this.notifications,
       unreadCount: unreadCount ?? this.unreadCount,
     );
   }
 }
 
-// ==================== NOTIFICATION NOTIFIER ====================
+class NotificationService extends StateNotifier<NotificationState> {
+  final Ref ref;
+  final FirebaseMessaging _messaging = FirebaseMessaging.instance;
+  
+  // ✅ 1. Initialize Local Notifications Plugin
+  final FlutterLocalNotificationsPlugin _localNotifications = FlutterLocalNotificationsPlugin();
+  
+  static const String _notificationsKey = 'saved_notifications';
+  static const String _unreadCountKey = 'unread_count';
 
-class NotificationNotifier extends StateNotifier<NotificationState> {
-  NotificationNotifier() : super(NotificationState());
+  NotificationService(this.ref) : super(NotificationState()) {
+    _loadSavedNotifications();
+  }
 
-  final FlutterLocalNotificationsPlugin _localNotifications =
-      FlutterLocalNotificationsPlugin();
-
-  // ========== INITIALIZE NOTIFICATIONS ==========
   Future<void> initialize() async {
-    debugPrint('🔔 Initializing notification service...');
-
-    // Initialize local notifications
-    const androidSettings = AndroidInitializationSettings('@mipmap/ic_launcher');
-    const iosSettings = DarwinInitializationSettings(
-      requestAlertPermission: true,
-      requestBadgePermission: true,
-      requestSoundPermission: true,
-    );
-
-    const initSettings = InitializationSettings(
-      android: androidSettings,
-      iOS: iosSettings,
-    );
-
-    await _localNotifications.initialize(
-      initSettings,
-      onDidReceiveNotificationResponse: _onNotificationTapped,
-    );
-
-    debugPrint('✅ Local notifications initialized');
-
-    // Request FCM permission
-    final messaging = FirebaseMessaging.instance;
-    final settings = await messaging.requestPermission(
-      alert: true,
-      badge: true,
-      sound: true,
-      provisional: false,
-    );
-
-    if (settings.authorizationStatus == AuthorizationStatus.authorized) {
-      debugPrint('✅ Notification permission granted');
-
-      // Get FCM token
-      final token = await messaging.getToken();
-      if (token != null) {
-        debugPrint('✅ FCM Token: $token');
-        state = state.copyWith(fcmToken: token);
-      }
-
-      // Listen to token refresh
-      messaging.onTokenRefresh.listen((newToken) {
-        debugPrint('🔄 FCM Token refreshed: $newToken');
-        state = state.copyWith(fcmToken: newToken);
-      });
-
-      // Listen to foreground messages (app is open)
-      FirebaseMessaging.onMessage.listen(_handleForegroundMessage);
-
-      // Listen to background message taps (app was in background)
-      FirebaseMessaging.onMessageOpenedApp.listen(_handleBackgroundMessageTap);
-
-      // Check if app was opened from terminated state by notification
-      final initialMessage = await messaging.getInitialMessage();
-      if (initialMessage != null) {
-        debugPrint('📲 App opened from terminated state by notification');
-        _handleBackgroundMessageTap(initialMessage);
-      }
-    } else {
-      debugPrint('❌ Notification permission denied');
-    }
-  }
-
-  // ========== HANDLE FOREGROUND MESSAGES ==========
-  Future<void> _handleForegroundMessage(RemoteMessage message) async {
-    debugPrint('🔔 Foreground message received: ${message.messageId}');
-    debugPrint('   Title: ${message.notification?.title}');
-    debugPrint('   Body: ${message.notification?.body}');
-    debugPrint('   Data: ${message.data}');
-
-    // Add to notification list
-    final updatedNotifications = [message, ...state.notifications];
-    state = state.copyWith(
-      notifications: updatedNotifications,
-      unreadCount: state.unreadCount + 1,
-    );
-
-    // Show local notification when app is in foreground
-    await _showLocalNotification(message);
-  }
-
-  // ========== SHOW LOCAL NOTIFICATION ==========
-  Future<void> _showLocalNotification(RemoteMessage message) async {
-    final notification = message.notification;
-    final data = message.data;
-
-    if (notification != null) {
-      const androidDetails = AndroidNotificationDetails(
-        'challenge_channel',
-        'Challenge Notifications',
-        channelDescription: 'Notifications for 1v1 challenge invites and updates',
-        importance: Importance.high,
-        priority: Priority.high,
-        icon: '@mipmap/ic_launcher',
-        playSound: true,
-        enableVibration: true,
-      );
-
-      const iosDetails = DarwinNotificationDetails(
-        presentAlert: true,
-        presentBadge: true,
-        presentSound: true,
-      );
-
-      const details = NotificationDetails(
-        android: androidDetails,
-        iOS: iosDetails,
-      );
-
-      await _localNotifications.show(
-        message.hashCode,
-        notification.title,
-        notification.body,
-        details,
-        payload: jsonEncode(data),
-      );
-
-      debugPrint('✅ Local notification shown');
-    }
-  }
-
-  // ========== HANDLE NOTIFICATION TAP (FOREGROUND) ==========
-  void _onNotificationTapped(NotificationResponse response) {
-    debugPrint('📲 Notification tapped (foreground): ${response.payload}');
-
-    if (response.payload != null) {
-      try {
-        final data = jsonDecode(response.payload!) as Map<String, dynamic>;
-        _navigateBasedOnType(data);
-      } catch (e) {
-        debugPrint('❌ Error parsing notification payload: $e');
-      }
-    }
-  }
-
-  // ========== HANDLE BACKGROUND NOTIFICATION TAP ==========
-  void _handleBackgroundMessageTap(RemoteMessage message) {
-    debugPrint('📲 Background notification tapped');
-    debugPrint('   Data: ${message.data}');
-
-    _navigateBasedOnType(message.data);
-  }
-
-  // ========== NAVIGATE BASED ON NOTIFICATION TYPE ==========
-  void _navigateBasedOnType(Map<String, dynamic> data) {
-    final type = data['type'];
-    final challengeId = data['challengeId'];
-    final challengerName = data['challengerName'];
-    final opponentName = data['opponentName'];
-
-    debugPrint('🧭 Navigation requested for type: $type');
-
-    switch (type) {
-      case 'challenge_invite':
-        debugPrint('🎯 Challenge invite received');
-        debugPrint('   Challenge ID: $challengeId');
-        debugPrint('   Challenger: $challengerName');
-        // TODO: Navigate to challenge accept/reject screen
-        // Example:
-        // NavigationService.navigateTo(
-        //   '/challenge/accept',
-        //   arguments: {
-        //     'challengeId': challengeId,
-        //     'challengerName': challengerName,
-        //   },
-        // );
-        break;
-
-      case 'challenge_accepted':
-        debugPrint('✅ Challenge accepted by opponent');
-        debugPrint('   Challenge ID: $challengeId');
-        debugPrint('   Opponent: $opponentName');
-        // TODO: Navigate to quiz/battle screen
-        // Example:
-        // NavigationService.navigateTo(
-        //   '/battle',
-        //   arguments: {'challengeId': challengeId},
-        // );
-        break;
-
-      case 'challenge_rejected':
-        debugPrint('❌ Challenge rejected by opponent');
-        debugPrint('   Challenge ID: $challengeId');
-        // TODO: Show rejection message or navigate to home
-        // Example:
-        // NavigationService.navigateTo('/home');
-        // showSnackbar('Challenge was rejected');
-        break;
-
-      default:
-        debugPrint('❓ Unknown notification type: $type');
-    }
-  }
-
-  // ========== SEND TOKEN TO BACKEND ==========
-  Future<void> sendTokenToBackend(String? authToken) async {
-    if (state.fcmToken == null || authToken == null) {
-      debugPrint('⚠️ Cannot send token: FCM token or auth token missing');
-      debugPrint('   FCM Token: ${state.fcmToken}');
-      debugPrint('   Auth Token: ${authToken != null ? "present" : "null"}');
-      return;
-    }
-
     try {
-      debugPrint('📤 Sending FCM token to backend...');
-      await ApiService.saveFcmToken(state.fcmToken!, authToken);
-      debugPrint('✅ FCM token sent to backend successfully');
-    } catch (e) {
-      debugPrint('❌ Failed to send FCM token to backend: $e');
-    }
-  }
+      // ✅ 2. Setup Local Notifications (Android)
+      // Ensure you have an app icon named 'ic_launcher' in android/app/src/main/res/mipmap-*/
+      const AndroidInitializationSettings initializationSettingsAndroid =
+          AndroidInitializationSettings('@mipmap/ic_launcher');
 
-  // ========== MARK NOTIFICATIONS AS READ ==========
-  void markAsRead() {
-    debugPrint('✅ Marking notifications as read');
-    state = state.copyWith(unreadCount: 0);
-  }
-
-  // ========== CLEAR ALL NOTIFICATIONS ==========
-  void clearAll() {
-    debugPrint('🗑️ Clearing all notifications');
-    state = state.copyWith(
-      notifications: [],
-      unreadCount: 0,
-    );
-  }
-
-  // ========== DELETE SINGLE NOTIFICATION ==========
-  void deleteNotification(int index) {
-    debugPrint('🗑️ Deleting notification at index: $index');
-    final updated = List<RemoteMessage>.from(state.notifications);
-    if (index >= 0 && index < updated.length) {
-      updated.removeAt(index);
-      state = state.copyWith(
-        notifications: updated,
-        unreadCount: state.unreadCount > 0 ? state.unreadCount - 1 : 0,
+      const InitializationSettings initializationSettings = InitializationSettings(
+        android: initializationSettingsAndroid,
       );
+
+      await _localNotifications.initialize(
+        initializationSettings,
+        onDidReceiveNotificationResponse: (NotificationResponse details) {
+          debugPrint('🔔 Foreground notification tapped: ${details.payload}');
+          // Handle navigation here if needed
+        },
+      );
+
+      // ✅ 3. Create Notification Channel (Required for Android 8.0+)
+      const AndroidNotificationChannel channel = AndroidNotificationChannel(
+        'high_importance_channel', // id
+        'High Importance Notifications', // title
+        description: 'This channel is used for important notifications.',
+        importance: Importance.max,
+        playSound: true,
+      );
+
+      await _localNotifications
+          .resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>()
+          ?.createNotificationChannel(channel);
+
+      // ✅ 4. Request Permission from Firebase
+      NotificationSettings settings = await _messaging.requestPermission(
+        alert: true,
+        badge: true,
+        sound: true,
+        provisional: false,
+      );
+
+      if (settings.authorizationStatus == AuthorizationStatus.authorized) {
+        debugPrint('✅ User granted notification permission');
+
+        // ✅ 5. Get & Save Token
+        String? token = await _messaging.getToken();
+        if (token != null) {
+          debugPrint('📱 FCM Token: $token');
+          state = state.copyWith(fcmToken: token, isInitialized: true);
+          await sendTokenAfterLogin();
+        }
+
+        _messaging.onTokenRefresh.listen((newToken) async {
+          debugPrint('🔄 FCM Token refreshed: $newToken');
+          state = state.copyWith(fcmToken: newToken);
+          await sendTokenAfterLogin();
+        });
+
+        // ✅ 6. Start Listening for Messages (Pass the channel)
+        _setupMessageHandlers(channel);
+      } else {
+        debugPrint('❌ User declined notification permission');
+      }
+    } catch (e) {
+      debugPrint('❌ Error initializing notifications: $e');
     }
   }
 
-  // ========== GET UNREAD COUNT ==========
-  int getUnreadCount() {
-    return state.unreadCount;
+  void _setupMessageHandlers(AndroidNotificationChannel channel) {
+    // A. Foreground Message Handler
+    FirebaseMessaging.onMessage.listen((RemoteMessage message) {
+      debugPrint('🔔 Foreground Message: ${message.messageId}');
+
+      // Update internal state
+      final updatedNotifications = [message, ...state.notifications];
+      state = state.copyWith(
+        lastMessage: message,
+        notifications: updatedNotifications,
+        unreadCount: state.unreadCount + 1,
+      );
+      _saveNotifications();
+
+      // ✅ B. TRIGGER THE VISUAL POP-UP
+      RemoteNotification? notification = message.notification;
+      AndroidNotification? android = message.notification?.android;
+
+      if (notification != null && android != null) {
+        _localNotifications.show(
+          notification.hashCode,
+          notification.title,
+          notification.body,
+          NotificationDetails(
+            android: AndroidNotificationDetails(
+              channel.id,
+              channel.name,
+              channelDescription: channel.description,
+              icon: android.smallIcon,
+              // importance and priority must be high for heads-up display
+              importance: Importance.max,
+              priority: Priority.high,
+              color: Colors.deepPurple, 
+            ),
+          ),
+          payload: json.encode(message.data),
+        );
+      }
+      
+      _handleNotification(message);
+    });
+
+    // C. Background Tap Handler
+    FirebaseMessaging.onMessageOpenedApp.listen((RemoteMessage message) {
+      debugPrint('🔔 Notification clicked (background): ${message.messageId}');
+      _handleNotificationTap(message);
+    });
+
+    // D. Terminated Tap Handler
+    _messaging.getInitialMessage().then((RemoteMessage? message) {
+      if (message != null) {
+        debugPrint('🔔 Notification clicked (terminated): ${message.messageId}');
+        _handleNotificationTap(message);
+      }
+    });
+  }
+
+  // --- HELPER METHODS ---
+
+  Future<void> sendTokenAfterLogin() async {
+    if (state.fcmToken == null) return;
+    final authToken = await ApiService.getToken();
+    if (authToken != null && authToken.isNotEmpty) {
+      try {
+        await ApiService.saveFcmToken(state.fcmToken!, authToken);
+        debugPrint('✅ FCM token sent to backend via ApiService');
+      } catch (e) {
+        debugPrint('❌ Failed to send FCM token: $e');
+      }
+    }
+  }
+
+  Future<void> _loadSavedNotifications() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final savedData = prefs.getStringList(_notificationsKey) ?? [];
+      final unreadCount = prefs.getInt(_unreadCountKey) ?? 0;
+      
+      final notifications = savedData.map((jsonStr) {
+        final data = json.decode(jsonStr);
+        return RemoteMessage(
+          messageId: data['messageId'],
+          notification: data['notification'] != null
+              ? RemoteNotification(
+                  title: data['notification']['title'],
+                  body: data['notification']['body'],
+                )
+              : null,
+          data: Map<String, dynamic>.from(data['data'] ?? {}),
+          sentTime: data['sentTime'] != null
+              ? DateTime.parse(data['sentTime'])
+              : null,
+        );
+      }).toList();
+
+      state = state.copyWith(
+        notifications: notifications,
+        unreadCount: unreadCount,
+      );
+    } catch (e) {
+      debugPrint('❌ Error loading notifications: $e');
+    }
+  }
+
+  Future<void> _saveNotifications() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final notificationData = state.notifications.map((message) {
+        return json.encode({
+          'messageId': message.messageId,
+          'notification': message.notification != null
+              ? {
+                  'title': message.notification!.title,
+                  'body': message.notification!.body,
+                }
+              : null,
+          'data': message.data,
+          'sentTime': message.sentTime?.toIso8601String(),
+        });
+      }).toList();
+      
+      await prefs.setStringList(_notificationsKey, notificationData);
+      await prefs.setInt(_unreadCountKey, state.unreadCount);
+    } catch (e) {
+      debugPrint('❌ Error saving notifications: $e');
+    }
+  }
+
+  void _handleNotification(RemoteMessage message) {
+    final type = message.data['type'];
+    debugPrint('Handling notification type: $type');
+    // Add specific logic here if you need to update other providers
+  }
+
+  void _handleNotificationTap(RemoteMessage message) {
+    final type = message.data['type'];
+    final challengeId = message.data['challengeId'];
+    debugPrint('📱 User tapped notification: $type (Challenge: $challengeId)');
+    // Add Navigator logic here using a GlobalKey if needed
+  }
+
+  void markAsRead() {
+    if (state.unreadCount > 0) {
+      debugPrint('✅ Marking notifications as read');
+      state = state.copyWith(unreadCount: 0);
+      _saveNotifications();
+    }
+  }
+
+  void deleteNotification(int index) {
+    if (index >= 0 && index < state.notifications.length) {
+      final updatedNotifications = List<RemoteMessage>.from(state.notifications);
+      updatedNotifications.removeAt(index);
+      state = state.copyWith(notifications: updatedNotifications);
+      _saveNotifications();
+    }
+  }
+
+  void clearAll() {
+    state = state.copyWith(notifications: [], unreadCount: 0);
+    _saveNotifications();
   }
 }
-
-// ==================== PROVIDER ====================
-
-final notificationProvider =
-    StateNotifierProvider<NotificationNotifier, NotificationState>((ref) {
-  return NotificationNotifier();
-});

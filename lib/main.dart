@@ -1,151 +1,138 @@
 import 'package:firebase_core/firebase_core.dart';
-import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:quirzy/firebase_options.dart';
 import 'package:quirzy/providers/auth_provider.dart';
-import 'package:quirzy/screen/introduction/onboarding.dart';
+import 'package:quirzy/providers/connection_provider.dart';
+import 'package:quirzy/screen/NoInternetScreen.dart';
 import 'package:quirzy/screen/introduction/welcome.dart';
 import 'package:quirzy/screen/mainPage/mainScreen.dart';
 import 'package:quirzy/service/notification_service.dart';
+import 'package:quirzy/service/ad_service.dart';
 import 'package:quirzy/theme/theme.dart';
-import 'package:quirzy/widgets/internet_connection_wrapper.dart';
-import 'package:quirzy/widgets/splashScreen.dart';
-import 'package:shared_preferences/shared_preferences.dart';
+import 'package:quirzy/widgets/loadingScreen.dart';
+import 'package:showcaseview/showcaseview.dart';
 
-// ✅ Background Handler - ONLY checks if Firebase is initialized
-@pragma('vm:entry-point')
-Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
-  // ✅ Only initialize if not already initialized
-  if (Firebase.apps.isEmpty) {
-    await Firebase.initializeApp(
-      options: DefaultFirebaseOptions.currentPlatform,
-    );
-  }
-
-  debugPrint('🔔 Background message: ${message.messageId}');
-  debugPrint('Title: ${message.notification?.title}');
-  debugPrint('Body: ${message.notification?.body}');
-  debugPrint('Data: ${message.data}');
-}
-
-// ✅ Onboarding Provider
-final onboardingProvider = FutureProvider<bool>((ref) async {
-  final prefs = await SharedPreferences.getInstance();
-  return prefs.getBool('onboarding_done') ?? false;
-});
-
-// ✅ CORRECTED main()
-void main() async {
+Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // ✅ Initialize Firebase ONCE at the start
-  await Firebase.initializeApp(
-    options: DefaultFirebaseOptions.currentPlatform,
+  SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
+  SystemChrome.setSystemUIOverlayStyle(const SystemUiOverlayStyle(
+    statusBarColor: Colors.transparent,
+    systemNavigationBarColor: Colors.transparent,
+    statusBarIconBrightness: Brightness.dark,
+    systemNavigationBarIconBrightness: Brightness.dark,
+  ));
+
+  await Firebase.initializeApp();
+
+  // Use one ProviderContainer to initialize stuff BEFORE first frame
+  final container = ProviderContainer();
+
+  final startTime = DateTime.now();
+
+  try {
+    await Future.wait([
+      container.read(authProvider.notifier).initializeAuth(),
+      AdService().initialize(),
+    ]);
+
+    // Notification init can be after those two
+    container.read(notificationProvider.notifier).initialize();
+  } catch (e) {
+    debugPrint('⚠️ Initialization error: $e');
+  } finally {
+    // Keep your minimum splash duration logic if you want
+    final elapsed = DateTime.now().difference(startTime);
+    if (elapsed.inMilliseconds < 500) {
+      await Future.delayed(
+        Duration(milliseconds: 500 - elapsed.inMilliseconds),
+      );
+    }
+  }
+
+  runApp(
+    UncontrolledProviderScope(
+      container: container,
+      child: const MyApp(),
+    ),
   );
-
-  // ✅ Register background handler AFTER Firebase initialization
-  FirebaseMessaging.onBackgroundMessage(firebaseMessagingBackgroundHandler);
-
-  runApp(const ProviderScope(child: MyApp()));
 }
 
-class MyApp extends ConsumerStatefulWidget {
+// ---------------------- MY APP ---------------------------------------
+class MyApp extends StatelessWidget {
   const MyApp({super.key});
 
   @override
-  ConsumerState<MyApp> createState() => _MyAppState();
-}
-
-class _MyAppState extends ConsumerState<MyApp> {
-  @override
-  void initState() {
-    super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      _initializeNotifications();
-    });
-  }
-
-  Future<void> _initializeNotifications() async {
-    await ref.read(notificationProvider.notifier).initialize();
-  }
-
-  @override
   Widget build(BuildContext context) {
-    ref.listen(authProvider, (previous, next) {
-      if (next.isLoggedIn && next.token != null) {
-        ref.read(notificationProvider.notifier).sendTokenToBackend(next.token);
-      }
-    });
-
     return MaterialApp(
       debugShowCheckedModeBanner: false,
       title: 'Quirzy',
       theme: buildAppTheme(brightness: Brightness.light),
       darkTheme: buildAppTheme(brightness: Brightness.dark),
       themeMode: ThemeMode.system,
-      home: const InternetConnectionWrapper(
-        child: AuthWrapper(),
-      ),
+
+      // Wrap navigator output once, doesn’t rebuild when providers change
+      builder: (context, child) {
+        return Stack(
+          children: [
+            ShowCaseWidget(
+              builder: (context) => child!,
+            ),
+            const GlobalInternetOverlay(),
+          ],
+        );
+      },
+
+      home: const AuthWrapperOrSplash(),
     );
   }
 }
 
-class AuthWrapper extends ConsumerWidget {
-  const AuthWrapper({super.key});
+// ---------------------- SPLASH + AUTH WRAPPER ------------------------
+// This widget decides whether to show Splash or Auth result.
+// It listens to authProvider only here (small rebuild area).
+class AuthWrapperOrSplash extends ConsumerWidget {
+  const AuthWrapperOrSplash({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final onboarding = ref.watch(onboardingProvider);
     final authState = ref.watch(authProvider);
 
-    return onboarding.when(
-      data: (onboardingDone) {
-        if (!authState.isInitialized || authState.isLoading) {
-          return const SplashScreen();
-        }
+    if (!authState.isInitialized) {
+      return const SplashScreen();
+    }
 
-        if (!onboardingDone) {
-          return OnboardingScreen();
-        }
+    if (authState.isLoggedIn) {
+      return const MainScreen();
+    }
+    return const QuiryHome();
+  }
+}
 
-        if (authState.isLoggedIn) {
-          return const MainScreen();
-        }
+// ---------------------- GLOBAL OVERLAY WIDGET -----------------------
+class GlobalInternetOverlay extends ConsumerWidget {
+  const GlobalInternetOverlay({super.key});
 
-        return const QuiryHome();
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final connectionState = ref.watch(connectionProvider);
+
+    return connectionState.when(
+      data: (hasConnection) {
+        if (!hasConnection) {
+          return Positioned.fill(
+            child: NoInternetScreen(
+              onRetry: () {
+                ref.invalidate(connectionProvider);
+              },
+            ),
+          );
+        }
+        return const SizedBox.shrink();
       },
-
-      loading: () => const SplashScreen(),
-
-      error: (err, stack) {
-        return Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              const Icon(Icons.error_outline, color: Colors.red, size: 60),
-              const SizedBox(height: 16),
-              const Text(
-                'Error loading app',
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-              ),
-              const SizedBox(height: 8),
-              Text(err.toString(),
-                  textAlign: TextAlign.center,
-                  style: const TextStyle(color: Colors.grey)),
-              const SizedBox(height: 24),
-              ElevatedButton.icon(
-                onPressed: () {
-                  ref.invalidate(onboardingProvider);
-                  ref.read(authProvider.notifier).checkLoginStatus();
-                },
-                icon: const Icon(Icons.refresh),
-                label: const Text('Retry'),
-              ),
-            ],
-          ),
-        );
-      },
+      loading: () => const SizedBox.shrink(),
+      error: (_, __) => const SizedBox.shrink(),
     );
   }
 }

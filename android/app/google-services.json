@@ -1,26 +1,44 @@
 {
   "project_info": {
-    "project_number": "58516626621",
-    "project_id": "quirzy-bd6c3",
-    "storage_bucket": "quirzy-bd6c3.firebasestorage.app"
+    "project_number": "960586519952",
+    "project_id": "quirzy-production-25a0f",
+    "storage_bucket": "quirzy-production-25a0f.firebasestorage.app"
   },
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:58516626621:android:002d1e84249db5aa59ebd4",
+        "mobilesdk_app_id": "1:960586519952:android:0736eb9d6f6b9e21bf8f15",
         "android_client_info": {
-          "package_name": "com.example.quirzy"
+          "package_name": "com.ps9labs.quirzy"
         }
       },
-      "oauth_client": [],
+      "oauth_client": [
+        {
+          "client_id": "960586519952-urpvvaecclq826jkclsq3eb8olbmaa44.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.ps9labs.quirzy",
+            "certificate_hash": "d63ec2c7e6a42539ea17b24cddbc30933834a92d"
+          }
+        },
+        {
+          "client_id": "960586519952-ea8bh3sj6ki3d5jh38lev36414ibrk73.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
       "api_key": [
         {
-          "current_key": "AIzaSyAyupSqbHcx1SqefowFd7LTWhuCHU_MpTI"
+          "current_key": "AIzaSyAu7We4nD9fCUoWb5MrHnFip2sdVWiyv1w"
         }
       ],
       "services": {
         "appinvite_service": {
-          "other_platform_oauth_client": []
+          "other_platform_oauth_client": [
+            {
+              "client_id": "960586519952-ea8bh3sj6ki3d5jh38lev36414ibrk73.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
         }
       }
     }

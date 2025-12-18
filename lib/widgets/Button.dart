@@ -37,25 +37,22 @@ class ReusableButton extends StatelessWidget {
     final bgColor = backgroundColor ?? colorScheme.primary;
     final fgColor = foregroundColor ?? colorScheme.onPrimary;
     final disabledBgColor = theme.disabledColor;
-    
+
     // Button content
     final buttonChild = isLoading
         ? SizedBox(
             width: 24,
             height: 24,
-            child: CircularProgressIndicator(
-              strokeWidth: 2,
-              color: fgColor,
-            ),
+            child: CircularProgressIndicator(strokeWidth: 2, color: fgColor),
           )
         : (child ??
-            Text(
-              label,
-              style: theme.textTheme.labelLarge?.copyWith(
-                color: fgColor,
-                fontWeight: FontWeight.w500,
-              ),
-            ));
+              Text(
+                label,
+                style: theme.textTheme.labelLarge?.copyWith(
+                  color: fgColor,
+                  fontWeight: FontWeight.w500,
+                ),
+              ));
 
     // Button style
     final buttonStyle = ElevatedButton.styleFrom(
@@ -78,9 +75,6 @@ class ReusableButton extends StatelessWidget {
 
     return fullWidth
         ? button
-        : FractionallySizedBox(
-            widthFactor: widthFactor,
-            child: button,
-          );
+        : FractionallySizedBox(widthFactor: widthFactor, child: button);
   }
 }

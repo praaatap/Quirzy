@@ -1,3 +1,6 @@
+import java.io.FileInputStream
+import java.util.Properties
+
 plugins {
     id("com.android.application")
     id("kotlin-android")
@@ -5,15 +8,22 @@ plugins {
     id("com.google.gms.google-services")
 }
 
+val keystorePropertiesFile = rootProject.file("key.properties")
+val keystoreProperties = Properties().apply {
+    if (keystorePropertiesFile.exists()) {
+        load(FileInputStream(keystorePropertiesFile))
+    }
+}
+
 android {
-    namespace = "com.example.quirzy"
+    namespace = "com.ps9labs.quirzy"
     compileSdk = flutter.compileSdkVersion
     ndkVersion = "27.0.12077973"
 
     compileOptions {
-        // ADD THIS LINE - enables desugaring
+        // enables desugaring
         isCoreLibraryDesugaringEnabled = true
-        
+
         sourceCompatibility = JavaVersion.VERSION_11
         targetCompatibility = JavaVersion.VERSION_11
     }
@@ -23,20 +33,35 @@ android {
     }
 
     defaultConfig {
-        applicationId = "com.example.quirzy"
+        applicationId = "com.ps9labs.quirzy"
         minSdk = flutter.minSdkVersion
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode
-        versionName = flutter.versionName
-        
-        // ADD THIS LINE - enables multidex
+        versionName = "1.1"
+
+        // enables multidex if required
         multiDexEnabled = true
     }
 
-    buildTypes {
-        release {
-            signingConfig = signingConfigs.getByName("debug")
+    signingConfigs {
+        // create a release signing config that reads from key.properties
+        create("release") {
+            keyAlias = keystoreProperties.getProperty("keyAlias") ?: "upload"
+            keyPassword = keystoreProperties.getProperty("keyPassword") ?: ""
+            storeFile = file(keystoreProperties.getProperty("storeFile") ?: "app/release-key.jks")
+            storePassword = keystoreProperties.getProperty("storePassword") ?: ""
         }
+    }
+
+    buildTypes {
+        getByName("release") {
+            // use the real release signing config (not debug)
+            signingConfig = signingConfigs.getByName("release")
+
+            isMinifyEnabled = false
+            isShrinkResources = false
+        }
+        // debug stays unchanged and signed with debug key automatically
     }
 }
 
@@ -48,4 +73,16 @@ dependencies {
     implementation(platform("com.google.firebase:firebase-bom:34.5.0"))
     implementation("com.google.firebase:firebase-analytics")
     coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.4")
+
+    // add Multidex runtime if you enabled multiDexEnabled and need it at runtime
+    implementation("androidx.multidex:multidex:2.0.1")
+    implementation("com.google.android.material:material:1.9.0")
+}
+
+
+
+configurations.all {
+    resolutionStrategy {
+        force("androidx.browser:browser:1.8.0")
+    }
 }

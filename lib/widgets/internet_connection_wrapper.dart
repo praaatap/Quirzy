@@ -10,7 +10,6 @@ class InternetConnectionWrapper extends ConsumerWidget {
     super.key,
     required this.child,
   });
-
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final connectionState = ref.watch(connectionProvider);
@@ -22,7 +21,6 @@ class InternetConnectionWrapper extends ConsumerWidget {
         if (!hasConnection) {
           return NoInternetScreen(
             onRetry: () => ref.refresh(connectionProvider.future),
-            childWhenOnline: child,
           );
         }
         return child;

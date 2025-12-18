@@ -2,12 +2,12 @@ import 'dart:convert';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:http/http.dart' as http;
 import 'package:image_picker/image_picker.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:quirzy/utils/constant.dart';
+import 'package:flutter_riverpod/legacy.dart';
 
 class AuthState {
   final bool isLoggedIn;
@@ -70,79 +70,121 @@ class AuthState {
 final _storage = const FlutterSecureStorage();
 
 class AuthNotifier extends StateNotifier<AuthState> {
-  AuthNotifier() : super(AuthState.initial()) {
-    // Initialize auth on provider creation
-    _initializeAuth();
-  }
+  AuthNotifier() : super(AuthState.initial());
 
   final GoogleSignIn _googleSignIn = GoogleSignIn.instance;
 
-  // Private method to handle initialization
-  Future<void> _initializeAuth() async {
+  // ✅ Public method to initialize auth - called from main app
+  Future<void> initializeAuth() async {
     await initialize();
     await checkLoginStatus();
   }
 
+  // ✅ FIXED: Initialize with your Web Client ID
   Future<void> initialize() async {
-    _googleSignIn.initialize(
-      clientId:
-          '908203960958-9u6gq8elpinjop2k41m7o8et42e1imje.apps.googleusercontent.com',
-      serverClientId:
-          '908203960958-24a3a2odtq07jaea5h9nb7f4hfjoi9c3.apps.googleusercontent.com',
-    );
+    try {
+      // ✅ CORRECT: This is your Web Client ID (from google-services.json client_type: 3)
+      await _googleSignIn.initialize(
+        serverClientId:
+            '960586519952-ea8bh3sj6ki3d5jh38lev36414ibrk73.apps.googleusercontent.com',
+      );
+
+      debugPrint('✅ Google Sign-In initialized');
+    } catch (e) {
+      debugPrint('⚠️ Google Sign-In initialization error: $e');
+    }
   }
 
-  Future<void> initializeAndAuthenticateGoogle() async {
+  Future<void> checkLoginStatus() async {
     try {
-      state = state.copyWith(isGoogleSigningIn: true, error: null);
+      debugPrint('🔍 Checking login status...');
 
-      // CRITICAL: Initialize must be called first with serverClientId
-      await _googleSignIn.initialize(
-        clientId:
-            '908203960958-9u6gq8elpinjop2k41m7o8et42e1imje.apps.googleusercontent.com',
-        serverClientId:
-            '908203960958-24a3a2odtq07jaea5h9nb7f4hfjoi9c3.apps.googleusercontent.com',
+      state = state.copyWith(isInitialized: false, isLoading: true);
+
+      final token = await _storage.read(key: 'token');
+
+      debugPrint(
+        '📝 Token from storage: ${token != null ? "Found" : "Not found"}',
       );
 
-      // Use authenticate() - this is CORRECT for v7.x
-      final GoogleSignInAccount user = await _googleSignIn.authenticate();
+      if (token != null && token.isNotEmpty) {
+        debugPrint('✅ Token exists, verifying...');
 
-      // Get authentication tokens
-      final googleAuth = await user.authentication;
+        final isValid = await _verifyToken(token);
 
-      debugPrint('ID Token: ${googleAuth.idToken}');
+        if (isValid) {
+          final email = await _storage.read(key: 'user_email');
+          final username = await _storage.read(key: 'user_name');
 
-      // Send to backend
-      final response = await http.post(
-        Uri.parse('${kBackendApiUrl}/auth/google-auth'),
-        headers: {'Content-Type': 'application/json'},
-        body: json.encode({'token': googleAuth.idToken}),
+          state = state.copyWith(
+            isLoggedIn: true,
+            token: token,
+            email: email,
+            username: username,
+            isLoading: false,
+            isInitialized: true,
+          );
+          debugPrint('✅ User authenticated, redirecting to main screen');
+        } else {
+          debugPrint('❌ Token invalid, clearing data');
+          await _storage.delete(key: 'token');
+          await _storage.delete(key: 'user_email');
+          await _storage.delete(key: 'user_name');
+
+          state = state.copyWith(
+            isLoggedIn: false,
+            token: null,
+            email: null,
+            username: null,
+            isLoading: false,
+            isInitialized: true,
+          );
+        }
+      } else {
+        debugPrint('ℹ️ No token found, showing welcome screen');
+        state = state.copyWith(
+          isLoggedIn: false,
+          token: null,
+          isLoading: false,
+          isInitialized: true,
+        );
+      }
+    } catch (e) {
+      debugPrint('⚠️ Error checking login status: $e');
+      state = state.copyWith(
+        isLoggedIn: false,
+        token: null,
+        isLoading: false,
+        isInitialized: true,
+        error: e.toString(),
       );
+    }
+  }
+
+  Future<bool> _verifyToken(String token) async {
+    try {
+      debugPrint('🔐 Verifying token with backend...');
+
+      final response = await http
+          .get(
+            Uri.parse('${kBackendApiUrl}/auth/verify'),
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': 'Bearer $token',
+            },
+          )
+          .timeout(const Duration(seconds: 5));
 
       if (response.statusCode == 200) {
-        final data = json.decode(response.body);
-        await _storage.write(key: 'token', value: data['token']);
-        state = state.copyWith(
-          isLoggedIn: true,
-          token: data['token'],
-          email: user.email,
-          username: user.displayName ?? user.email.split('@')[0],
-          isGoogleSigningIn: false,
-          error: null,
-        );
+        debugPrint('✅ Token verified successfully');
+        return true;
       } else {
-        final data = json.decode(response.body);
-        throw Exception(data['error'] ?? 'Failed to authenticate with Google');
+        debugPrint('❌ Token verification failed: ${response.statusCode}');
+        return false;
       }
-    } on GoogleSignInException catch (e) {
-      debugPrint('Google Sign-In Error: ${e.code} - ${e.description}');
-      state = state.copyWith(
-          error: e.description ?? 'Sign in failed', isGoogleSigningIn: false);
-      rethrow;
     } catch (e) {
-      debugPrint('Google Sign-In Error: $e');
-      state = state.copyWith(error: e.toString(), isGoogleSigningIn: false);
-      rethrow;
+      debugPrint('⚠️ Token verification error: $e');
+      return true;
     }
   }
 
@@ -202,13 +244,21 @@ class AuthNotifier extends StateNotifier<AuthState> {
 
       if (res.statusCode == 200 || res.statusCode == 201) {
         final data = jsonDecode(res.body);
+
         await _storage.write(key: 'token', value: data['token']);
+        await _storage.write(key: 'user_email', value: email);
+        await _storage.write(key: 'user_name', value: username);
+
         state = state.copyWith(
           isLoggedIn: true,
           isLoading: false,
           token: data['token'],
+          email: email,
+          username: username,
           error: null,
+          isInitialized: true,
         );
+        debugPrint('✅ Signup successful');
       } else {
         final data = jsonDecode(res.body);
         throw Exception(data['error'] ?? 'Registration failed');
@@ -217,84 +267,6 @@ class AuthNotifier extends StateNotifier<AuthState> {
       state = state.copyWith(error: e.toString(), isLoading: false);
       debugPrint('SignUp Error: ${e.toString()}');
       throw Exception(e.toString());
-    }
-  }
-
-  Future<void> checkLoginStatus() async {
-    try {
-      // Set loading state for auth check
-      state = state.copyWith(isLoading: true, isInitialized: false);
-      
-      final token = await _storage.read(key: 'token');
-      
-      if (token != null && token.isNotEmpty) {
-        // Token exists, verify it's still valid (optional but recommended)
-        final isValid = await _verifyToken(token);
-        
-        if (isValid) {
-          state = state.copyWith(
-            isLoggedIn: true,
-            token: token,
-            isLoading: false,
-            isInitialized: true,
-          );
-          debugPrint('✅ User is authenticated, auto-switching to main screen');
-        } else {
-          // Token is invalid, clear it
-          await _storage.delete(key: 'token');
-          state = state.copyWith(
-            isLoggedIn: false,
-            token: null,
-            isLoading: false,
-            isInitialized: true,
-          );
-          debugPrint('❌ Token invalid, showing welcome screen');
-        }
-      } else {
-        // No token found, user is logged out
-        state = state.copyWith(
-          isLoggedIn: false,
-          token: null,
-          isLoading: false,
-          isInitialized: true,
-        );
-        debugPrint('ℹ️ No token found, showing welcome screen');
-      }
-    } catch (e) {
-      debugPrint('⚠️ Error checking login status: $e');
-      // Error reading storage, treat as logged out
-      await logout();
-    } finally {
-      // Ensure initialized is always set to true after check
-      if (!state.isInitialized) {
-        state = state.copyWith(isLoading: false, isInitialized: true);
-      }
-    }
-  }
-
-  // Optional: Verify token with backend
-  Future<bool> _verifyToken(String token) async {
-    try {
-      final response = await http.get(
-        Uri.parse('${kBackendApiUrl}/auth/verify'),
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': 'Bearer $token',
-        },
-      );
-      
-      if (response.statusCode == 200) {
-        debugPrint('✅ Token verified successfully');
-        return true;
-      } else {
-        debugPrint('❌ Token verification failed: ${response.statusCode}');
-        return false;
-      }
-    } catch (e) {
-      debugPrint('⚠️ Token verification error: $e');
-      // If backend is unreachable, assume token is valid
-      // You can change this to return false for stricter security
-      return true;
     }
   }
 
@@ -309,22 +281,129 @@ class AuthNotifier extends StateNotifier<AuthState> {
 
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
+
         await _storage.write(key: 'token', value: data['token']);
+        await _storage.write(key: 'user_email', value: email);
+
+        final username = data['name'] ?? email.split('@')[0];
+        await _storage.write(key: 'user_name', value: username);
+
         state = state.copyWith(
           isLoggedIn: true,
           isLoading: false,
           token: data['token'],
+          email: email,
+          username: username,
           error: null,
+          isInitialized: true,
         );
         debugPrint('✅ Login successful');
       } else {
         final data = jsonDecode(response.body);
         throw Exception(data['error'] ?? 'Login failed');
       }
-    } catch (e) {
+    } catch  (e) {
       state = state.copyWith(error: e.toString(), isLoading: false);
       debugPrint('❌ Login Error: ${e.toString()}');
       throw Exception(e.toString());
+    }
+  }
+
+  // ✅ COMPLETE FIXED GOOGLE SIGN-IN METHOD
+  Future<void> initializeAndAuthenticateGoogle() async {
+    try {
+      state = state.copyWith(isGoogleSigningIn: true, error: null);
+
+      // ✅ FIXED: Use your correct Web Client ID (NOT Client Secret)
+      // ✅ CORRECT: This is your Web Client ID (from google-services.json client_type: 3)
+      await _googleSignIn.initialize(
+        serverClientId:
+            '960586519952-ea8bh3sj6ki3d5jh38lev36414ibrk73.apps.googleusercontent.com',
+      );
+
+      debugPrint('🔄 Starting Google Sign-In...');
+
+      // ✅ Use authenticate() method for google_sign_in 7.x
+      final GoogleSignInAccount? user = await _googleSignIn.authenticate();
+
+      // ✅ Check if user cancelled sign-in
+      if (user == null) {
+        debugPrint('⚠️ User cancelled Google Sign-In');
+        state = state.copyWith(
+          isGoogleSigningIn: false,
+          error: 'Sign in was cancelled',
+        );
+        return;
+      }
+
+      final googleAuth = await user.authentication;
+
+      // ✅ Check if idToken exists
+      if (googleAuth.idToken == null) {
+        debugPrint('❌ ID Token is null');
+        throw Exception(
+          'Failed to get ID token from Google. Please check Firebase configuration and SHA-1 fingerprints.',
+        );
+      }
+
+      debugPrint(
+        '✅ ID Token received: ${googleAuth.idToken!.substring(0, 20)}...',
+      );
+
+      // Send token to your backend
+      final response = await http.post(
+        Uri.parse('${kBackendApiUrl}/auth/google-auth'),
+        headers: {'Content-Type': 'application/json'},
+        body: json.encode({'token': googleAuth.idToken}),
+      );
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+
+        await _storage.write(key: 'token', value: data['token']);
+        await _storage.write(key: 'user_email', value: user.email);
+        await _storage.write(
+          key: 'user_name',
+          value: user.displayName ?? user.email.split('@')[0],
+        );
+
+        state = state.copyWith(
+          isLoggedIn: true,
+          token: data['token'],
+          email: user.email,
+          username: user.displayName ?? user.email.split('@')[0],
+          isGoogleSigningIn: false,
+          error: null,
+          isInitialized: true,
+        );
+        debugPrint('✅ Google sign-in successful');
+      } else {
+        final data = json.decode(response.body);
+        throw Exception(data['error'] ?? 'Failed to authenticate with Google');
+      }
+    } on GoogleSignInException catch (e) {
+      debugPrint('❌ Google Sign-In Exception: ${e.code} - ${e.description}');
+
+      // ✅ Better error messages based on error code
+      String errorMessage = 'Sign in failed';
+      switch (e.code) {
+        case GoogleSignInExceptionCode.canceled:
+          errorMessage = 'Sign in was cancelled';
+          break;
+        case GoogleSignInExceptionCode.clientConfigurationError:
+          errorMessage =
+              'Configuration error. Please check SHA-1 fingerprints in Firebase Console';
+          break;
+        default:
+          errorMessage = e.description ?? 'Sign in failed. Please try again';
+      }
+
+      state = state.copyWith(error: errorMessage, isGoogleSigningIn: false);
+      rethrow;
+    } catch (e) {
+      debugPrint('❌ Google Sign-In Error: $e');
+      state = state.copyWith(error: e.toString(), isGoogleSigningIn: false);
+      rethrow;
     }
   }
 
@@ -332,16 +411,18 @@ class AuthNotifier extends StateNotifier<AuthState> {
     try {
       state = state.copyWith(isLoading: true, error: null);
 
-      // Sign out from Google (if user signed in with Google)
-      await _googleSignIn.signOut();
+      try {
+        await _googleSignIn.signOut();
+        debugPrint('✅ Google sign out successful');
+      } catch (e) {
+        debugPrint('⚠️ Google sign out warning: $e');
+      }
 
-      // Delete stored token
       await _storage.delete(key: 'token');
+      await _storage.delete(key: 'user_email');
+      await _storage.delete(key: 'user_name');
+      await _storage.delete(key: 'fcmToken');
 
-      // Optionally: Notify backend about logout (if needed)
-      // await _notifyBackendLogout();
-
-      // Reset state completely with all fields cleared
       state = const AuthState(
         isLoggedIn: false,
         isInitialized: true,
@@ -356,12 +437,14 @@ class AuthNotifier extends StateNotifier<AuthState> {
         isGoogleSigningIn: false,
       );
 
-      debugPrint('✅ Logout successful');
+      debugPrint('✅ Logout successful - all data cleared');
     } catch (e) {
       debugPrint('⚠️ Logout Error: $e');
 
-      // Even if Google sign out fails, still clear local data
       await _storage.delete(key: 'token');
+      await _storage.delete(key: 'user_email');
+      await _storage.delete(key: 'user_name');
+
       state = const AuthState(
         isLoggedIn: false,
         isInitialized: true,
@@ -407,7 +490,6 @@ class AuthNotifier extends StateNotifier<AuthState> {
   }
 }
 
-// Provider definition
 final authProvider = StateNotifierProvider<AuthNotifier, AuthState>((ref) {
   return AuthNotifier();
 });

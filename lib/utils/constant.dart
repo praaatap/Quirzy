@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 const Color kPrimaryBlue = Color(0xFF1E88E5);
 const Color kTextDark = Colors.black87;
@@ -24,7 +23,10 @@ const String kQuizDescription =
     "Describe your quiz idea or upload a document to generate a quiz.";
 const String kOnbordingStatus = "onboarding_done";
 
-final String kBackendApiUrl = "http://10.0.2.2:3000" ;
+// final String kBackendApiUrl = "https://quirzybackend.pratapsingh.me/";
+
+// final String kBackendApiUrl = "http://192.168.1.38:3000";
+final String kBackendApiUrl = "https://quirzybackend.pratapsingh.me";
 
 
 const String kgeminiKey  = 'AIzaSyDHuDteHuXXHAWpRaYteoJwN4z-nkcrM2o';

@@ -40,67 +40,27 @@ class ApiService {
     }
   }
 
-  // ==================== USER MANAGEMENT ====================
-
-  /// Search users by name or email
-  static Future<Map<String, dynamic>> searchUsers(String query) async {
-    try {
-      final token = await getToken();
-      
-      if (token == null) {
-        throw Exception('Authentication token not found. Please login again.');
-      }
-
-      debugPrint('🔍 Searching users with query: $query');
-      
-      final uri = Uri.parse('${kBackendApiUrl}/search-users?q=${Uri.encodeComponent(query)}');
-      
-      final response = await http.get(
-        uri,
-        headers: {
-          'Authorization': 'Bearer $token',
-          'Content-Type': 'application/json',
-        },
-      ).timeout(const Duration(seconds: 10));
-
-      debugPrint('Search API Status: ${response.statusCode}');
-      debugPrint('Search API Body: ${response.body}');
-
-      if (response.statusCode == 200) {
-        return json.decode(response.body) as Map<String, dynamic>;
-      } else if (response.statusCode == 401) {
-        throw Exception('Session expired. Please login again.');
-      } else if (response.statusCode == 400) {
-        final errorBody = json.decode(response.body);
-        throw Exception(errorBody['error'] ?? 'Invalid search query');
-      } else {
-        final errorBody = json.decode(response.body);
-        throw Exception(errorBody['error'] ?? 'Failed to search users');
-      }
-    } catch (e) {
-      debugPrint('❌ Search users error: $e');
-      rethrow;
-    }
-  }
 
   /// Get all users (for testing/admin)
   static Future<List<Map<String, dynamic>>> getAllUsers() async {
     try {
       final token = await getToken();
-      
+
       if (token == null) {
         throw Exception('Authentication token not found. Please login again.');
       }
 
       final uri = Uri.parse('${kBackendApiUrl}/users');
-      
-      final response = await http.get(
-        uri,
-        headers: {
-          'Authorization': 'Bearer $token',
-          'Content-Type': 'application/json',
-        },
-      ).timeout(const Duration(seconds: 10));
+
+      final response = await http
+          .get(
+            uri,
+            headers: {
+              'Authorization': 'Bearer $token',
+              'Content-Type': 'application/json',
+            },
+          )
+          .timeout(const Duration(seconds: 10));
 
       if (response.statusCode == 200) {
         return List<Map<String, dynamic>>.from(json.decode(response.body));
@@ -114,261 +74,12 @@ class ApiService {
     }
   }
 
-  // ==================== CHALLENGE MANAGEMENT ====================
-
-  /// Send a challenge to another user
-  static Future<Map<String, dynamic>> sendChallenge({
-    required int opponentId,
-    int? quizId,
-  }) async {
-    try {
-      final token = await getToken();
-      
-      if (token == null) {
-        throw Exception('Authentication token not found. Please login again.');
-      }
-
-      debugPrint('📤 Sending challenge to opponent ID: $opponentId');
-
-      final uri = Uri.parse('${kBackendApiUrl}/challenge/send');
-      
-      final response = await http.post(
-        uri,
-        headers: {
-          'Authorization': 'Bearer $token',
-          'Content-Type': 'application/json',
-        },
-        body: json.encode({
-          'opponentId': opponentId,
-          if (quizId != null) 'quizId': quizId,
-        }),
-      ).timeout(const Duration(seconds: 15));
-
-      debugPrint('Send Challenge Status: ${response.statusCode}');
-      debugPrint('Send Challenge Body: ${response.body}');
-
-      if (response.statusCode == 200) {
-        return json.decode(response.body) as Map<String, dynamic>;
-      } else if (response.statusCode == 401) {
-        throw Exception('Session expired. Please login again.');
-      } else if (response.statusCode == 404) {
-        throw Exception('Opponent not found');
-      } else {
-        final errorBody = json.decode(response.body);
-        throw Exception(errorBody['error'] ?? 'Failed to send challenge');
-      }
-    } catch (e) {
-      debugPrint('❌ Send challenge error: $e');
-      rethrow;
-    }
-  }
-
-  /// Get challenge status by ID
-  static Future<Map<String, dynamic>> getChallengeStatus(int challengeId) async {
-    try {
-      final token = await getToken();
-      
-      if (token == null) {
-        throw Exception('Authentication token not found. Please login again.');
-      }
-
-      debugPrint('📊 Getting challenge status for ID: $challengeId');
-
-      final uri = Uri.parse('${kBackendApiUrl}/challenge/$challengeId');
-      
-      final response = await http.get(
-        uri,
-        headers: {
-          'Authorization': 'Bearer $token',
-          'Content-Type': 'application/json',
-        },
-      ).timeout(const Duration(seconds: 10));
-
-      debugPrint('Get Challenge Status: ${response.statusCode}');
-
-      if (response.statusCode == 200) {
-        return json.decode(response.body) as Map<String, dynamic>;
-      } else if (response.statusCode == 401) {
-        throw Exception('Session expired. Please login again.');
-      } else if (response.statusCode == 404) {
-        throw Exception('Challenge not found');
-      } else {
-        final errorBody = json.decode(response.body);
-        throw Exception(errorBody['error'] ?? 'Failed to get challenge status');
-      }
-    } catch (e) {
-      debugPrint('❌ Get challenge status error: $e');
-      rethrow;
-    }
-  }
-
-  /// Accept a challenge
-  static Future<Map<String, dynamic>> acceptChallenge(int challengeId) async {
-    try {
-      final token = await getToken();
-      
-      if (token == null) {
-        throw Exception('Authentication token not found. Please login again.');
-      }
-
-      debugPrint('✅ Accepting challenge ID: $challengeId');
-
-      final uri = Uri.parse('${kBackendApiUrl}/challenge/$challengeId/accept');
-      
-      final response = await http.post(
-        uri,
-        headers: {
-          'Authorization': 'Bearer $token',
-          'Content-Type': 'application/json',
-        },
-      ).timeout(const Duration(seconds: 10));
-
-      debugPrint('Accept Challenge Status: ${response.statusCode}');
-
-      if (response.statusCode == 200) {
-        return json.decode(response.body) as Map<String, dynamic>;
-      } else if (response.statusCode == 401) {
-        throw Exception('Session expired. Please login again.');
-      } else if (response.statusCode == 404) {
-        throw Exception('Challenge not found or already accepted');
-      } else if (response.statusCode == 400) {
-        final errorBody = json.decode(response.body);
-        throw Exception(errorBody['error'] ?? 'Challenge has expired');
-      } else {
-        final errorBody = json.decode(response.body);
-        throw Exception(errorBody['error'] ?? 'Failed to accept challenge');
-      }
-    } catch (e) {
-      debugPrint('❌ Accept challenge error: $e');
-      rethrow;
-    }
-  }
-
-  /// Reject a challenge
-  static Future<Map<String, dynamic>> rejectChallenge(int challengeId) async {
-    try {
-      final token = await getToken();
-      
-      if (token == null) {
-        throw Exception('Authentication token not found. Please login again.');
-      }
-
-      debugPrint('❌ Rejecting challenge ID: $challengeId');
-
-      final uri = Uri.parse('${kBackendApiUrl}/challenge/$challengeId/reject');
-      
-      final response = await http.post(
-        uri,
-        headers: {
-          'Authorization': 'Bearer $token',
-          'Content-Type': 'application/json',
-        },
-      ).timeout(const Duration(seconds: 10));
-
-      debugPrint('Reject Challenge Status: ${response.statusCode}');
-
-      if (response.statusCode == 200) {
-        return json.decode(response.body) as Map<String, dynamic>;
-      } else if (response.statusCode == 401) {
-        throw Exception('Session expired. Please login again.');
-      } else if (response.statusCode == 404) {
-        throw Exception('Challenge not found');
-      } else {
-        final errorBody = json.decode(response.body);
-        throw Exception(errorBody['error'] ?? 'Failed to reject challenge');
-      }
-    } catch (e) {
-      debugPrint('❌ Reject challenge error: $e');
-      rethrow;
-    }
-  }
-
-  /// Cancel a challenge (for challenger only)
-  static Future<void> cancelChallenge(int challengeId) async {
-    try {
-      final token = await getToken();
-      
-      if (token == null) {
-        throw Exception('Authentication token not found. Please login again.');
-      }
-
-      debugPrint('🚫 Cancelling challenge ID: $challengeId');
-
-      final uri = Uri.parse('${kBackendApiUrl}/challenge/$challengeId');
-      
-      final response = await http.delete(
-        uri,
-        headers: {
-          'Authorization': 'Bearer $token',
-          'Content-Type': 'application/json',
-        },
-      ).timeout(const Duration(seconds: 10));
-
-      debugPrint('Cancel Challenge Status: ${response.statusCode}');
-      debugPrint('Cancel Challenge Body: ${response.body}');
-
-      if (response.statusCode == 200) {
-        debugPrint('✅ Challenge cancelled successfully');
-        return;
-      } else if (response.statusCode == 401) {
-        throw Exception('Session expired. Please login again.');
-      } else if (response.statusCode == 404) {
-        throw Exception('Challenge not found or cannot be cancelled');
-      } else {
-        final errorBody = json.decode(response.body);
-        throw Exception(errorBody['error'] ?? 'Failed to cancel challenge');
-      }
-    } catch (e) {
-      debugPrint('❌ Cancel challenge error: $e');
-      rethrow;
-    }
-  }
-
-  /// Get all challenges for current user
-  static Future<List<Map<String, dynamic>>> getMyChallenges() async {
-    try {
-      final token = await getToken();
-      
-      if (token == null) {
-        throw Exception('Authentication token not found. Please login again.');
-      }
-
-      debugPrint('📋 Getting my challenges');
-
-      final uri = Uri.parse('${kBackendApiUrl}/challenges/my');
-      
-      final response = await http.get(
-        uri,
-        headers: {
-          'Authorization': 'Bearer $token',
-          'Content-Type': 'application/json',
-        },
-      ).timeout(const Duration(seconds: 10));
-
-      debugPrint('Get My Challenges Status: ${response.statusCode}');
-
-      if (response.statusCode == 200) {
-        final data = json.decode(response.body) as Map<String, dynamic>;
-        return List<Map<String, dynamic>>.from(data['challenges']);
-      } else if (response.statusCode == 401) {
-        throw Exception('Session expired. Please login again.');
-      } else {
-        final errorBody = json.decode(response.body);
-        throw Exception(errorBody['error'] ?? 'Failed to get challenges');
-      }
-    } catch (e) {
-      debugPrint('❌ Get my challenges error: $e');
-      rethrow;
-    }
-  }
-
-  // ==================== FCM TOKEN MANAGEMENT ====================
 
   /// Save FCM token for push notifications
   static Future<void> saveFCMToken(String fcmToken) async {
     try {
       final token = await getToken();
-      
+
       if (token == null) {
         throw Exception('Authentication token not found. Please login again.');
       }
@@ -376,17 +87,17 @@ class ApiService {
       debugPrint('💾 Saving FCM token');
 
       final uri = Uri.parse('${kBackendApiUrl}/auth/save-token');
-      
-      final response = await http.post(
-        uri,
-        headers: {
-          'Authorization': 'Bearer $token',
-          'Content-Type': 'application/json',
-        },
-        body: json.encode({
-          'fcmToken': fcmToken,
-        }),
-      ).timeout(const Duration(seconds: 10));
+
+      final response = await http
+          .post(
+            uri,
+            headers: {
+              'Authorization': 'Bearer $token',
+              'Content-Type': 'application/json',
+            },
+            body: json.encode({'fcmToken': fcmToken}),
+          )
+          .timeout(const Duration(seconds: 10));
 
       debugPrint('Save FCM Token Status: ${response.statusCode}');
 
@@ -415,17 +126,14 @@ class ApiService {
       debugPrint('🔑 Resetting password for: $email');
 
       final uri = Uri.parse('${kBackendApiUrl}/reset-password');
-      
-      final response = await http.post(
-        uri,
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: json.encode({
-          'email': email,
-          'newPassword': newPassword,
-        }),
-      ).timeout(const Duration(seconds: 10));
+
+      final response = await http
+          .post(
+            uri,
+            headers: {'Content-Type': 'application/json'},
+            body: json.encode({'email': email, 'newPassword': newPassword}),
+          )
+          .timeout(const Duration(seconds: 10));
 
       debugPrint('Reset Password Status: ${response.statusCode}');
 
@@ -461,26 +169,36 @@ class ApiService {
     }
   }
 
-
   static Future<void> saveFcmToken(String fcmToken, String authToken) async {
-    debugPrint('📤 API: Saving FCM token');
+    try {
+      debugPrint('💾 Saving FCM token to backend');
 
-    final response = await http.post(
-      Uri.parse('${kBackendApiUrl}/auth/save-token'),
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': 'Bearer $authToken',
-      },
-      body: jsonEncode({'fcmToken': fcmToken}),
-    );
+      final uri = Uri.parse('${kBackendApiUrl}/auth/save-token');
 
-    if (response.statusCode == 200) {
-      debugPrint('✅ API: FCM token saved successfully');
-    } else {
-      final data = jsonDecode(response.body);
-      debugPrint('❌ API: Failed to save FCM token - ${data['error']}');
-      throw Exception(data['error'] ?? 'Failed to save FCM token');
+      final response = await http
+          .post(
+            uri,
+            headers: {
+              'Authorization': 'Bearer $authToken',
+              'Content-Type': 'application/json',
+            },
+            body: json.encode({'fcmToken': fcmToken}),
+          )
+          .timeout(const Duration(seconds: 10));
+
+      debugPrint('Save FCM Token Status: ${response.statusCode}');
+
+      if (response.statusCode == 200) {
+        debugPrint('✅ FCM token saved successfully');
+      } else if (response.statusCode == 401) {
+        throw Exception('Session expired. Please login again.');
+      } else {
+        final errorBody = json.decode(response.body);
+        throw Exception(errorBody['error'] ?? 'Failed to save FCM token');
+      }
+    } catch (e) {
+      debugPrint('❌ Save FCM token error: $e');
+      rethrow;
     }
   }
-
 }

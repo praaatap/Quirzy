@@ -3,18 +3,41 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:quirzy/service/notification_service.dart';
 import 'package:timeago/timeago.dart' as timeago;
-class NotificationScreen extends ConsumerWidget {
+
+class NotificationScreen extends ConsumerStatefulWidget {
   const NotificationScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final notificationState = ref.watch(notificationProvider);
-    final theme = Theme.of(context);
+  ConsumerState<NotificationScreen> createState() => _NotificationScreenState();
+}
 
-    // Mark as read when screen is opened
+class _NotificationScreenState extends ConsumerState<NotificationScreen> {
+  @override
+  void initState() {
+    super.initState();
+    // ✅ Call markAsRead only once when screen opens
     WidgetsBinding.instance.addPostFrameCallback((_) {
       ref.read(notificationProvider.notifier).markAsRead();
+      
+      // ✅ Log FCM token to console for testing
+      final fcmToken = ref.read(notificationProvider).fcmToken;
+      if (fcmToken != null) {
+        debugPrint('═' * 60);
+        debugPrint('📱 FCM TOKEN FOR TESTING');
+        debugPrint('═' * 60);
+        debugPrint(fcmToken);
+        debugPrint('═' * 60);
+        debugPrint('Copy this token and use it in Firebase Console → Messaging → Send test message');
+        debugPrint('═' * 60);
+      } else {
+        debugPrint('⚠️ No FCM token available yet');
+      }
     });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final notificationState = ref.watch(notificationProvider);
 
     return Scaffold(
       appBar: AppBar(
@@ -24,14 +47,12 @@ class NotificationScreen extends ConsumerWidget {
             IconButton(
               icon: const Icon(Icons.delete_sweep),
               tooltip: 'Clear all',
-              onPressed: () {
-                _showClearAllDialog(context, ref);
-              },
+              onPressed: () => _showClearAllDialog(context),
             ),
         ],
       ),
       body: notificationState.notifications.isEmpty
-          ? _buildEmptyState(context)
+          ? _buildEmptyState(context, notificationState.fcmToken)
           : Column(
               children: [
                 // FCM Token Section (collapsible)
@@ -43,12 +64,7 @@ class NotificationScreen extends ConsumerWidget {
                     itemCount: notificationState.notifications.length,
                     itemBuilder: (context, index) {
                       final message = notificationState.notifications[index];
-                      return _buildNotificationItem(
-                        context,
-                        ref,
-                        message,
-                        index,
-                      );
+                      return _buildNotificationItem(context, message, index);
                     },
                   ),
                 ),
@@ -57,31 +73,74 @@ class NotificationScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildEmptyState(BuildContext context) {
-    return Center(
+  Widget _buildEmptyState(BuildContext context, String? fcmToken) {
+    return SingleChildScrollView(
       child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(
-            Icons.notifications_off_outlined,
-            size: 80,
-            color: Colors.grey.shade400,
-          ),
-          const SizedBox(height: 16),
-          Text(
-            'No notifications yet',
-            style: TextStyle(
-              fontSize: 18,
-              color: Colors.grey.shade600,
-              fontWeight: FontWeight.w500,
-            ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            'You\'ll see challenge invites and updates here',
-            style: TextStyle(
-              fontSize: 14,
-              color: Colors.grey.shade500,
+          // ✅ Show FCM token even when no notifications
+          if (fcmToken != null) ...[
+            _buildTokenSection(context, fcmToken),
+            const Divider(height: 1),
+            const SizedBox(height: 40),
+          ],
+          // Empty state
+          Padding(
+            padding: const EdgeInsets.all(24.0),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(
+                  Icons.notifications_off_outlined,
+                  size: 80,
+                  color: Colors.grey.shade400,
+                ),
+                const SizedBox(height: 16),
+                Text(
+                  'No notifications yet',
+                  style: TextStyle(
+                    fontSize: 18,
+                    color: Colors.grey.shade600,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  'You\'ll see challenge invites and updates here',
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: Colors.grey.shade500,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 24),
+                // ✅ Helper card for testing
+                if (fcmToken != null)
+                  Card(
+                    margin: const EdgeInsets.symmetric(horizontal: 16),
+                    child: Padding(
+                      padding: const EdgeInsets.all(16.0),
+                      child: Column(
+                        children: [
+                          const Icon(Icons.info_outline, size: 40, color: Colors.blue),
+                          const SizedBox(height: 12),
+                          const Text(
+                            'Test Notifications',
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          const Text(
+                            'Tap on "FCM Token" above to copy your token, then send a test notification from Firebase Console.',
+                            textAlign: TextAlign.center,
+                            style: TextStyle(fontSize: 12),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+              ],
             ),
           ),
         ],
@@ -97,34 +156,147 @@ class NotificationScreen extends ConsumerWidget {
         fcmToken != null ? 'Tap to view and copy' : 'No token available',
         style: const TextStyle(fontSize: 12),
       ),
+      // ✅ Expanded by default if no notifications
+      initiallyExpanded: ref.read(notificationProvider).notifications.isEmpty,
       children: [
         Padding(
           padding: const EdgeInsets.all(16.0),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              SelectableText(
-                fcmToken ?? 'No token available',
-                style: const TextStyle(
-                  fontFamily: 'monospace',
-                  fontSize: 12,
+              // ✅ Show token status
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: fcmToken != null ? Colors.green.shade50 : Colors.red.shade50,
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Row(
+                  children: [
+                    Icon(
+                      fcmToken != null ? Icons.check_circle : Icons.error,
+                      color: fcmToken != null ? Colors.green : Colors.red,
+                      size: 16,
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        fcmToken != null 
+                            ? 'Token is active and ready for notifications'
+                            : 'Token not available - check permissions',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: fcmToken != null ? Colors.green.shade900 : Colors.red.shade900,
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
               ),
-              const SizedBox(height: 8),
-              ElevatedButton.icon(
-                onPressed: fcmToken != null
-                    ? () {
-                        Clipboard.setData(ClipboardData(text: fcmToken));
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text('Token copied to clipboard'),
-                            duration: Duration(seconds: 2),
-                          ),
-                        );
+              const SizedBox(height: 12),
+              // Token display
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.grey.shade100,
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: Colors.grey.shade300),
+                ),
+                child: SelectableText(
+                  fcmToken ?? 'No token available',
+                  style: const TextStyle(
+                    fontFamily: 'monospace',
+                    fontSize: 11,
+                  ),
+                ),
+              ),
+              const SizedBox(height: 12),
+              Row(
+                children: [
+                  Expanded(
+                    child: ElevatedButton.icon(
+                      onPressed: fcmToken != null
+                          ? () {
+                              Clipboard.setData(ClipboardData(text: fcmToken));
+                              // ✅ Also log to console when copied
+                              debugPrint('📋 FCM Token copied to clipboard');
+                              debugPrint('Token: $fcmToken');
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content: Text('✅ Token copied to clipboard'),
+                                  duration: Duration(seconds: 2),
+                                  backgroundColor: Colors.green,
+                                ),
+                              );
+                            }
+                          : null,
+                      icon: const Icon(Icons.copy, size: 16),
+                      label: const Text('Copy Token'),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  // ✅ Add refresh button
+                  IconButton(
+                    onPressed: () {
+                      final token = ref.read(notificationProvider).fcmToken;
+                      if (token != null) {
+                        debugPrint('═' * 60);
+                        debugPrint('🔄 REFRESHED FCM TOKEN');
+                        debugPrint('═' * 60);
+                        debugPrint(token);
+                        debugPrint('═' * 60);
                       }
-                    : null,
-                icon: const Icon(Icons.copy, size: 16),
-                label: const Text('Copy Token'),
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('Check console for token'),
+                          duration: Duration(seconds: 1),
+                        ),
+                      );
+                    },
+                    icon: const Icon(Icons.refresh),
+                    tooltip: 'Print token to console',
+                  ),
+                ],
+              ),
+              const SizedBox(height: 8),
+              // ✅ Instructions
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.blue.shade50,
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Icon(Icons.lightbulb_outline, size: 16, color: Colors.blue.shade700),
+                        const SizedBox(width: 8),
+                        Text(
+                          'How to test notifications:',
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            color: Colors.blue.shade900,
+                            fontSize: 12,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      '1. Copy the token above\n'
+                      '2. Go to Firebase Console → Messaging\n'
+                      '3. Click "New campaign"\n'
+                      '4. Click "Send test message"\n'
+                      '5. Paste your token and click Test',
+                      style: TextStyle(
+                        fontSize: 11,
+                        color: Colors.blue.shade800,
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ],
           ),
@@ -133,12 +305,7 @@ class NotificationScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildNotificationItem(
-    BuildContext context,
-    WidgetRef ref,
-    dynamic message,
-    int index,
-  ) {
+  Widget _buildNotificationItem(BuildContext context, dynamic message, int index) {
     final notification = message.notification;
     final data = message.data as Map<String, dynamic>;
     final type = data['type'] ?? 'unknown';
@@ -208,9 +375,7 @@ class NotificationScreen extends ConsumerWidget {
             ],
           ),
           trailing: const Icon(Icons.chevron_right),
-          onTap: () {
-            _showNotificationDetails(context, message);
-          },
+          onTap: () => _showNotificationDetails(context, message),
         ),
       ),
     );
@@ -251,13 +416,10 @@ class NotificationScreen extends ConsumerWidget {
               _buildDetailRow('Title', message.notification?.title ?? 'N/A'),
               _buildDetailRow('Body', message.notification?.body ?? 'N/A'),
               _buildDetailRow('Type', message.data['type'] ?? 'unknown'),
-              _buildDetailRow(
-                'Sent Time',
-                message.sentTime?.toString() ?? 'Unknown',
-              ),
+              _buildDetailRow('Sent Time', message.sentTime?.toString() ?? 'Unknown'),
               const SizedBox(height: 16),
               const Text(
-                'Data Payload:',
+                'Data Payload',
                 style: TextStyle(fontWeight: FontWeight.bold),
               ),
               const SizedBox(height: 8),
@@ -298,7 +460,7 @@ class NotificationScreen extends ConsumerWidget {
     );
   }
 
-  void _showClearAllDialog(BuildContext context, WidgetRef ref) {
+  void _showClearAllDialog(BuildContext context) {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
