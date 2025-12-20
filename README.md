@@ -67,6 +67,22 @@ Ads: Google AdMob (Rewarded + Interstitial)
 Fonts: Google Fonts (Inter, Poppins)
 ```
 
+## 📚 **Documentation for Contributors**
+
+New to the project? We have comprehensive guides to help you navigate the codebase:
+
+- 📖 **[QUICK_REFERENCE.md](QUICK_REFERENCE.md)** - Start here! Quick guide to find code and add new features
+- 📖 **[FOLDER_STRUCTURE.md](FOLDER_STRUCTURE.md)** - Detailed folder organization and migration guide
+- 📖 **[PROJECT_STRUCTURE.md](../PROJECT_STRUCTURE.md)** - Overall project structure  
+- 📖 **[CONTRIBUTING.md](CONTRIBUTING.md)** - How to contribute effectively
+- 📖 **[CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md)** - Community guidelines
+
+### Quick Navigation:
+- Looking for screens? → `lib/features/[feature]/screens/`
+- Looking for widgets? → `lib/shared/widgets/`
+- Looking for business logic? → `lib/features/[feature]/services/`
+- Legacy code? → `lib/_old_structure/` (⚠️ DO NOT USE)
+
 ## 📱 **Screenshots**
 
 ```

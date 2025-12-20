@@ -10,7 +10,7 @@ import 'package:quirzy/utils/constant.dart';
 
 class UserDataService {
   // Use 10.0.2.2 for Android Emulator, localhost for iOS Simulator
-  final String _baseUrl = kBackendApiUrl; 
+  final String _baseUrl = kBackendApiUrl;
   final _storage = const FlutterSecureStorage();
 
   Future<Map<String, dynamic>> downloadUserData() async {
@@ -22,15 +22,15 @@ class UserDataService {
       // 1. Get Authentication Token
       // CHECK THIS: specific key name must match what you used in LoginScreen
       String? token = await _storage.read(key: 'auth_token');
-      
+
       // Fallback: If 'auth_token' is null, try common alternatives
       token ??= await _storage.read(key: 'token');
       token ??= await _storage.read(key: 'jwt');
 
       if (token == null) {
         return {
-          'success': false, 
-          'message': 'Token not found. Storage keys: ${allKeys.keys}'
+          'success': false,
+          'message': 'Token not found. Storage keys: ${allKeys.keys}',
         };
       }
 
@@ -39,14 +39,14 @@ class UserDataService {
       if (!hasPermission) {
         return {
           'success': false,
-          'message': 'Storage permission denied. Cannot save file.'
+          'message': 'Storage permission denied. Cannot save file.',
         };
       }
 
       // 3. Make the API Call
       // FIXED: Changed from /users/export-data to /settings/download-data
       final response = await http.get(
-        Uri.parse('$_baseUrl/settings/download-data'), 
+        Uri.parse('$_baseUrl/settings/download-data'),
         headers: {
           'Authorization': 'Bearer $token',
           'Content-Type': 'application/json',
@@ -57,17 +57,24 @@ class UserDataService {
         // 4. Get Download Directory
         String? savePath = await _getDownloadPath();
         if (savePath == null) {
-          return {'success': false, 'message': 'Could not locate download folder'};
+          return {
+            'success': false,
+            'message': 'Could not locate download folder',
+          };
         }
 
         // 5. Generate Filename
-        String fileName = 'quirzy-data-${DateTime.now().millisecondsSinceEpoch}.json';
-        
+        String fileName =
+            'quirzy-data-${DateTime.now().millisecondsSinceEpoch}.json';
+
         // Try to get filename from server headers
         String? contentDisposition = response.headers['content-disposition'];
-        if (contentDisposition != null && contentDisposition.contains('filename=')) {
+        if (contentDisposition != null &&
+            contentDisposition.contains('filename=')) {
           try {
-            fileName = contentDisposition.split('filename=')[1].replaceAll('"', '');
+            fileName = contentDisposition
+                .split('filename=')[1]
+                .replaceAll('"', '');
           } catch (_) {
             // keep default filename on parse error
           }
@@ -78,18 +85,18 @@ class UserDataService {
         await file.writeAsBytes(response.bodyBytes);
 
         debugPrint('✅ File saved to: ${file.path}');
-        
+
         return {
           'success': true,
           'message': 'Saved to Downloads folder!',
           'filename': fileName,
-          'path': file.path
+          'path': file.path,
         };
       } else {
         debugPrint('❌ Server Error: ${response.body}');
         return {
           'success': false,
-          'message': 'Server error: ${response.statusCode}'
+          'message': 'Server error: ${response.statusCode}',
         };
       }
     } catch (e) {
@@ -103,16 +110,16 @@ class UserDataService {
 
     if (Platform.isAndroid) {
       final androidInfo = await DeviceInfoPlugin().androidInfo;
-      
+
       // Android 13+ (SDK 33) does not use WRITE_EXTERNAL_STORAGE
       if (androidInfo.version.sdkInt >= 33) {
-        return true; 
+        return true;
       }
-      
+
       // Android 10-12
       var status = await Permission.storage.status;
       if (status.isGranted) return true;
-      
+
       var result = await Permission.storage.request();
       return result.isGranted;
     }

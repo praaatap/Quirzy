@@ -78,6 +78,10 @@ dependencies:
   shorebird_code_push: ^2.0.5
   device_info_plus: ^12.3.0
   fl_chart: ^1.1.1
+  hive: ^2.2.3
+  hive_flutter: ^1.1.0
+  path_provider: ^2.1.5
+  flip_card: ^0.7.0
 
 flutter_launcher_icons:
   android: true
@@ -87,6 +91,7 @@ flutter_launcher_icons:
 
   adaptive_icon_foreground: "assets/splash/splash.png"
   adaptive_icon_background: "#FFFFFF"
+
 
 
 

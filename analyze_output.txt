@@ -1,0 +1,124 @@
+﻿Analyzing quirzy...                                             
+
+   info - Library names are not necessary - lib\core\core.dart:2:9 - unnecessary_library_name
+warning - The value of the field '_statsTTL' isn't used - lib\core\storage\hive_cache_service.dart:34:20 - unused_field
+   info - Library names are not necessary - lib\features\auth\auth.dart:2:9 - unnecessary_library_name
+   info - The imported package 'http' isn't a dependency of the importing package - lib\features\auth\providers\auth_provider.dart:6:8 - depend_on_referenced_packages
+   info - Unnecessary braces in a string interpolation - lib\features\auth\providers\auth_provider.dart:170:24 - unnecessary_brace_in_string_interps
+   info - Unnecessary braces in a string interpolation - lib\features\auth\providers\auth_provider.dart:234:30 - unnecessary_brace_in_string_interps
+   info - Unnecessary braces in a string interpolation - lib\features\auth\providers\auth_provider.dart:277:20 - unnecessary_brace_in_string_interps
+   info - Type could be non-nullable - lib\features\auth\providers\auth_provider.dart:327:34 - unnecessary_nullable_for_final_variable_declarations
+   info - Uses 'await' on an instance of 'GoogleSignInAuthentication', which is not a subtype of 'Future' - lib\features\auth\providers\auth_provider.dart:339:26 - await_only_futures
+   info - Unnecessary braces in a string interpolation - lib\features\auth\providers\auth_provider.dart:355:20 - unnecessary_brace_in_string_interps
+   info - Unnecessary braces in a string interpolation - lib\features\auth\providers\auth_provider.dart:480:18 - unnecessary_brace_in_string_interps
+  error - Target of URI doesn't exist: 'package:quirzy/screen/introduction/signup.dart' - lib\features\auth\screens\login_screen.dart:6:8 - uri_does_not_exist
+  error - Target of URI doesn't exist: 'package:quirzy/screen/introduction/success_screen.dart' - lib\features\auth\screens\login_screen.dart:7:8 - uri_does_not_exist
+  error - Target of URI doesn't exist: 'package:quirzy/screen/mainPage/mainScreen.dart' - lib\features\auth\screens\login_screen.dart:8:8 - uri_does_not_exist
+  error - Target of URI doesn't exist: 'package:quirzy/widgets/textfiled.dart' - lib\features\auth\screens\login_screen.dart:10:8 - uri_does_not_exist
+  error - The name 'MainScreen' isn't a class - lib\features\auth\screens\login_screen.dart:97:47 - creation_with_non_type
+  error - The method 'SuccessScreen' isn't defined for the type '_SignInPageState' - lib\features\auth\screens\login_screen.dart:108:31 - undefined_method
+  error - The method 'ReusableTextField' isn't defined for the type '_SignInPageState' - lib\features\auth\screens\login_screen.dart:263:23 - undefined_method
+  error - The method 'ReusableTextField' isn't defined for the type '_SignInPageState' - lib\features\auth\screens\login_screen.dart:271:23 - undefined_method
+  error - The name 'SignUpPage' isn't a class - lib\features\auth\screens\login_screen.dart:309:39 - creation_with_non_type
+  error - Target of URI doesn't exist: 'package:quirzy/screen/introduction/signIn.dart' - lib\features\auth\screens\signup_screen.dart:6:8 - uri_does_not_exist
+  error - Target of URI doesn't exist: 'package:quirzy/screen/introduction/success_screen.dart' - lib\features\auth\screens\signup_screen.dart:7:8 - uri_does_not_exist
+  error - Target of URI doesn't exist: 'package:quirzy/screen/mainPage/mainScreen.dart' - lib\features\auth\screens\signup_screen.dart:8:8 - uri_does_not_exist
+  error - Target of URI doesn't exist: 'package:quirzy/widgets/textfiled.dart' - lib\features\auth\screens\signup_screen.dart:10:8 - uri_does_not_exist
+  error - The name 'MainScreen' isn't a class - lib\features\auth\screens\signup_screen.dart:75:47 - creation_with_non_type
+  error - The method 'SuccessScreen' isn't defined for the type '_SignUpPageState' - lib\features\auth\screens\signup_screen.dart:86:31 - undefined_method
+  error - The method 'ReusableTextField' isn't defined for the type '_SignUpPageState' - lib\features\auth\screens\signup_screen.dart:265:23 - undefined_method
+  error - The method 'ReusableTextField' isn't defined for the type '_SignUpPageState' - lib\features\auth\screens\signup_screen.dart:271:23 - undefined_method
+  error - The method 'ReusableTextField' isn't defined for the type '_SignUpPageState' - lib\features\auth\screens\signup_screen.dart:278:23 - undefined_method
+  error - The name 'SignInPage' isn't a class - lib\features\auth\screens\signup_screen.dart:314:50 - creation_with_non_type
+  error - Target of URI doesn't exist: 'package:quirzy/screen/mainPage/mainScreen.dart' - lib\features\auth\screens\success_screen.dart:5:8 - uri_does_not_exist
+   info - Don't use 'BuildContext's across async gaps - lib\features\auth\screens\success_screen.dart:74:33 - use_build_context_synchronously
+  error - The method 'MainScreen' isn't defined for the type '_SuccessScreenState' - lib\features\auth\screens\success_screen.dart:74:82 - undefined_method
+  error - Target of URI doesn't exist: 'package:quirzy/screen/introduction/signIn.dart' - lib\features\auth\screens\welcome_screen.dart:8:8 - uri_does_not_exist
+  error - Target of URI doesn't exist: 'package:quirzy/screen/introduction/signup.dart' - lib\features\auth\screens\welcome_screen.dart:9:8 - uri_does_not_exist
+  error - Target of URI doesn't exist: 'package:quirzy/screen/introduction/success_screen.dart' - lib\features\auth\screens\welcome_screen.dart:10:8 - uri_does_not_exist
+  error - Target of URI doesn't exist: 'package:quirzy/screen/mainPage/mainScreen.dart' - lib\features\auth\screens\welcome_screen.dart:11:8 - uri_does_not_exist
+  error - Target of URI doesn't exist: 'package:quirzy/screen/privacy/privacyPolicy.dart' - lib\features\auth\screens\welcome_screen.dart:12:8 - uri_does_not_exist
+   info - Don't use 'BuildContext's across async gaps - lib\features\auth\screens\welcome_screen.dart:118:11 - use_build_context_synchronously
+  error - The method 'SuccessScreen' isn't defined for the type '_QuiryHomeState' - lib\features\auth\screens\welcome_screen.dart:120:35 - undefined_method
+  error - The name 'MainScreen' isn't a class - lib\features\auth\screens\welcome_screen.dart:124:59 - creation_with_non_type
+  error - The name 'SignInPage' isn't a class - lib\features\auth\screens\welcome_screen.dart:151:51 - creation_with_non_type
+  error - The name 'SignUpPage' isn't a class - lib\features\auth\screens\welcome_screen.dart:160:51 - creation_with_non_type
+  error - The name 'PrivacyPolicyScreen' isn't a class - lib\features\auth\screens\welcome_screen.dart:222:41 - creation_with_non_type
+   info - Library names are not necessary - lib\features\features.dart:3:9 - unnecessary_library_name
+   info - Library names are not necessary - lib\features\flashcards\flashcards.dart:2:9 - unnecessary_library_name
+warning - Unused import: 'dart:math' - lib\features\flashcards\screens\flashcard_study_screen.dart:1:8 - unused_import
+  error - Target of URI doesn't exist: 'package:quirzy/widgets/shimmer_loading.dart' - lib\features\flashcards\screens\flashcards_screen.dart:9:8 - uri_does_not_exist
+  error - Undefined name 'ShimmerPlaceholders' - lib\features\flashcards\screens\flashcards_screen.dart:393:34 - undefined_identifier
+   info - The imported package 'http' isn't a dependency of the importing package - lib\features\flashcards\services\flashcard_service.dart:4:8 - depend_on_referenced_packages
+   info - Library names are not necessary - lib\features\history\history.dart:2:9 - unnecessary_library_name
+  error - Target of URI doesn't exist: 'package:quirzy/screen/history/stats/quiz_stats_screen.dart' - lib\features\history\screens\history_screen.dart:7:8 - uri_does_not_exist
+  error - Target of URI doesn't exist: 'package:quirzy/widgets/shimmer_loading.dart' - lib\features\history\screens\history_screen.dart:8:8 - uri_does_not_exist
+  error - The method 'QuizStatsScreen' isn't defined for the type '_HistoryScreenState' - lib\features\history\screens\history_screen.dart:35:47 - undefined_method
+  error - Undefined name 'ShimmerPlaceholders' - lib\features\history\screens\history_screen.dart:161:32 - undefined_identifier
+warning - Unused import: 'dart:math' - lib\features\history\screens\quiz_stats_screen.dart:1:8 - unused_import
+   info - Library names are not necessary - lib\features\home\home.dart:2:9 - unnecessary_library_name
+  error - Target of URI doesn't exist: 'package:quirzy/screen/quizPage/startQuiz.dart' - lib\features\home\screens\home_screen.dart:7:8 - uri_does_not_exist
+  error - The method 'StartQuizScreen' isn't defined for the type '_HomeScreenState' - lib\features\home\screens\home_screen.dart:154:27 - undefined_method
+   info - Library names are not necessary - lib\features\profile\profile.dart:2:9 - unnecessary_library_name
+  error - Target of URI doesn't exist: 'package:quirzy/screen/introduction/welcome.dart' - lib\features\profile\screens\profile_screen.dart:9:8 - uri_does_not_exist
+  error - Target of URI doesn't exist: 'package:quirzy/screen/settings/settings_screen.dart' - lib\features\profile\screens\profile_screen.dart:10:8 - uri_does_not_exist
+  error - Target of URI doesn't exist: 'package:quirzy/screen/privacy/privacyPolicy.dart' - lib\features\profile\screens\profile_screen.dart:11:8 - uri_does_not_exist
+  error - The name 'SettingsScreen' isn't a class - lib\features\profile\screens\profile_screen.dart:132:55 - creation_with_non_type
+  error - The name 'PrivacyPolicyScreen' isn't a class - lib\features\profile\screens\profile_screen.dart:230:57 - creation_with_non_type
+  error - The name 'QuiryHome' isn't a class - lib\features\profile\screens\profile_screen.dart:429:47 - creation_with_non_type
+warning - Unused import: 'dart:io' - lib\features\profile\services\profile_service.dart:1:8 - unused_import
+warning - Unused import: 'package:flutter/material.dart' - lib\features\profile\services\profile_service.dart:3:8 - unused_import
+   info - The imported package 'http' isn't a dependency of the importing package - lib\features\profile\services\profile_service.dart:6:8 - depend_on_referenced_packages
+   info - Library names are not necessary - lib\features\quiz\quiz.dart:2:9 - unnecessary_library_name
+warning - The value of the local variable 'isDark' isn't used - lib\features\quiz\screens\quiz_completed_screen.dart:164:11 - unused_local_variable
+warning - The declaration '_goToNextQuestion' isn't referenced - lib\features\quiz\screens\quiz_question_screen.dart:150:8 - unused_element
+warning - The value of the local variable 'isDark' isn't used - lib\features\quiz\screens\quiz_question_screen.dart:304:11 - unused_local_variable
+   info - Unnecessary braces in a string interpolation - lib\features\quiz\screens\start_quiz_screen.dart:765:57 - unnecessary_brace_in_string_interps
+   info - Unnecessary braces in a string interpolation - lib\features\quiz\screens\start_quiz_screen.dart:767:13 - unnecessary_brace_in_string_interps
+   info - The imported package 'http' isn't a dependency of the importing package - lib\features\quiz\services\quiz_service.dart:6:8 - depend_on_referenced_packages
+   info - Library names are not necessary - lib\features\settings\settings.dart:2:9 - unnecessary_library_name
+   info - Unnecessary use of multiple underscores - lib\main.dart:142:18 - unnecessary_underscores
+   info - The imported package 'http' isn't a dependency of the importing package - lib\providers\auth_provider.dart:6:8 - depend_on_referenced_packages
+   info - Unnecessary braces in a string interpolation - lib\providers\auth_provider.dart:170:24 - unnecessary_brace_in_string_interps
+   info - Unnecessary braces in a string interpolation - lib\providers\auth_provider.dart:234:30 - unnecessary_brace_in_string_interps
+   info - Unnecessary braces in a string interpolation - lib\providers\auth_provider.dart:277:20 - unnecessary_brace_in_string_interps
+   info - Type could be non-nullable - lib\providers\auth_provider.dart:327:34 - unnecessary_nullable_for_final_variable_declarations
+   info - Uses 'await' on an instance of 'GoogleSignInAuthentication', which is not a subtype of 'Future' - lib\providers\auth_provider.dart:339:26 - await_only_futures
+   info - Unnecessary braces in a string interpolation - lib\providers\auth_provider.dart:355:20 - unnecessary_brace_in_string_interps
+   info - Unnecessary braces in a string interpolation - lib\providers\auth_provider.dart:480:18 - unnecessary_brace_in_string_interps
+warning - Unused import: 'dart:io' - lib\service\ad_service.dart:1:8 - unused_import
+   info - The imported package 'http' isn't a dependency of the importing package - lib\service\api_service.dart:4:8 - depend_on_referenced_packages
+   info - Unnecessary braces in a string interpolation - lib\service\api_service.dart:53:30 - unnecessary_brace_in_string_interps
+   info - Unnecessary braces in a string interpolation - lib\service\api_service.dart:89:30 - unnecessary_brace_in_string_interps
+   info - Unnecessary braces in a string interpolation - lib\service\api_service.dart:128:30 - unnecessary_brace_in_string_interps
+   info - Unnecessary braces in a string interpolation - lib\service\api_service.dart:176:30 - unnecessary_brace_in_string_interps
+warning - Duplicate import - lib\service\notification_service.dart:9:8 - duplicate_import
+warning - Unused import: 'dart:convert' - lib\service\user_data_service.dart:1:8 - unused_import
+   info - The imported package 'http' isn't a dependency of the importing package - lib\service\user_data_service.dart:5:8 - depend_on_referenced_packages
+   info - Library names are not necessary - lib\shared\shared.dart:3:9 - unnecessary_library_name
+   info - Library names are not necessary - lib\shared\utils\utils.dart:2:9 - unnecessary_library_name
+   info - The variable name 'BorderSideColour' isn't a lowerCamelCase identifier - lib\shared\widgets\inputs\custom_text_field.dart:41:10 - non_constant_identifier_names
+   info - Parameter 'key' could be a super parameter - lib\shared\widgets\loading\loading_overlay.dart:11:9 - use_super_parameters
+   info - The import of 'package:flutter/cupertino.dart' is unnecessary because all of the used elements are also provided by the import of 'package:flutter/material.dart' - lib\shared\widgets\loading\loading_screen.dart:1:8 - unnecessary_import
+   info - The import of 'package:flutter/cupertino.dart' is unnecessary because all of the used elements are also provided by the import of 'package:flutter/material.dart' - lib\shared\widgets\loading\splash_screen.dart:1:8 - unnecessary_import
+   info - Library names are not necessary - lib\shared\widgets\widgets.dart:2:9 - unnecessary_library_name
+
+flutter : 102 issues 
+found. (ran in 14.0s)
+At line:1 char:1
++ flutter analyze 
+2>&1 | Out-File 
+-FilePath 
+"analyze_output.txt" 
+-Encod ...
++ ~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo    
+          : NotSpeci  
+  fied: (102 issues   
+  found. (ran in 1    
+4.0s):String) [],     
+RemoteException
+    + FullyQualifiedE 
+   rrorId : NativeCo  
+  mmandError
+ 
