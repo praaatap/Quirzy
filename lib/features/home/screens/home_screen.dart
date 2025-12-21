@@ -230,18 +230,40 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
 
   void _showSnackBar(String message, {bool isError = false}) {
     if (!mounted) return;
+    final theme = Theme.of(context);
+    ScaffoldMessenger.of(context).clearSnackBars();
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text(
-          message,
-          style: GoogleFonts.poppins(fontWeight: FontWeight.w500),
+        content: Row(
+          children: [
+            Icon(
+              isError
+                  ? Icons.error_outline_rounded
+                  : Icons.check_circle_outline_rounded,
+              color: Colors.white,
+              size: 20,
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                message,
+                style: GoogleFonts.poppins(
+                  fontWeight: FontWeight.w500,
+                  fontSize: 14,
+                ),
+              ),
+            ),
+          ],
         ),
         backgroundColor: isError
-            ? Theme.of(context).colorScheme.error
-            : Theme.of(context).colorScheme.primary,
+            ? theme.colorScheme.error
+            : theme.colorScheme.primary,
         behavior: SnackBarBehavior.floating,
         margin: const EdgeInsets.all(16),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        duration: const Duration(seconds: 3),
+        dismissDirection: DismissDirection.horizontal,
       ),
     );
   }
@@ -417,42 +439,61 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
       snap: true,
       backgroundColor: Colors.transparent,
       elevation: 0,
-      toolbarHeight: isSmall ? 56 : 64,
+      toolbarHeight: isSmall ? 60 : 68,
       title: Row(
         children: [
-          // Logo
+          // Premium animated logo
           Container(
-            padding: EdgeInsets.all(isSmall ? 8 : 10),
+            padding: EdgeInsets.all(isSmall ? 10 : 12),
             decoration: BoxDecoration(
               gradient: LinearGradient(
                 colors: [
                   theme.colorScheme.primary,
-                  theme.colorScheme.primary.withOpacity(0.8),
+                  theme.colorScheme.primary.withBlue(220),
                 ],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
               ),
-              borderRadius: BorderRadius.circular(isSmall ? 12 : 14),
+              borderRadius: BorderRadius.circular(isSmall ? 14 : 16),
               boxShadow: [
                 BoxShadow(
-                  color: theme.colorScheme.primary.withOpacity(0.3),
-                  blurRadius: 8,
-                  offset: const Offset(0, 2),
+                  color: theme.colorScheme.primary.withOpacity(0.4),
+                  blurRadius: 12,
+                  offset: const Offset(0, 4),
+                  spreadRadius: -2,
                 ),
               ],
             ),
             child: Icon(
-              Icons.quiz_rounded,
+              Icons.bolt_rounded,
               color: Colors.white,
-              size: isSmall ? 18 : 22,
+              size: isSmall ? 20 : 24,
             ),
           ),
-          SizedBox(width: isSmall ? 10 : 12),
-          Text(
-            'Quirzy',
-            style: GoogleFonts.poppins(
-              fontWeight: FontWeight.bold,
-              fontSize: isSmall ? 20 : 24,
-              color: theme.colorScheme.onSurface,
-            ),
+          SizedBox(width: isSmall ? 12 : 14),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                'Quirzy',
+                style: GoogleFonts.poppins(
+                  fontWeight: FontWeight.w800,
+                  fontSize: isSmall ? 22 : 26,
+                  color: theme.colorScheme.onSurface,
+                  letterSpacing: -0.5,
+                ),
+              ),
+              Text(
+                'AI Quiz Generator',
+                style: GoogleFonts.poppins(
+                  fontSize: isSmall ? 10 : 11,
+                  fontWeight: FontWeight.w500,
+                  color: theme.colorScheme.onSurfaceVariant,
+                  letterSpacing: 0.3,
+                ),
+              ),
+            ],
           ),
         ],
       ),
@@ -464,53 +505,112 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
   }
 
   Widget _buildHeroSection(ThemeData theme, bool isSmall, bool isLarge) {
+    // Dynamic greeting based on time of day
+    final hour = DateTime.now().hour;
+    String greeting;
+    IconData greetingIcon;
+    if (hour < 12) {
+      greeting = 'Good Morning';
+      greetingIcon = Icons.wb_sunny_rounded;
+    } else if (hour < 17) {
+      greeting = 'Good Afternoon';
+      greetingIcon = Icons.wb_cloudy_rounded;
+    } else {
+      greeting = 'Good Evening';
+      greetingIcon = Icons.nightlight_round;
+    }
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // Main headline
-        Text(
-          'What do you want\nto learn today?',
-          style: GoogleFonts.poppins(
-            fontSize: isSmall ? 24 : (isLarge ? 30 : 28),
-            fontWeight: FontWeight.w700,
-            color: theme.colorScheme.onSurface,
-            height: 1.15,
+        // Greeting row with animated wave
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              colors: [
+                theme.colorScheme.primaryContainer.withOpacity(0.6),
+                theme.colorScheme.primaryContainer.withOpacity(0.3),
+              ],
+            ),
+            borderRadius: BorderRadius.circular(24),
+            border: Border.all(
+              color: theme.colorScheme.primary.withOpacity(0.2),
+            ),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                greetingIcon,
+                size: isSmall ? 18 : 20,
+                color: theme.colorScheme.primary,
+              ),
+              const SizedBox(width: 8),
+              Text(
+                greeting,
+                style: GoogleFonts.poppins(
+                  fontSize: isSmall ? 13 : 14,
+                  fontWeight: FontWeight.w600,
+                  color: theme.colorScheme.primary,
+                ),
+              ),
+              const SizedBox(width: 4),
+              Text('👋', style: TextStyle(fontSize: isSmall ? 14 : 16)),
+            ],
           ),
         ),
-        SizedBox(height: isSmall ? 6 : 10),
-        // Subtitle with gradient
+        SizedBox(height: isSmall ? 16 : 20),
+
+        // Main headline with gradient
+        ShaderMask(
+          shaderCallback: (bounds) => LinearGradient(
+            colors: [
+              theme.colorScheme.onSurface,
+              theme.colorScheme.primary.withOpacity(0.8),
+            ],
+          ).createShader(bounds),
+          child: Text(
+            'What do you want\nto learn today?',
+            style: GoogleFonts.poppins(
+              fontSize: isSmall ? 28 : (isLarge ? 34 : 32),
+              fontWeight: FontWeight.w800,
+              color: Colors.white,
+              height: 1.05,
+              letterSpacing: -1,
+            ),
+          ),
+        ),
+        SizedBox(height: isSmall ? 16 : 20),
+
+        // Premium feature badges
         Row(
           children: [
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [
-                    theme.colorScheme.primary.withOpacity(0.15),
-                    theme.colorScheme.secondary.withOpacity(0.1),
-                  ],
-                ),
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(
-                    Icons.auto_awesome,
-                    size: 14,
-                    color: theme.colorScheme.primary,
-                  ),
-                  const SizedBox(width: 6),
-                  Text(
-                    'AI-Powered Quiz Generator',
-                    style: GoogleFonts.poppins(
-                      fontSize: isSmall ? 11 : 12,
-                      fontWeight: FontWeight.w600,
-                      color: theme.colorScheme.primary,
-                    ),
-                  ),
-                ],
-              ),
+            _PremiumFeatureBadge(
+              icon: Icons.auto_awesome_rounded,
+              label: 'AI',
+              gradient: [
+                theme.colorScheme.primary,
+                theme.colorScheme.primary.withBlue(220),
+              ],
+            ),
+            const SizedBox(width: 10),
+            _PremiumFeatureBadge(
+              icon: Icons.bolt_rounded,
+              label: 'Fast',
+              gradient: [Colors.orange, Colors.deepOrange],
+            ),
+            const SizedBox(width: 10),
+            _PremiumFeatureBadge(
+              icon: Icons.psychology_alt_rounded,
+              label: 'Smart',
+              gradient: [Colors.purple, Colors.deepPurple],
+            ),
+            const SizedBox(width: 10),
+            _PremiumFeatureBadge(
+              icon: Icons.school_rounded,
+              label: 'Learn',
+              gradient: [Colors.teal, Colors.cyan],
             ),
           ],
         ),
@@ -607,51 +707,34 @@ class _BackgroundDecoration extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
+    final size = MediaQuery.of(context).size;
 
     return Stack(
       children: [
-        // Top gradient
+        // Top gradient overlay
         Positioned(
           top: 0,
           left: 0,
           right: 0,
-          height: 350,
+          height: 450,
           child: Container(
             decoration: BoxDecoration(
               gradient: LinearGradient(
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
                 colors: [
-                  theme.colorScheme.primary.withOpacity(isDark ? 0.06 : 0.1),
-                  theme.colorScheme.secondary.withOpacity(isDark ? 0.03 : 0.05),
+                  theme.colorScheme.primary.withOpacity(isDark ? 0.1 : 0.14),
+                  theme.colorScheme.secondary.withOpacity(isDark ? 0.05 : 0.08),
                   theme.scaffoldBackgroundColor.withOpacity(0),
                 ],
               ),
             ),
           ),
         ),
-        // Blob 1
+        // Top-right primary blur blob
         Positioned(
-          top: -80,
-          right: -60,
-          child: Container(
-            width: 220,
-            height: 220,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              gradient: RadialGradient(
-                colors: [
-                  theme.colorScheme.primary.withOpacity(isDark ? 0.12 : 0.15),
-                  theme.colorScheme.primary.withOpacity(0),
-                ],
-              ),
-            ),
-          ),
-        ),
-        // Blob 2
-        Positioned(
-          bottom: 200,
-          left: -100,
+          top: -100,
+          right: -80,
           child: Container(
             width: 280,
             height: 280,
@@ -659,14 +742,119 @@ class _BackgroundDecoration extends StatelessWidget {
               shape: BoxShape.circle,
               gradient: RadialGradient(
                 colors: [
+                  theme.colorScheme.primary.withOpacity(isDark ? 0.2 : 0.25),
+                  theme.colorScheme.primary.withOpacity(isDark ? 0.1 : 0.12),
+                  theme.colorScheme.primary.withOpacity(0),
+                ],
+                stops: const [0.0, 0.4, 1.0],
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: theme.colorScheme.primary.withOpacity(0.15),
+                  blurRadius: 100,
+                  spreadRadius: 40,
+                ),
+              ],
+            ),
+          ),
+        ),
+        // Bottom-left secondary blur blob
+        Positioned(
+          bottom: 180,
+          left: -120,
+          child: Container(
+            width: 320,
+            height: 320,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              gradient: RadialGradient(
+                colors: [
+                  theme.colorScheme.secondary.withOpacity(isDark ? 0.12 : 0.15),
                   theme.colorScheme.secondary.withOpacity(isDark ? 0.06 : 0.08),
                   theme.colorScheme.secondary.withOpacity(0),
+                ],
+                stops: const [0.0, 0.4, 1.0],
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: theme.colorScheme.secondary.withOpacity(0.1),
+                  blurRadius: 80,
+                  spreadRadius: 30,
+                ),
+              ],
+            ),
+          ),
+        ),
+        // Accent glow
+        Positioned(
+          top: size.height * 0.35,
+          right: -30,
+          child: Container(
+            width: 120,
+            height: 120,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              gradient: RadialGradient(
+                colors: [
+                  Colors.teal.withOpacity(isDark ? 0.1 : 0.12),
+                  Colors.teal.withOpacity(0),
                 ],
               ),
             ),
           ),
         ),
       ],
+    );
+  }
+}
+
+// Premium feature badge with gradient for hero section
+class _PremiumFeatureBadge extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final List<Color> gradient;
+
+  const _PremiumFeatureBadge({
+    required this.icon,
+    required this.label,
+    required this.gradient,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: gradient,
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(14),
+        boxShadow: [
+          BoxShadow(
+            color: gradient.first.withOpacity(0.3),
+            blurRadius: 8,
+            offset: const Offset(0, 3),
+          ),
+        ],
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 20, color: Colors.white),
+          const SizedBox(height: 4),
+          Text(
+            label,
+            style: GoogleFonts.poppins(
+              fontSize: 10,
+              fontWeight: FontWeight.w700,
+              color: Colors.white,
+              letterSpacing: 0.3,
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
@@ -681,7 +869,7 @@ class _QuotaBadge extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final hasCredits = remainingFree > 0;
-
+    bool isDarkTheme = theme.brightness == Brightness.dark;
     return Container(
       padding: EdgeInsets.symmetric(
         horizontal: isSmall ? 10 : 14,
@@ -709,7 +897,7 @@ class _QuotaBadge extends StatelessWidget {
           Icon(
             hasCredits ? Icons.bolt_rounded : Icons.movie_rounded,
             size: isSmall ? 14 : 16,
-            color: hasCredits ? theme.colorScheme.primary : Colors.amber[700],
+            color: isDarkTheme ? Colors.white : Colors.black,
           ),
           SizedBox(width: isSmall ? 4 : 6),
           Text(
@@ -717,7 +905,7 @@ class _QuotaBadge extends StatelessWidget {
             style: GoogleFonts.poppins(
               fontSize: isSmall ? 10 : 12,
               fontWeight: FontWeight.w600,
-              color: hasCredits ? theme.colorScheme.primary : Colors.amber[800],
+              color: isDarkTheme ? Colors.white : Colors.black,
             ),
           ),
         ],
@@ -815,167 +1003,60 @@ class _ModernInputArea extends StatefulWidget {
 }
 
 class _ModernInputAreaState extends State<_ModernInputArea> {
-  bool _hasFocus = false;
-  bool _showPaste = false;
-
   @override
   void initState() {
     super.initState();
-    widget.focusNode.addListener(_onFocusChange);
     widget.controller.addListener(() {
       setState(() {});
       widget.onChanged?.call();
     });
-    _checkClipboard();
-  }
-
-  void _onFocusChange() {
-    setState(() => _hasFocus = widget.focusNode.hasFocus);
-  }
-
-  Future<void> _checkClipboard() async {
-    final hasContent = await Clipboard.hasStrings();
-    if (mounted) setState(() => _showPaste = hasContent);
-  }
-
-  Future<void> _paste() async {
-    HapticFeedback.lightImpact();
-    final data = await Clipboard.getData(Clipboard.kTextPlain);
-    if (data?.text != null) widget.controller.text = data!.text!;
   }
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
 
-    return AnimatedContainer(
-      duration: const Duration(milliseconds: 200),
-      decoration: BoxDecoration(
-        color: theme.colorScheme.surface,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(
-          color: _hasFocus
-              ? theme.colorScheme.primary.withOpacity(0.5)
-              : theme.colorScheme.outline.withOpacity(0.12),
-          width: _hasFocus ? 2 : 1,
+    return TextField(
+      controller: widget.controller,
+      focusNode: widget.focusNode,
+      enabled: !widget.isGenerating,
+      keyboardType: TextInputType.multiline,
+      minLines: 3,
+      maxLines: 5,
+      style: GoogleFonts.poppins(fontSize: 15, height: 1.5),
+      decoration: InputDecoration(
+        hintText: 'Enter a topic or paste your notes...',
+        hintStyle: GoogleFonts.poppins(
+          color: theme.colorScheme.onSurfaceVariant.withOpacity(0.6),
+          fontSize: 14,
         ),
-        boxShadow: [
-          BoxShadow(
-            color: _hasFocus
-                ? theme.colorScheme.primary.withOpacity(0.1)
-                : Colors.black.withOpacity(isDark ? 0.15 : 0.05),
-            blurRadius: _hasFocus ? 20 : 12,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          TextField(
-            controller: widget.controller,
-            focusNode: widget.focusNode,
-            enabled: !widget.isGenerating,
-            keyboardType: TextInputType.multiline,
-            minLines: 3,
-            maxLines: 6,
-            style: GoogleFonts.poppins(
-              fontSize: 15,
-              color: theme.colorScheme.onSurface,
-              height: 1.5,
-            ),
-            decoration: InputDecoration(
-              hintText:
-                  "Enter any topic, paste notes, or describe what you want to learn...",
-              hintStyle: GoogleFonts.poppins(
-                fontSize: 14,
-                color: theme.colorScheme.onSurfaceVariant.withOpacity(0.5),
-              ),
-              border: InputBorder.none,
-              contentPadding: const EdgeInsets.fromLTRB(18, 18, 18, 8),
-            ),
-          ),
-
-          // Action Row
-          Padding(
-            padding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
-            child: Row(
-              children: [
-                // Tips
-                Icon(
-                  Icons.lightbulb_outline,
-                  size: 14,
-                  color: theme.colorScheme.onSurfaceVariant.withOpacity(0.5),
+        filled: true,
+        fillColor: theme.colorScheme.surfaceContainerHighest,
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(16),
+          borderSide: BorderSide.none,
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(16),
+          borderSide: BorderSide.none,
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(16),
+          borderSide: BorderSide(color: theme.colorScheme.primary, width: 2),
+        ),
+        contentPadding: const EdgeInsets.all(16),
+        suffixIcon: widget.controller.text.isNotEmpty
+            ? IconButton(
+                onPressed: () {
+                  widget.controller.clear();
+                  HapticFeedback.lightImpact();
+                },
+                icon: Icon(
+                  Icons.clear_rounded,
+                  color: theme.colorScheme.onSurfaceVariant,
                 ),
-                const SizedBox(width: 4),
-                Expanded(
-                  child: Text(
-                    'Tip: Be specific for better results',
-                    style: GoogleFonts.poppins(
-                      fontSize: 10,
-                      color: theme.colorScheme.onSurfaceVariant.withOpacity(
-                        0.5,
-                      ),
-                    ),
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ),
-
-                // Clear button
-                if (widget.controller.text.isNotEmpty)
-                  IconButton(
-                    onPressed: () {
-                      widget.controller.clear();
-                      HapticFeedback.lightImpact();
-                    },
-                    icon: Icon(
-                      Icons.clear_rounded,
-                      size: 18,
-                      color: theme.colorScheme.onSurfaceVariant,
-                    ),
-                    visualDensity: VisualDensity.compact,
-                    padding: EdgeInsets.zero,
-                    constraints: const BoxConstraints(
-                      minWidth: 32,
-                      minHeight: 32,
-                    ),
-                  ),
-
-                // Paste button
-                if (_showPaste && widget.controller.text.isEmpty)
-                  TextButton.icon(
-                    onPressed: _paste,
-                    icon: Icon(
-                      Icons.paste_rounded,
-                      size: 14,
-                      color: theme.colorScheme.primary,
-                    ),
-                    label: Text(
-                      'Paste',
-                      style: GoogleFonts.poppins(
-                        fontSize: 11,
-                        fontWeight: FontWeight.w600,
-                        color: theme.colorScheme.primary,
-                      ),
-                    ),
-                    style: TextButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 10,
-                        vertical: 6,
-                      ),
-                      backgroundColor: theme.colorScheme.primaryContainer
-                          .withOpacity(0.5),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      visualDensity: VisualDensity.compact,
-                    ),
-                  ),
-              ],
-            ),
-          ),
-        ],
+              )
+            : null,
       ),
     );
   }
@@ -996,100 +1077,97 @@ class _GenerateButton extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
 
-    return SizedBox(
-      width: double.infinity,
-      height: 56,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(16),
-          gradient: LinearGradient(
-            colors: isLimitReached
-                ? [Colors.amber, Colors.orange]
-                : [
-                    theme.colorScheme.primary,
-                    theme.colorScheme.primary.withBlue(200),
-                  ],
-          ),
-          boxShadow: isGenerating
-              ? null
-              : [
-                  BoxShadow(
-                    color:
-                        (isLimitReached
-                                ? Colors.amber
-                                : theme.colorScheme.primary)
-                            .withOpacity(0.4),
-                    blurRadius: 12,
-                    offset: const Offset(0, 4),
-                  ),
-                ],
-        ),
-        child: Material(
-          color: Colors.transparent,
-          child: InkWell(
-            onTap: isGenerating ? null : onPressed,
-            borderRadius: BorderRadius.circular(16),
-            child: Center(
-              child: AnimatedSwitcher(
-                duration: const Duration(milliseconds: 250),
-                child: isGenerating
-                    ? Row(
-                        key: const ValueKey('loading'),
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          SizedBox(
-                            width: 22,
-                            height: 22,
-                            child: CircularProgressIndicator(
-                              strokeWidth: 2.5,
-                              color: isLimitReached
-                                  ? Colors.black87
-                                  : Colors.white,
-                            ),
-                          ),
-                          const SizedBox(width: 12),
-                          Text(
-                            'Creating Quiz...',
-                            style: GoogleFonts.poppins(
-                              fontSize: 15,
-                              fontWeight: FontWeight.w600,
-                              color: isLimitReached
-                                  ? Colors.black87
-                                  : Colors.white,
-                            ),
-                          ),
-                        ],
-                      )
-                    : Row(
-                        key: const ValueKey('ready'),
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(
-                            isLimitReached
-                                ? Icons.play_circle_rounded
-                                : Icons.auto_awesome_rounded,
-                            size: 22,
-                            color: isLimitReached
-                                ? Colors.black87
-                                : Colors.white,
-                          ),
-                          const SizedBox(width: 10),
-                          Text(
-                            isLimitReached
-                                ? 'Watch Ad & Generate'
-                                : 'Generate Quiz',
-                            style: GoogleFonts.poppins(
-                              fontSize: 15,
-                              fontWeight: FontWeight.bold,
-                              color: isLimitReached
-                                  ? Colors.black87
-                                  : Colors.white,
-                              letterSpacing: 0.3,
-                            ),
-                          ),
-                        ],
+    // 60% width, centered
+    return Center(
+      child: FractionallySizedBox(
+        widthFactor: 0.6,
+        child: SizedBox(
+          height: 50,
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 200),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(12),
+              gradient: LinearGradient(
+                colors: isLimitReached
+                    ? [Colors.amber, Colors.orange]
+                    : [
+                        theme.colorScheme.primary,
+                        theme.colorScheme.primary.withBlue(200),
+                      ],
+              ),
+              boxShadow: isGenerating
+                  ? null
+                  : [
+                      BoxShadow(
+                        color:
+                            (isLimitReached
+                                    ? Colors.amber
+                                    : theme.colorScheme.primary)
+                                .withOpacity(0.3),
+                        blurRadius: 8,
+                        offset: const Offset(0, 3),
                       ),
+                    ],
+            ),
+            child: Material(
+              color: Colors.transparent,
+              child: InkWell(
+                onTap: isGenerating ? null : onPressed,
+                borderRadius: BorderRadius.circular(12),
+                child: Center(
+                  child: isGenerating
+                      ? Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            SizedBox(
+                              width: 18,
+                              height: 18,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                color: isLimitReached
+                                    ? Colors.black87
+                                    : Colors.white,
+                              ),
+                            ),
+                            const SizedBox(width: 10),
+                            Text(
+                              'Creating...',
+                              style: GoogleFonts.poppins(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w600,
+                                color: isLimitReached
+                                    ? Colors.black87
+                                    : Colors.white,
+                              ),
+                            ),
+                          ],
+                        )
+                      : Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(
+                              isLimitReached
+                                  ? Icons.play_circle_rounded
+                                  : Icons.auto_awesome_rounded,
+                              size: 20,
+                              color: isLimitReached
+                                  ? Colors.black87
+                                  : Colors.white,
+                            ),
+                            const SizedBox(width: 8),
+                            Text(
+                              isLimitReached ? 'Watch Ad' : 'Generate',
+                              style: GoogleFonts.poppins(
+                                fontSize: 14,
+                                fontWeight: FontWeight.bold,
+                                color: isLimitReached
+                                    ? Colors.black87
+                                    : Colors.white,
+                              ),
+                            ),
+                          ],
+                        ),
+                ),
               ),
             ),
           ),

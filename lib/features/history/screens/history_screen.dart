@@ -227,56 +227,97 @@ class _BackgroundDecoration extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
+    final size = MediaQuery.of(context).size;
 
     return Stack(
       children: [
+        // Top gradient overlay
         Positioned(
           top: 0,
           left: 0,
           right: 0,
-          height: 280,
-          child: DecoratedBox(
+          height: 400,
+          child: Container(
             decoration: BoxDecoration(
               gradient: LinearGradient(
                 begin: Alignment.topCenter,
                 end: Alignment.bottomCenter,
                 colors: [
-                  theme.colorScheme.primary.withOpacity(isDark ? 0.08 : 0.1),
+                  theme.colorScheme.primary.withOpacity(isDark ? 0.1 : 0.14),
+                  theme.colorScheme.secondary.withOpacity(isDark ? 0.04 : 0.06),
                   theme.scaffoldBackgroundColor.withOpacity(0),
                 ],
               ),
             ),
           ),
         ),
+        // Top-right primary blur blob
         Positioned(
-          top: -50,
-          right: -50,
+          top: -80,
+          right: -60,
           child: Container(
-            width: 180,
-            height: 180,
+            width: 240,
+            height: 240,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
               gradient: RadialGradient(
                 colors: [
-                  theme.colorScheme.primary.withOpacity(isDark ? 0.12 : 0.15),
+                  theme.colorScheme.primary.withOpacity(isDark ? 0.2 : 0.25),
+                  theme.colorScheme.primary.withOpacity(isDark ? 0.1 : 0.12),
                   theme.colorScheme.primary.withOpacity(0),
                 ],
+                stops: const [0.0, 0.4, 1.0],
               ),
+              boxShadow: [
+                BoxShadow(
+                  color: theme.colorScheme.primary.withOpacity(0.15),
+                  blurRadius: 80,
+                  spreadRadius: 30,
+                ),
+              ],
             ),
           ),
         ),
+        // Bottom-left secondary blur blob
         Positioned(
-          bottom: 180,
-          left: -70,
+          bottom: 150,
+          left: -100,
           child: Container(
-            width: 200,
-            height: 200,
+            width: 280,
+            height: 280,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
               gradient: RadialGradient(
                 colors: [
+                  theme.colorScheme.secondary.withOpacity(isDark ? 0.12 : 0.15),
                   theme.colorScheme.secondary.withOpacity(isDark ? 0.06 : 0.08),
                   theme.colorScheme.secondary.withOpacity(0),
+                ],
+                stops: const [0.0, 0.4, 1.0],
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: theme.colorScheme.secondary.withOpacity(0.1),
+                  blurRadius: 60,
+                  spreadRadius: 20,
+                ),
+              ],
+            ),
+          ),
+        ),
+        // Accent glow
+        Positioned(
+          top: size.height * 0.4,
+          right: -40,
+          child: Container(
+            width: 100,
+            height: 100,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              gradient: RadialGradient(
+                colors: [
+                  Colors.orange.withOpacity(isDark ? 0.08 : 0.1),
+                  Colors.orange.withOpacity(0),
                 ],
               ),
             ),
@@ -309,34 +350,145 @@ class _HistoryHeader extends ConsumerWidget {
     );
 
     return Padding(
-      padding: const EdgeInsets.fromLTRB(24, 16, 16, 8),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      padding: const EdgeInsets.fromLTRB(24, 16, 20, 16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+          // Top row with icon and refresh button
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(
-                'Quiz History',
-                style: GoogleFonts.poppins(
-                  fontSize: 26,
-                  fontWeight: FontWeight.bold,
-                  color: theme.colorScheme.onSurface,
-                  height: 1.2,
-                ),
+              // Icon and label
+              Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        colors: [
+                          theme.colorScheme.primary,
+                          theme.colorScheme.primary.withOpacity(0.8),
+                        ],
+                      ),
+                      borderRadius: BorderRadius.circular(14),
+                      boxShadow: [
+                        BoxShadow(
+                          color: theme.colorScheme.primary.withOpacity(0.3),
+                          blurRadius: 8,
+                          offset: const Offset(0, 2),
+                        ),
+                      ],
+                    ),
+                    child: const Icon(
+                      Icons.history_rounded,
+                      color: Colors.white,
+                      size: 22,
+                    ),
+                  ),
+                  const SizedBox(width: 14),
+                  Text(
+                    'History',
+                    style: GoogleFonts.poppins(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 24,
+                      color: theme.colorScheme.onSurface,
+                    ),
+                  ),
+                ],
               ),
-              const SizedBox(height: 4),
-              Text(
-                count == 0 ? 'Track your progress' : '$count attempts',
-                style: GoogleFonts.poppins(
-                  fontSize: 14,
-                  color: theme.colorScheme.onSurfaceVariant,
-                  fontWeight: FontWeight.w500,
-                ),
+              _RefreshButton(isRefreshing: isRefreshing, onRefresh: onRefresh),
+            ],
+          ),
+
+          const SizedBox(height: 20),
+
+          // Title with gradient
+          ShaderMask(
+            shaderCallback: (bounds) => LinearGradient(
+              colors: [
+                theme.colorScheme.onSurface,
+                theme.colorScheme.primary.withOpacity(0.8),
+              ],
+            ).createShader(bounds),
+            child: Text(
+              'Your Learning\nJourney',
+              style: GoogleFonts.poppins(
+                fontSize: 28,
+                fontWeight: FontWeight.w800,
+                color: Colors.white,
+                height: 1.1,
+                letterSpacing: -0.5,
+              ),
+            ),
+          ),
+
+          const SizedBox(height: 14),
+
+          // Stats badges row
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              _HistoryBadge(
+                icon: Icons.quiz_rounded,
+                label: '$count Quizzes',
+                color: theme.colorScheme.primary,
+              ),
+              _HistoryBadge(
+                icon: Icons.trending_up_rounded,
+                label: 'Track Progress',
+                color: Colors.orange,
+              ),
+              _HistoryBadge(
+                icon: Icons.insights_rounded,
+                label: 'View Stats',
+                color: Colors.purple,
               ),
             ],
           ),
-          _RefreshButton(isRefreshing: isRefreshing, onRefresh: onRefresh),
+        ],
+      ),
+    );
+  }
+}
+
+// Badge widget for history header
+class _HistoryBadge extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final Color color;
+
+  const _HistoryBadge({
+    required this.icon,
+    required this.label,
+    required this.color,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      decoration: BoxDecoration(
+        color: color.withOpacity(isDark ? 0.15 : 0.1),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: color.withOpacity(0.2), width: 1),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 14, color: color),
+          const SizedBox(width: 5),
+          Text(
+            label,
+            style: GoogleFonts.poppins(
+              fontSize: 11,
+              fontWeight: FontWeight.w600,
+              color: color,
+            ),
+          ),
         ],
       ),
     );

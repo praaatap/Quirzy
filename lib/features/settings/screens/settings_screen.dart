@@ -453,39 +453,97 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     ];
 
     return Scaffold(
-      extendBodyBehindAppBar: false,
+      extendBodyBehindAppBar: true,
       backgroundColor: theme.scaffoldBackgroundColor,
       body: Stack(
         children: [
-          // Background
+          // Premium Blur Background
           RepaintBoundary(
             child: Stack(
               children: [
+                // Top gradient overlay
                 Positioned(
-                  top: -80,
-                  right: -80,
+                  top: 0,
+                  left: 0,
+                  right: 0,
+                  height: 400,
                   child: Container(
-                    width: 250,
-                    height: 250,
                     decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: theme.colorScheme.primary.withOpacity(
-                        isDark ? 0.05 : 0.08,
+                      gradient: LinearGradient(
+                        begin: Alignment.topCenter,
+                        end: Alignment.bottomCenter,
+                        colors: [
+                          theme.colorScheme.primary.withOpacity(
+                            isDark ? 0.1 : 0.14,
+                          ),
+                          theme.colorScheme.tertiary.withOpacity(
+                            isDark ? 0.05 : 0.08,
+                          ),
+                          theme.scaffoldBackgroundColor.withOpacity(0),
+                        ],
                       ),
                     ),
                   ),
                 ),
+                // Top-right blur blob
                 Positioned(
-                  bottom: -50,
-                  left: -50,
+                  top: -100,
+                  right: -80,
                   child: Container(
-                    width: 150,
-                    height: 150,
+                    width: 280,
+                    height: 280,
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
-                      color: theme.colorScheme.secondary.withOpacity(
-                        isDark ? 0.04 : 0.06,
+                      gradient: RadialGradient(
+                        colors: [
+                          theme.colorScheme.primary.withOpacity(
+                            isDark ? 0.2 : 0.25,
+                          ),
+                          theme.colorScheme.primary.withOpacity(
+                            isDark ? 0.1 : 0.12,
+                          ),
+                          theme.colorScheme.primary.withOpacity(0),
+                        ],
+                        stops: const [0.0, 0.4, 1.0],
                       ),
+                      boxShadow: [
+                        BoxShadow(
+                          color: theme.colorScheme.primary.withOpacity(0.15),
+                          blurRadius: 100,
+                          spreadRadius: 40,
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                // Bottom-left blur blob
+                Positioned(
+                  bottom: 200,
+                  left: -120,
+                  child: Container(
+                    width: 300,
+                    height: 300,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      gradient: RadialGradient(
+                        colors: [
+                          theme.colorScheme.tertiary.withOpacity(
+                            isDark ? 0.12 : 0.15,
+                          ),
+                          theme.colorScheme.tertiary.withOpacity(
+                            isDark ? 0.06 : 0.08,
+                          ),
+                          theme.colorScheme.tertiary.withOpacity(0),
+                        ],
+                        stops: const [0.0, 0.4, 1.0],
+                      ),
+                      boxShadow: [
+                        BoxShadow(
+                          color: theme.colorScheme.tertiary.withOpacity(0.1),
+                          blurRadius: 80,
+                          spreadRadius: 30,
+                        ),
+                      ],
                     ),
                   ),
                 ),
@@ -499,34 +557,129 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               parent: BouncingScrollPhysics(),
             ),
             slivers: [
+              // App Bar
               SliverAppBar(
                 floating: true,
                 snap: true,
-                stretch: true,
-                expandedHeight: 100,
                 backgroundColor: Colors.transparent,
                 elevation: 0,
-                leading: IconButton(
-                  icon: Icon(
-                    Icons.arrow_back,
-                    color: theme.colorScheme.onSurface,
+                leading: Container(
+                  margin: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: theme.colorScheme.surfaceContainerHighest
+                        .withOpacity(0.6),
+                    shape: BoxShape.circle,
                   ),
-                  onPressed: () => Navigator.pop(context),
-                ),
-                flexibleSpace: FlexibleSpaceBar(
-                  centerTitle: true,
-                  title: Text(
-                    'Settings',
-                    style: GoogleFonts.poppins(
-                      fontSize: 24,
-                      fontWeight: FontWeight.bold,
+                  child: IconButton(
+                    icon: Icon(
+                      Icons.arrow_back_rounded,
                       color: theme.colorScheme.onSurface,
                     ),
+                    onPressed: () => Navigator.pop(context),
                   ),
                 ),
               ),
+
+              // Header Section
+              SliverToBoxAdapter(
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(24, 8, 24, 16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // Icon and title row
+                      Row(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(12),
+                            decoration: BoxDecoration(
+                              gradient: LinearGradient(
+                                colors: [
+                                  theme.colorScheme.primary,
+                                  theme.colorScheme.primary.withOpacity(0.8),
+                                ],
+                              ),
+                              borderRadius: BorderRadius.circular(14),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: theme.colorScheme.primary.withOpacity(
+                                    0.3,
+                                  ),
+                                  blurRadius: 8,
+                                  offset: const Offset(0, 2),
+                                ),
+                              ],
+                            ),
+                            child: const Icon(
+                              Icons.settings_rounded,
+                              color: Colors.white,
+                              size: 24,
+                            ),
+                          ),
+                          const SizedBox(width: 14),
+                          Text(
+                            'Settings',
+                            style: GoogleFonts.poppins(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 26,
+                              color: theme.colorScheme.onSurface,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 16),
+
+                      // Gradient headline
+                      ShaderMask(
+                        shaderCallback: (bounds) => LinearGradient(
+                          colors: [
+                            theme.colorScheme.onSurface,
+                            theme.colorScheme.primary.withOpacity(0.8),
+                          ],
+                        ).createShader(bounds),
+                        child: Text(
+                          'Customize Your\nExperience',
+                          style: GoogleFonts.poppins(
+                            fontSize: 28,
+                            fontWeight: FontWeight.w800,
+                            color: Colors.white,
+                            height: 1.1,
+                            letterSpacing: -0.5,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 14),
+
+                      // Feature badges
+                      Wrap(
+                        spacing: 8,
+                        runSpacing: 8,
+                        children: [
+                          _SettingsBadge(
+                            icon: Icons.color_lens_rounded,
+                            label: 'Appearance',
+                            color: Colors.indigo,
+                          ),
+                          _SettingsBadge(
+                            icon: Icons.notifications_rounded,
+                            label: 'Alerts',
+                            color: Colors.orange,
+                          ),
+                          _SettingsBadge(
+                            icon: Icons.security_rounded,
+                            label: 'Privacy',
+                            color: Colors.teal,
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+
+              // Settings Sections
               SliverPadding(
-                padding: const EdgeInsets.all(20),
+                padding: const EdgeInsets.fromLTRB(20, 8, 20, 20),
                 sliver: SliverList(
                   delegate: SliverChildBuilderDelegate((context, index) {
                     return settingSections[index];
@@ -1329,6 +1482,49 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             },
             style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
             child: Text('Delete', style: GoogleFonts.poppins()),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// Badge widget for settings header
+class _SettingsBadge extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final Color color;
+
+  const _SettingsBadge({
+    required this.icon,
+    required this.label,
+    required this.color,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      decoration: BoxDecoration(
+        color: color.withOpacity(isDark ? 0.15 : 0.1),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: color.withOpacity(0.2), width: 1),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 14, color: color),
+          const SizedBox(width: 5),
+          Text(
+            label,
+            style: GoogleFonts.poppins(
+              fontSize: 11,
+              fontWeight: FontWeight.w600,
+              color: color,
+            ),
           ),
         ],
       ),

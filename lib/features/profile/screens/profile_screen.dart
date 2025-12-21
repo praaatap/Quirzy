@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -100,8 +99,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen>
     super.build(context); // Required for AutomaticKeepAliveClientMixin
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
-    // Use select for minimal rebuilds
-    final historyState = ref.watch(quizHistoryProvider);
+    // Note: Stats use their own selectors inside _StatsSection
 
     return Scaffold(
       extendBodyBehindAppBar: true,
@@ -149,34 +147,110 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen>
       ),
       body: Stack(
         children: [
-          // 1. Ambient Background
+          // 1. Premium Ambient Background
           RepaintBoundary(
             child: Stack(
               children: [
+                // Top gradient overlay
+                Positioned(
+                  top: 0,
+                  left: 0,
+                  right: 0,
+                  height: 450,
+                  child: Container(
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: Alignment.topCenter,
+                        end: Alignment.bottomCenter,
+                        colors: [
+                          theme.colorScheme.primary.withOpacity(
+                            isDark ? 0.12 : 0.16,
+                          ),
+                          theme.colorScheme.secondary.withOpacity(
+                            isDark ? 0.05 : 0.08,
+                          ),
+                          theme.scaffoldBackgroundColor.withOpacity(0),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+                // Top-right primary blur blob
                 Positioned(
                   top: -100,
-                  right: -50,
+                  right: -80,
                   child: Container(
                     width: 300,
                     height: 300,
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
-                      color: theme.colorScheme.primary.withOpacity(
-                        isDark ? 0.08 : 0.12,
+                      gradient: RadialGradient(
+                        colors: [
+                          theme.colorScheme.primary.withOpacity(
+                            isDark ? 0.22 : 0.28,
+                          ),
+                          theme.colorScheme.primary.withOpacity(
+                            isDark ? 0.1 : 0.12,
+                          ),
+                          theme.colorScheme.primary.withOpacity(0),
+                        ],
+                        stops: const [0.0, 0.4, 1.0],
                       ),
+                      boxShadow: [
+                        BoxShadow(
+                          color: theme.colorScheme.primary.withOpacity(0.15),
+                          blurRadius: 100,
+                          spreadRadius: 40,
+                        ),
+                      ],
                     ),
                   ),
                 ),
+                // Bottom-left secondary blur blob
                 Positioned(
-                  bottom: 50,
-                  left: -100,
+                  bottom: 100,
+                  left: -120,
                   child: Container(
-                    width: 250,
-                    height: 250,
+                    width: 320,
+                    height: 320,
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
-                      color: theme.colorScheme.secondary.withOpacity(
-                        isDark ? 0.05 : 0.08,
+                      gradient: RadialGradient(
+                        colors: [
+                          theme.colorScheme.secondary.withOpacity(
+                            isDark ? 0.15 : 0.18,
+                          ),
+                          theme.colorScheme.secondary.withOpacity(
+                            isDark ? 0.08 : 0.1,
+                          ),
+                          theme.colorScheme.secondary.withOpacity(0),
+                        ],
+                        stops: const [0.0, 0.4, 1.0],
+                      ),
+                      boxShadow: [
+                        BoxShadow(
+                          color: theme.colorScheme.secondary.withOpacity(0.1),
+                          blurRadius: 80,
+                          spreadRadius: 30,
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                // Accent glow
+                Positioned(
+                  top: MediaQuery.of(context).size.height * 0.25,
+                  right: -30,
+                  child: Container(
+                    width: 100,
+                    height: 100,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      gradient: RadialGradient(
+                        colors: [
+                          Colors.purple.withOpacity(isDark ? 0.12 : 0.15),
+                          Colors.purple.withOpacity(0),
+                        ],
                       ),
                     ),
                   ),
@@ -211,8 +285,8 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen>
 
                             const SizedBox(height: 32),
 
-                            // 3. Stats Section
-                            _StatsSection(historyState: historyState),
+                            // 3. Stats Section (uses internal selectors)
+                            const _StatsSection(),
 
                             const SizedBox(height: 32),
 
@@ -431,51 +505,178 @@ class _ProfileHeader extends StatelessWidget {
 
     return Column(
       children: [
-        // Avatar
+        // Avatar with gradient border
         Container(
-          width: 100,
-          height: 100,
+          padding: const EdgeInsets.all(4),
           decoration: BoxDecoration(
             shape: BoxShape.circle,
-            color: theme.colorScheme.primary,
-            boxShadow: [
-              BoxShadow(
-                color: theme.colorScheme.primary.withOpacity(0.3),
-                blurRadius: 20,
-                offset: const Offset(0, 8),
-              ),
-            ],
+            gradient: LinearGradient(
+              colors: [
+                theme.colorScheme.primary,
+                theme.colorScheme.primary.withOpacity(0.6),
+              ],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
           ),
-          child: Center(
-            child: Text(
-              avatarLetter,
-              style: GoogleFonts.poppins(
-                fontSize: 40,
-                fontWeight: FontWeight.bold,
-                color: theme.colorScheme.onPrimary,
+          child: Container(
+            width: 96,
+            height: 96,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: theme.colorScheme.surface,
+            ),
+            child: Center(
+              child: Container(
+                width: 84,
+                height: 84,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  gradient: LinearGradient(
+                    colors: [
+                      theme.colorScheme.primary,
+                      theme.colorScheme.primary.withOpacity(0.8),
+                    ],
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: theme.colorScheme.primary.withOpacity(0.3),
+                      blurRadius: 16,
+                      offset: const Offset(0, 6),
+                    ),
+                  ],
+                ),
+                child: Center(
+                  child: Text(
+                    avatarLetter,
+                    style: GoogleFonts.poppins(
+                      fontSize: 36,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                    ),
+                  ),
+                ),
               ),
             ),
           ),
         ),
-        const SizedBox(height: 16),
-        Text(
-          userName,
-          style: GoogleFonts.poppins(
-            fontSize: 22,
-            fontWeight: FontWeight.w800,
-            color: theme.colorScheme.onSurface,
+        const SizedBox(height: 20),
+
+        // Name with gradient
+        ShaderMask(
+          shaderCallback: (bounds) => LinearGradient(
+            colors: [
+              theme.colorScheme.onSurface,
+              theme.colorScheme.primary.withOpacity(0.8),
+            ],
+          ).createShader(bounds),
+          child: Text(
+            userName,
+            style: GoogleFonts.poppins(
+              fontSize: 24,
+              fontWeight: FontWeight.w800,
+              color: Colors.white,
+              letterSpacing: -0.5,
+            ),
           ),
         ),
-        const SizedBox(height: 4),
-        Text(
-          userEmail,
-          style: GoogleFonts.poppins(
-            fontSize: 14,
-            fontWeight: FontWeight.w500,
-            color: theme.colorScheme.onSurfaceVariant,
+        const SizedBox(height: 6),
+
+        // Email badge
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+          decoration: BoxDecoration(
+            color: theme.colorScheme.surfaceContainerHighest.withOpacity(0.6),
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(
+              color: theme.colorScheme.outline.withOpacity(0.1),
+            ),
           ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                Icons.email_rounded,
+                size: 14,
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
+              const SizedBox(width: 6),
+              Text(
+                userEmail,
+                style: GoogleFonts.poppins(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w500,
+                  color: theme.colorScheme.onSurfaceVariant,
+                ),
+              ),
+            ],
+          ),
+        ),
+
+        const SizedBox(height: 16),
+
+        // Profile badges
+        Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          alignment: WrapAlignment.center,
+          children: [
+            _ProfileBadge(
+              icon: Icons.verified_rounded,
+              label: 'Member',
+              color: theme.colorScheme.primary,
+            ),
+            _ProfileBadge(
+              icon: Icons.auto_awesome,
+              label: 'Learner',
+              color: Colors.orange,
+            ),
+          ],
         ),
       ],
+    );
+  }
+}
+
+// Badge widget for profile header
+class _ProfileBadge extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final Color color;
+
+  const _ProfileBadge({
+    required this.icon,
+    required this.label,
+    required this.color,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      decoration: BoxDecoration(
+        color: color.withOpacity(isDark ? 0.15 : 0.1),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: color.withOpacity(0.2), width: 1),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 14, color: color),
+          const SizedBox(width: 5),
+          Text(
+            label,
+            style: GoogleFonts.poppins(
+              fontSize: 11,
+              fontWeight: FontWeight.w600,
+              color: color,
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
@@ -484,15 +685,24 @@ class _ProfileHeader extends StatelessWidget {
 // STATS SECTION
 // ==========================================
 
-class _StatsSection extends StatelessWidget {
-  final QuizHistoryState historyState;
-
-  const _StatsSection({required this.historyState});
+class _StatsSection extends ConsumerWidget {
+  const _StatsSection();
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
+
+    // Use selectors for minimal rebuilds - only rebuilds when these specific values change
+    final totalQuizzes = ref.watch(
+      quizHistoryProvider.select((s) => s.totalQuizzes),
+    );
+    final averageScore = ref.watch(
+      quizHistoryProvider.select((s) => s.averageScore),
+    );
+    final totalCorrectAnswers = ref.watch(
+      quizHistoryProvider.select((s) => s.totalCorrectAnswers),
+    );
 
     return Container(
       padding: const EdgeInsets.all(20),
@@ -512,21 +722,21 @@ class _StatsSection extends StatelessWidget {
         children: [
           _StatItem(
             icon: Icons.quiz_rounded,
-            value: '${historyState.totalQuizzes}',
+            value: '$totalQuizzes',
             label: 'Quizzes',
             color: theme.colorScheme.primary,
           ),
           _StatDivider(),
           _StatItem(
             icon: Icons.percent_rounded,
-            value: '${historyState.averageScore.toStringAsFixed(0)}%',
+            value: '${averageScore.toStringAsFixed(0)}%',
             label: 'Avg Score',
-            color: _getScoreColor(historyState.averageScore),
+            color: _getScoreColor(averageScore),
           ),
           _StatDivider(),
           _StatItem(
             icon: Icons.check_circle_rounded,
-            value: '${historyState.totalCorrectAnswers}',
+            value: '$totalCorrectAnswers',
             label: 'Correct',
             color: Colors.green,
           ),

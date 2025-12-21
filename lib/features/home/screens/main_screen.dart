@@ -75,12 +75,18 @@ class _MainScreenState extends ConsumerState<MainScreen> {
 }
 
 // ==========================================
-// MODERN FLOATING NAVBAR (Unchanged logic)
+// MODERN FLOATING NAVBAR (OPTIMIZED)
 // ==========================================
 
 class _ModernFloatingNavBar extends StatelessWidget {
   final int selectedIndex;
   final Function(int) onItemSelected;
+
+  // Cached constants for performance
+  static const _animDuration = Duration(milliseconds: 350);
+  static const _containerHeight = 72.0;
+  static const _borderRadius = 36.0;
+  static const _padding = 6.0;
 
   const _ModernFloatingNavBar({
     required this.selectedIndex,
@@ -92,13 +98,14 @@ class _ModernFloatingNavBar extends StatelessWidget {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
 
+    // Pre-compute alignment
     final double alignmentX = -1.0 + (selectedIndex * (2.0 / 3));
 
     return Container(
-      height: 72,
+      height: _containerHeight,
       decoration: BoxDecoration(
         color: theme.colorScheme.surfaceContainer.withOpacity(0.95),
-        borderRadius: BorderRadius.circular(36),
+        borderRadius: BorderRadius.circular(_borderRadius),
         border: Border.all(
           color: theme.colorScheme.outlineVariant.withOpacity(0.2),
           width: 1,
@@ -113,12 +120,12 @@ class _ModernFloatingNavBar extends StatelessWidget {
         ],
       ),
       child: Padding(
-        padding: const EdgeInsets.all(6.0),
+        padding: const EdgeInsets.all(_padding),
         child: Stack(
           children: [
             AnimatedAlign(
               alignment: Alignment(alignmentX, 0),
-              duration: const Duration(milliseconds: 350),
+              duration: _animDuration,
               curve: Curves.fastOutSlowIn,
               child: LayoutBuilder(
                 builder: (context, constraints) {
@@ -204,6 +211,9 @@ class _NavBarItem extends StatelessWidget {
   final Function(int) onTap;
   final ThemeData theme;
 
+  // Cached constant durations
+  static const _animDuration = Duration(milliseconds: 250);
+
   const _NavBarItem({
     required this.icon,
     required this.activeIcon,
@@ -216,6 +226,11 @@ class _NavBarItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Cache colors to avoid repeated lookups
+    final activeColor = theme.colorScheme.onPrimary;
+    final inactiveColor = theme.colorScheme.onSurfaceVariant;
+    final color = isSelected ? activeColor : inactiveColor;
+
     return Expanded(
       child: GestureDetector(
         onTap: () => onTap(index),
@@ -224,16 +239,14 @@ class _NavBarItem extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             AnimatedSwitcher(
-              duration: const Duration(milliseconds: 250),
+              duration: _animDuration,
               transitionBuilder: (child, anim) =>
                   ScaleTransition(scale: anim, child: child),
               child: Icon(
                 isSelected ? activeIcon : icon,
                 key: ValueKey(isSelected),
                 size: 24,
-                color: isSelected
-                    ? theme.colorScheme.onPrimary
-                    : theme.colorScheme.onSurfaceVariant,
+                color: color,
               ),
             ),
             const SizedBox(height: 4),
@@ -242,9 +255,7 @@ class _NavBarItem extends StatelessWidget {
               style: GoogleFonts.poppins(
                 fontSize: 10,
                 fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
-                color: isSelected
-                    ? theme.colorScheme.onPrimary
-                    : theme.colorScheme.onSurfaceVariant,
+                color: color,
               ),
               maxLines: 1,
             ),
