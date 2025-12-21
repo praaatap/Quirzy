@@ -5,6 +5,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:quirzy/features/quiz/services/quiz_service.dart';
 import 'package:quirzy/service/ad_service.dart';
 import 'package:quirzy/features/quiz/screens/start_quiz_screen.dart';
+import 'package:quirzy/core/platform/platform_adaptive.dart';
 
 // ==========================================
 // PREMIUM HOME SCREEN
@@ -357,7 +358,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
               child: SlideTransition(
                 position: _slideAnim,
                 child: CustomScrollView(
-                  physics: const BouncingScrollPhysics(),
+                  physics: PlatformAdaptive.scrollPhysics,
                   slivers: [
                     // App Bar
                     _buildAppBar(theme, isSmallScreen),

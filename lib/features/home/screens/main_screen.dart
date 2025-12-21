@@ -16,90 +16,26 @@ class MainScreen extends ConsumerStatefulWidget {
   ConsumerState<MainScreen> createState() => _MainScreenState();
 }
 
-class _MainScreenState extends ConsumerState<MainScreen>
-    with TickerProviderStateMixin {
-  late PageController _pageController;
-
-  // Flag to prevent race condition during programmatic page changes
-  bool _isAnimating = false;
-
+class _MainScreenState extends ConsumerState<MainScreen> {
   // Cache screens for performance
-  late final List<Widget> _screens;
-
-  @override
-  void initState() {
-    super.initState();
-    // Initialize controller with the current state from provider
-    final initialPage = ref.read(tabIndexProvider);
-    _pageController = PageController(
-      initialPage: initialPage,
-      // Keep 1 page on each side in memory for smoother transitions
-      viewportFraction: 1.0,
-    );
-
-    // Pre-build screens with RepaintBoundary for rendering isolation
-    _screens = const [
-      RepaintBoundary(child: HomeScreen()),
-      RepaintBoundary(child: FlashcardsScreen()),
-      RepaintBoundary(child: HistoryScreen()),
-      RepaintBoundary(child: ProfileScreen()),
-    ];
-  }
-
-  @override
-  void dispose() {
-    _pageController.dispose();
-    super.dispose();
-  }
+  static const List<Widget> _screens = [
+    RepaintBoundary(child: HomeScreen()),
+    RepaintBoundary(child: FlashcardsScreen()),
+    RepaintBoundary(child: HistoryScreen()),
+    RepaintBoundary(child: ProfileScreen()),
+  ];
 
   @override
   Widget build(BuildContext context) {
     final selectedIndex = ref.watch(tabIndexProvider);
     final navbarStyle = ref.watch(settingsProvider).navbarStyle;
 
-    // Listen to the provider. When the Navbar changes the state,
-    // we animate the PageView to the new index.
-    ref.listen<int>(tabIndexProvider, (previous, next) {
-      if (_pageController.hasClients && next != _pageController.page?.round()) {
-        // Set flag to prevent onPageChanged from updating provider during animation
-        _isAnimating = true;
-        _pageController
-            .animateToPage(
-              next,
-              // Faster, smoother animation
-              duration: const Duration(milliseconds: 280),
-              curve: Curves.easeOutCubic,
-            )
-            .then((_) {
-              // Reset flag after animation completes
-              _isAnimating = false;
-            });
-      }
-    });
-
     return Scaffold(
       extendBody: true,
       body: Stack(
         children: [
-          // High-performance PageView with optimized physics
-          PageView.builder(
-            controller: _pageController,
-            physics: const _HighPerformancePagePhysics(),
-            onPageChanged: (index) {
-              // Only update provider if this is a user swipe, not a programmatic animation
-              if (!_isAnimating) {
-                ref.read(tabIndexProvider.notifier).state = index;
-              }
-            },
-            itemCount: _screens.length,
-            itemBuilder: (context, index) {
-              // Use TickerMode to pause animations on non-visible pages
-              return TickerMode(
-                enabled: selectedIndex == index,
-                child: _screens[index],
-              );
-            },
-          ),
+          // IndexedStack - no swipe, just instant tab switching
+          IndexedStack(index: selectedIndex, children: _screens),
 
           // Navbar
           if (navbarStyle == 'custom')
@@ -136,25 +72,6 @@ class _MainScreenState extends ConsumerState<MainScreen>
       ),
     );
   }
-}
-
-/// High-performance page physics with smooth scrolling
-class _HighPerformancePagePhysics extends ScrollPhysics {
-  const _HighPerformancePagePhysics({super.parent});
-
-  @override
-  _HighPerformancePagePhysics applyTo(ScrollPhysics? ancestor) {
-    return _HighPerformancePagePhysics(
-      parent: buildParent(ancestor) ?? const ClampingScrollPhysics(),
-    );
-  }
-
-  @override
-  SpringDescription get spring => const SpringDescription(
-    mass: 50, // Lower mass = faster response
-    stiffness: 100, // Higher stiffness = snappier
-    damping: 1, // Critical damping for smooth stop
-  );
 }
 
 // ==========================================

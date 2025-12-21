@@ -200,37 +200,46 @@ class _QuiryHomeState extends ConsumerState<QuiryHome>
       backgroundColor: theme.scaffoldBackgroundColor,
       body: Stack(
         children: [
-          // Background Circles (solid dark teal)
+          // Background Circles (theme-adaptive)
           RepaintBoundary(
-            child: Stack(
-              children: [
-                // Top-right circle
-                Positioned(
-                  top: -100,
-                  right: -80,
-                  child: Container(
-                    width: 350,
-                    height: 350,
-                    decoration: const BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: Color(0xFF12292F),
+            child: Builder(
+              builder: (context) {
+                final isDark = theme.brightness == Brightness.dark;
+                return Stack(
+                  children: [
+                    // Top-right circle
+                    Positioned(
+                      top: -100,
+                      right: -80,
+                      child: Container(
+                        width: 350,
+                        height: 350,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: isDark
+                              ? const Color(0xFF12292F)
+                              : theme.colorScheme.primary.withOpacity(0.08),
+                        ),
+                      ),
                     ),
-                  ),
-                ),
-                // Bottom-left circle
-                Positioned(
-                  bottom: 80,
-                  left: -100,
-                  child: Container(
-                    width: 320,
-                    height: 320,
-                    decoration: const BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: Color(0xFF0F2328),
+                    // Bottom-left circle
+                    Positioned(
+                      bottom: 80,
+                      left: -100,
+                      child: Container(
+                        width: 320,
+                        height: 320,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: isDark
+                              ? const Color(0xFF0F2328)
+                              : theme.colorScheme.secondary.withOpacity(0.06),
+                        ),
+                      ),
                     ),
-                  ),
-                ),
-              ],
+                  ],
+                );
+              },
             ),
           ),
           // Main content

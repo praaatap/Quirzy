@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -9,6 +10,7 @@ import 'package:quirzy/providers/quiz_history_provider.dart';
 import 'package:quirzy/features/auth/screens/welcome_screen.dart';
 import 'package:quirzy/features/settings/screens/settings_screen.dart';
 import 'package:quirzy/features/settings/screens/privacy_policy_screen.dart';
+import 'package:quirzy/core/platform/platform_adaptive.dart';
 
 class ProfileScreen extends ConsumerStatefulWidget {
   const ProfileScreen({super.key});
@@ -132,10 +134,15 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen>
                 size: 20,
               ),
             ),
-            onPressed: () => Navigator.push(
-              context,
-              MaterialPageRoute(builder: (_) => const SettingsScreen()),
-            ),
+            onPressed: () {
+              HapticFeedback.lightImpact();
+              Navigator.push(
+                context,
+                PlatformAdaptive.pageRoute(
+                  builder: (_) => const SettingsScreen(),
+                ),
+              );
+            },
           ),
           const SizedBox(width: 8),
         ],
@@ -229,12 +236,15 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen>
                               title: 'Privacy & Security',
                               subtitle: 'Manage your data',
                               color: Colors.teal,
-                              onTap: () => Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (_) => const PrivacyPolicyScreen(),
-                                ),
-                              ),
+                              onTap: () {
+                                HapticFeedback.lightImpact();
+                                Navigator.push(
+                                  context,
+                                  PlatformAdaptive.pageRoute(
+                                    builder: (_) => const PrivacyPolicyScreen(),
+                                  ),
+                                );
+                              },
                             ),
                             const SizedBox(height: 12),
                             _MenuTile(
@@ -356,63 +366,28 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen>
   }
 
   Future<void> _showLogoutDialog() async {
-    final theme = Theme.of(context);
+    HapticFeedback.mediumImpact();
 
-    await showDialog(
+    await showNativeDialog(
       context: context,
-      builder: (dialogContext) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
-        icon: Container(
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: theme.colorScheme.error.withOpacity(0.1),
-            shape: BoxShape.circle,
-          ),
-          child: Icon(
-            Icons.logout_rounded,
-            color: theme.colorScheme.error,
-            size: 32,
-          ),
+      title: 'Log Out?',
+      content: 'Are you sure you want to log out of your account?',
+      cancelText: 'Cancel',
+      confirmText: 'Log Out',
+      isDestructive: true,
+      icon: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: Theme.of(context).colorScheme.error.withOpacity(0.1),
+          shape: BoxShape.circle,
         ),
-        title: Text(
-          'Log Out?',
-          style: GoogleFonts.poppins(fontWeight: FontWeight.bold),
+        child: Icon(
+          Icons.logout_rounded,
+          color: Theme.of(context).colorScheme.error,
+          size: 32,
         ),
-        content: Text(
-          'Are you sure you want to log out of your account?',
-          style: GoogleFonts.poppins(color: theme.colorScheme.onSurfaceVariant),
-          textAlign: TextAlign.center,
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(dialogContext),
-            child: Text(
-              'Cancel',
-              style: GoogleFonts.poppins(
-                fontWeight: FontWeight.w600,
-                color: theme.colorScheme.onSurface,
-              ),
-            ),
-          ),
-          FilledButton(
-            onPressed: () async {
-              Navigator.pop(dialogContext);
-              await _performLogout();
-            },
-            style: FilledButton.styleFrom(
-              backgroundColor: theme.colorScheme.error,
-              foregroundColor: theme.colorScheme.onError,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-            ),
-            child: Text(
-              'Log Out',
-              style: GoogleFonts.poppins(fontWeight: FontWeight.bold),
-            ),
-          ),
-        ],
       ),
+      onConfirm: () => _performLogout(),
     );
   }
 

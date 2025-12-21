@@ -10,7 +10,7 @@ class NoInternetScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    
+
     return Scaffold(
       backgroundColor: theme.scaffoldBackgroundColor,
       body: Container(
@@ -31,19 +31,20 @@ class NoInternetScreen extends StatelessWidget {
                     color: Colors.black.withOpacity(0.05),
                     blurRadius: 20,
                     offset: const Offset(0, 10),
-                  )
+                  ),
                 ],
               ),
               child: ClipOval(
                 child: Lottie.asset(
-                  'assets/lottie/no_internet.json',
+                  'assets/no_internet.json',
                   fit: BoxFit.contain,
+                  repeat: true,
                 ),
               ),
             ),
-            
+
             const SizedBox(height: 40),
-            
+
             Text(
               'Connection Lost',
               style: GoogleFonts.poppins(
@@ -52,9 +53,9 @@ class NoInternetScreen extends StatelessWidget {
                 color: theme.colorScheme.onBackground,
               ),
             ),
-            
+
             const SizedBox(height: 12),
-            
+
             Text(
               'No internet connection was found.\nCheck your connection and try again.',
               textAlign: TextAlign.center,
@@ -64,9 +65,9 @@ class NoInternetScreen extends StatelessWidget {
                 height: 1.5,
               ),
             ),
-            
+
             const SizedBox(height: 40),
-            
+
             // Retry Button
             SizedBox(
               width: double.infinity,
