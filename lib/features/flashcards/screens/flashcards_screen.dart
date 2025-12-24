@@ -1,3 +1,5 @@
+import 'package:flutter/cupertino.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -802,34 +804,32 @@ class _GenerateCard extends StatelessWidget {
 
         const SizedBox(height: 16),
 
-        // Generate button - 60% width, centered
-        Center(
-          child: FractionallySizedBox(
-            widthFactor: 0.6,
-            child: FilledButton.icon(
-              onPressed: isGenerating ? null : onGenerate,
-              icon: isGenerating
-                  ? SizedBox(
-                      width: 18,
-                      height: 18,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2,
-                        color: theme.colorScheme.onPrimary,
-                      ),
-                    )
-                  : const Icon(Icons.auto_awesome_rounded, size: 20),
-              label: Text(
-                isGenerating ? 'Generating...' : 'Generate',
-                style: GoogleFonts.poppins(
-                  fontWeight: FontWeight.w600,
-                  fontSize: 15,
-                ),
+        // Generate button - Full width
+        SizedBox(
+          width: double.infinity,
+          child: FilledButton.icon(
+            onPressed: isGenerating ? null : onGenerate,
+            icon: isGenerating
+                ? SizedBox(
+                    width: 18,
+                    height: 18,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      color: theme.colorScheme.onPrimary,
+                    ),
+                  )
+                : const Icon(Icons.auto_awesome_rounded, size: 20),
+            label: Text(
+              isGenerating ? 'Generating...' : 'Generate',
+              style: GoogleFonts.poppins(
+                fontWeight: FontWeight.w600,
+                fontSize: 15,
               ),
-              style: FilledButton.styleFrom(
-                minimumSize: const Size(0, 50),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
+            ),
+            style: FilledButton.styleFrom(
+              minimumSize: const Size(0, 50),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
               ),
             ),
           ),

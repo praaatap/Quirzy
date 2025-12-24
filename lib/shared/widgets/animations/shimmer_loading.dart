@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 
-/// Native-feeling shimmer loading effect
 class ShimmerLoading extends StatefulWidget {
   final double width;
   final double height;

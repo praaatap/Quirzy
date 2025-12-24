@@ -243,31 +243,33 @@ class _QuiryHomeState extends ConsumerState<QuiryHome>
             ),
           ),
           // Main content
-          FadeTransition(
-            opacity: _fadeAnimation,
-            child: Padding(
-              padding: EdgeInsets.symmetric(horizontal: size.width * 0.08),
-              child: _Body(
-                size: size,
-                theme: theme,
-                isProcessing: isProcessing,
-                isPrivacyAccepted: _isPrivacyPolicyAccepted,
-                onPrivacyChanged: (value) {
-                  setState(() {
-                    _isPrivacyPolicyAccepted = value;
-                  });
-                },
-                onGoogleSignIn: _handleGoogleSignIn,
-                onEmailLogin: _onEmailLoginPressed,
-                onRegister: _onRegisterPressed,
-                onConsentRequired: _showConsentRequiredMessage,
-                onPrivacyPolicyTap: () {
-                  Navigator.of(
-                    context,
-                  ).push(_createRoute(const PrivacyPolicyScreen()));
-                },
-                checkboxKey: _checkboxKey,
-                googleLoginKey: _googleLoginKey,
+          SafeArea(
+            child: FadeTransition(
+              opacity: _fadeAnimation,
+              child: Padding(
+                padding: EdgeInsets.symmetric(horizontal: size.width * 0.08),
+                child: _Body(
+                  size: size,
+                  theme: theme,
+                  isProcessing: isProcessing,
+                  isPrivacyAccepted: _isPrivacyPolicyAccepted,
+                  onPrivacyChanged: (value) {
+                    setState(() {
+                      _isPrivacyPolicyAccepted = value;
+                    });
+                  },
+                  onGoogleSignIn: _handleGoogleSignIn,
+                  onEmailLogin: _onEmailLoginPressed,
+                  onRegister: _onRegisterPressed,
+                  onConsentRequired: _showConsentRequiredMessage,
+                  onPrivacyPolicyTap: () {
+                    Navigator.of(
+                      context,
+                    ).push(_createRoute(const PrivacyPolicyScreen()));
+                  },
+                  checkboxKey: _checkboxKey,
+                  googleLoginKey: _googleLoginKey,
+                ),
               ),
             ),
           ),

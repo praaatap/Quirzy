@@ -1077,98 +1077,92 @@ class _GenerateButton extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
 
-    // 60% width, centered
-    return Center(
-      child: FractionallySizedBox(
-        widthFactor: 0.6,
-        child: SizedBox(
-          height: 50,
-          child: AnimatedContainer(
-            duration: const Duration(milliseconds: 200),
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(12),
-              gradient: LinearGradient(
-                colors: isLimitReached
-                    ? [Colors.amber, Colors.orange]
-                    : [
-                        theme.colorScheme.primary,
-                        theme.colorScheme.primary.withBlue(200),
-                      ],
-              ),
-              boxShadow: isGenerating
-                  ? null
-                  : [
-                      BoxShadow(
-                        color:
-                            (isLimitReached
-                                    ? Colors.amber
-                                    : theme.colorScheme.primary)
-                                .withOpacity(0.3),
-                        blurRadius: 8,
-                        offset: const Offset(0, 3),
-                      ),
-                    ],
-            ),
-            child: Material(
-              color: Colors.transparent,
-              child: InkWell(
-                onTap: isGenerating ? null : onPressed,
-                borderRadius: BorderRadius.circular(12),
-                child: Center(
-                  child: isGenerating
-                      ? Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            SizedBox(
-                              width: 18,
-                              height: 18,
-                              child: CircularProgressIndicator(
-                                strokeWidth: 2,
-                                color: isLimitReached
-                                    ? Colors.black87
-                                    : Colors.white,
-                              ),
-                            ),
-                            const SizedBox(width: 10),
-                            Text(
-                              'Creating...',
-                              style: GoogleFonts.poppins(
-                                fontSize: 14,
-                                fontWeight: FontWeight.w600,
-                                color: isLimitReached
-                                    ? Colors.black87
-                                    : Colors.white,
-                              ),
-                            ),
-                          ],
-                        )
-                      : Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Icon(
-                              isLimitReached
-                                  ? Icons.play_circle_rounded
-                                  : Icons.auto_awesome_rounded,
-                              size: 20,
-                              color: isLimitReached
-                                  ? Colors.black87
-                                  : Colors.white,
-                            ),
-                            const SizedBox(width: 8),
-                            Text(
-                              isLimitReached ? 'Watch Ad' : 'Generate',
-                              style: GoogleFonts.poppins(
-                                fontSize: 14,
-                                fontWeight: FontWeight.bold,
-                                color: isLimitReached
-                                    ? Colors.black87
-                                    : Colors.white,
-                              ),
-                            ),
-                          ],
+    // Full width to match text field
+    return SizedBox(
+      height: 54, // Slightly taller for better touch target
+      width: double.infinity,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(12),
+          gradient: LinearGradient(
+            colors: isLimitReached
+                ? [Colors.amber, Colors.orange]
+                : [
+                    theme.colorScheme.primary,
+                    theme.colorScheme.primary.withBlue(200),
+                  ],
+          ),
+          boxShadow: isGenerating
+              ? null
+              : [
+                  BoxShadow(
+                    color:
+                        (isLimitReached
+                                ? Colors.amber
+                                : theme.colorScheme.primary)
+                            .withOpacity(0.3),
+                    blurRadius: 8,
+                    offset: const Offset(0, 3),
+                  ),
+                ],
+        ),
+        child: Material(
+          color: Colors.transparent,
+          child: InkWell(
+            onTap: isGenerating ? null : onPressed,
+            borderRadius: BorderRadius.circular(12),
+            child: Center(
+              child: isGenerating
+                  ? Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        SizedBox(
+                          width: 18,
+                          height: 18,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: isLimitReached
+                                ? Colors.black87
+                                : Colors.white,
+                          ),
                         ),
-                ),
-              ),
+                        const SizedBox(width: 10),
+                        Text(
+                          'Creating...',
+                          style: GoogleFonts.poppins(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w600,
+                            color: isLimitReached
+                                ? Colors.black87
+                                : Colors.white,
+                          ),
+                        ),
+                      ],
+                    )
+                  : Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(
+                          isLimitReached
+                              ? Icons.play_circle_rounded
+                              : Icons.auto_awesome_rounded,
+                          size: 20,
+                          color: isLimitReached ? Colors.black87 : Colors.white,
+                        ),
+                        const SizedBox(width: 8),
+                        Text(
+                          isLimitReached ? 'Watch Ad' : 'Generate',
+                          style: GoogleFonts.poppins(
+                            fontSize: 14,
+                            fontWeight: FontWeight.bold,
+                            color: isLimitReached
+                                ? Colors.black87
+                                : Colors.white,
+                          ),
+                        ),
+                      ],
+                    ),
             ),
           ),
         ),

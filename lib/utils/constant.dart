@@ -24,8 +24,8 @@ const String kOnbordingStatus = "onboarding_done";
 // final String kBackendApiUrl = "https://quirzybackend.pratapsingh.me/";
 
 // final String kBackendApiUrl = "http://192.168.1.38:3000";
-// final String kBackendApiUrl = "https://quirzybackend.pratapsingh.me";
-final String kBackendApiUrl = "http://10.0.2.2:3000";
+final String kBackendApiUrl = "https://quirzybackend.pratapsingh.me";
+// final String kBackendApiUrl = "http://10.0.2.2:3000";
 
 
 const String kgeminiKey  = 'AIzaSyDHuDteHuXXHAWpRaYteoJwN4z-nkcrM2o';

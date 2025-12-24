@@ -1,17 +1,13 @@
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:hive_flutter/hive_flutter.dart';
+import '../utils/isolate_compute.dart';
 
 /// ===========================================
-/// HIGH-PERFORMANCE HIVE CACHE SERVICE
+/// HIVE CACHE SERVICE
 /// ===========================================
-/// Features:
-/// - Isolate-based JSON parsing (off-main-thread)
-/// - In-memory cache layer for instant access
-/// - Lazy box loading for quick startup
-/// - TTL support with smart refresh
-/// - Hardware-optimized thread pooling
-/// - Batch operations for efficiency
+/// Core caching service with in-memory layer and Hive persistence.
+/// Uses IsolateCompute for heavy operations.
 
 class HiveCacheService {
   static HiveCacheService? _instance;
@@ -27,8 +23,8 @@ class HiveCacheService {
   static Map<String, dynamic>? _memoryStatsCache;
   static DateTime? _memoryCacheTime;
 
-  // Pre-computed stats (avoid recalculation)
-  static _ComputedStats? _computedStats;
+  // Pre-computed stats
+  static QuizStats? _computedStats;
 
   // Box names
   static const String _quizHistoryBoxName = 'quiz_history';
@@ -83,12 +79,14 @@ class HiveCacheService {
         final data = _quizHistoryBox?.get(_historyKey) as String?;
         if (data != null) {
           // Use isolate for large data parsing
-          _memoryHistoryCache = await _parseJsonInIsolate(data);
+          _memoryHistoryCache = await IsolateCompute.parseJsonList(data);
           _memoryCacheTime = DateTime.now();
 
           // Pre-compute stats
           if (_memoryHistoryCache != null) {
-            _computedStats = await _computeStatsInIsolate(_memoryHistoryCache!);
+            _computedStats = await IsolateCompute.computeQuizStats(
+              _memoryHistoryCache!,
+            );
           }
           debugPrint('📦 Memory cache preloaded');
         }
@@ -110,92 +108,11 @@ class HiveCacheService {
 
   static bool get isInitialized => _isInitialized;
 
-  /// Parse JSON in a separate isolate (for large datasets)
-  static Future<List<Map<String, dynamic>>> _parseJsonInIsolate(
-    String jsonData,
-  ) async {
-    // For small data, parse on main thread (isolate overhead not worth it)
-    if (jsonData.length < 10000) {
-      return _parseJson(jsonData);
-    }
-
-    // Use compute() which automatically manages isolates
-    return await compute(_parseJson, jsonData);
-  }
-
-  /// Static function for isolate execution
-  static List<Map<String, dynamic>> _parseJson(String jsonData) {
-    final List<dynamic> decoded = jsonDecode(jsonData);
-    return decoded.map((e) => Map<String, dynamic>.from(e)).toList();
-  }
-
-  /// Encode JSON in isolate
-  static Future<String> _encodeJsonInIsolate(
-    List<Map<String, dynamic>> data,
-  ) async {
-    if (data.length < 50) {
-      return jsonEncode(data);
-    }
-    return await compute(_encodeJson, data);
-  }
-
-  static String _encodeJson(List<Map<String, dynamic>> data) {
-    return jsonEncode(data);
-  }
-
-  // ==========================================
-  // STATS COMPUTATION IN ISOLATE
-  // ==========================================
-
-  /// Compute stats off the main thread
-  static Future<_ComputedStats> _computeStatsInIsolate(
-    List<Map<String, dynamic>> quizzes,
-  ) async {
-    if (quizzes.length < 100) {
-      return _computeStats(quizzes);
-    }
-    return await compute(_computeStats, quizzes);
-  }
-
-  static _ComputedStats _computeStats(List<Map<String, dynamic>> quizzes) {
-    int totalCorrect = 0;
-    int totalQuestions = 0;
-    int bestPercentage = 0;
-    int worstPercentage = 100;
-
-    for (final quiz in quizzes) {
-      final score = quiz['score'] as int? ?? 0;
-      final total =
-          quiz['totalQuestions'] as int? ?? quiz['questionCount'] as int? ?? 0;
-
-      totalCorrect += score;
-      totalQuestions += total;
-
-      if (total > 0) {
-        final percentage = ((score / total) * 100).round();
-        if (percentage > bestPercentage) bestPercentage = percentage;
-        if (percentage < worstPercentage) worstPercentage = percentage;
-      }
-    }
-
-    return _ComputedStats(
-      totalQuizzes: quizzes.length,
-      totalCorrect: totalCorrect,
-      totalQuestions: totalQuestions,
-      avgPercentage: totalQuestions > 0
-          ? ((totalCorrect / totalQuestions) * 100).round()
-          : 0,
-      bestPercentage: quizzes.isEmpty ? 0 : bestPercentage,
-      worstPercentage: quizzes.isEmpty ? 0 : worstPercentage,
-      computedAt: DateTime.now(),
-    );
-  }
-
   /// Get pre-computed stats (instant, no calculation)
-  _ComputedStats? getComputedStats() => _computedStats;
+  QuizStats? getComputedStats() => _computedStats;
 
   // ==========================================
-  // QUIZ HISTORY CACHE - OPTIMIZED
+  // QUIZ HISTORY CACHE
   // ==========================================
 
   /// Save quiz history with isolate-based encoding
@@ -206,10 +123,10 @@ class HiveCacheService {
       _memoryCacheTime = DateTime.now();
 
       // Compute stats in isolate
-      _computedStats = await _computeStatsInIsolate(history);
+      _computedStats = await IsolateCompute.computeQuizStats(history);
 
       // Encode and save in background
-      final encoded = await _encodeJsonInIsolate(history);
+      final encoded = await IsolateCompute.encodeJsonList(history);
       await _quizHistoryBox?.put(_historyKey, encoded);
       await _quizHistoryBox?.put(
         _historyTimestampKey,
@@ -253,7 +170,7 @@ class HiveCacheService {
         }
       }
 
-      // Parse synchronously for small data (async for large)
+      // Parse synchronously for small data
       final List<dynamic> decoded = jsonDecode(data);
       final result = decoded.map((e) => Map<String, dynamic>.from(e)).toList();
 
@@ -284,7 +201,7 @@ class HiveCacheService {
       if (data == null) return null;
 
       // Parse in isolate
-      final result = await _parseJsonInIsolate(data);
+      final result = await IsolateCompute.parseJsonList(data);
       _memoryHistoryCache = result;
       _memoryCacheTime = DateTime.now();
 
@@ -295,7 +212,7 @@ class HiveCacheService {
     }
   }
 
-  /// Add single quiz to history (optimistic update with batch write)
+  /// Add single quiz to history (optimistic update)
   Future<void> addQuizToHistory(Map<String, dynamic> quiz) async {
     // Instant memory update
     _memoryHistoryCache = [quiz, ...(_memoryHistoryCache ?? [])];
@@ -303,7 +220,9 @@ class HiveCacheService {
 
     // Recompute stats
     if (_memoryHistoryCache != null) {
-      _computedStats = await _computeStatsInIsolate(_memoryHistoryCache!);
+      _computedStats = await IsolateCompute.computeQuizStats(
+        _memoryHistoryCache!,
+      );
     }
 
     // Persist in background (non-blocking)
@@ -422,35 +341,4 @@ class HiveCacheService {
     _isInitialized = false;
     debugPrint('📦 Hive boxes closed');
   }
-}
-
-/// Pre-computed statistics for instant access
-class _ComputedStats {
-  final int totalQuizzes;
-  final int totalCorrect;
-  final int totalQuestions;
-  final int avgPercentage;
-  final int bestPercentage;
-  final int worstPercentage;
-  final DateTime computedAt;
-
-  _ComputedStats({
-    required this.totalQuizzes,
-    required this.totalCorrect,
-    required this.totalQuestions,
-    required this.avgPercentage,
-    required this.bestPercentage,
-    required this.worstPercentage,
-    required this.computedAt,
-  });
-
-  Map<String, dynamic> toJson() => {
-    'totalQuizzes': totalQuizzes,
-    'totalCorrect': totalCorrect,
-    'totalQuestions': totalQuestions,
-    'avgPercentage': avgPercentage,
-    'bestPercentage': bestPercentage,
-    'worstPercentage': worstPercentage,
-    'computedAt': computedAt.millisecondsSinceEpoch,
-  };
 }
