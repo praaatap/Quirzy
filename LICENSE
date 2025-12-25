@@ -1,21 +1,224 @@
-MIT License
+QUIRZY PROPRIETARY LICENSE
+Version 1.0 - Effective Date: December 25, 2025
 
-Copyright (c) 2024 Quirzy
+================================================================================
+                    PROPRIETARY SOFTWARE LICENSE AGREEMENT
+                          ALL RIGHTS RESERVED
+================================================================================
 
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
+Copyright (c) 2025 Quirzy. All Rights Reserved.
 
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
+NOTICE: THIS SOFTWARE AND ASSOCIATED DOCUMENTATION FILES (THE "SOFTWARE") ARE
+PROPRIETARY AND CONFIDENTIAL. PUBLIC ACCESS TO THIS REPOSITORY IS PROVIDED
+SOLELY FOR VIEWING AND PORTFOLIO DEMONSTRATION PURPOSES.
 
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.
+================================================================================
+                              ARTICLE 1: DEFINITIONS
+================================================================================
+
+1.1 "Licensor" refers to Quirzy and its owners, developers, and affiliates.
+
+1.2 "Software" refers to all source code, object code, documentation, designs,
+    algorithms, user interfaces, graphics, and all related materials contained
+    in this repository.
+
+1.3 "Viewer" refers to any individual or entity accessing this repository.
+
+1.4 "Commercial Use" means any use of the Software intended for or directed
+    toward commercial advantage or monetary compensation.
+
+1.5 "Derivative Work" means any work that is based on, incorporates, or is
+    derived from the Software in any form.
+
+================================================================================
+                          ARTICLE 2: GRANT OF LICENSE
+================================================================================
+
+2.1 VIEWING RIGHTS ONLY
+    Subject to the terms of this Agreement, the Licensor grants the Viewer a
+    limited, non-exclusive, non-transferable, revocable license to VIEW the
+    Software solely for:
+    
+    (a) Educational reference and learning purposes
+    (b) Portfolio evaluation by potential employers or clients
+    (c) Code review and technical assessment
+    
+    NO OTHER RIGHTS ARE GRANTED, EXPRESSLY OR IMPLIED.
+
+2.2 NO USAGE LICENSE
+    This Agreement does NOT grant the Viewer any right to use, execute, run,
+    compile, or deploy the Software in any environment, whether development,
+    testing, staging, or production.
+
+================================================================================
+                          ARTICLE 3: RESTRICTIONS
+================================================================================
+
+THE VIEWER EXPRESSLY AGREES NOT TO:
+
+3.1 COPYING & REPRODUCTION
+    Copy, reproduce, duplicate, or replicate any portion of the Software,
+    whether in whole or in part, in any form or medium now known or later
+    developed.
+
+3.2 MODIFICATION & DERIVATIVES
+    Modify, adapt, translate, reverse engineer, decompile, disassemble, or
+    create any Derivative Works based on the Software.
+
+3.3 DISTRIBUTION & TRANSFER
+    Distribute, publish, display, broadcast, transmit, share, sublicense,
+    lease, lend, rent, sell, or otherwise transfer the Software or any rights
+    therein to any third party.
+
+3.4 COMMERCIAL EXPLOITATION
+    Use the Software, or any portion thereof, for any Commercial Use, including
+    but not limited to:
+    - Incorporating into commercial products or services
+    - Using as a template or foundation for paid applications
+    - Offering as part of consulting or development services
+    - Monetizing through advertising, subscriptions, or sales
+
+3.5 CODE EXTRACTION
+    Extract, copy, or reuse any algorithms, logic, designs, UI patterns,
+    architecture patterns, or code snippets from the Software.
+
+3.6 CLAIM OF OWNERSHIP
+    Represent, claim, or imply ownership of the Software or any portion thereof.
+
+3.7 REMOVAL OF NOTICES
+    Remove, alter, or obscure any copyright, trademark, or proprietary notices
+    contained in the Software.
+
+3.8 UNAUTHORIZED ACCESS
+    Access the Software through automated means, bots, crawlers, or any method
+    intended to systematically download or archive the Software.
+
+================================================================================
+                      ARTICLE 4: INTELLECTUAL PROPERTY
+================================================================================
+
+4.1 RETENTION OF RIGHTS
+    The Licensor retains all right, title, and interest in and to the Software,
+    including all intellectual property rights therein. This Agreement does not
+    transfer any ownership rights to the Viewer.
+
+4.2 PROPRIETARY TECHNOLOGY
+    The Software contains proprietary technology, trade secrets, and
+    confidential information of the Licensor. The Viewer acknowledges the
+    proprietary nature of the Software and agrees to maintain its
+    confidentiality.
+
+4.3 TRADEMARKS
+    "Quirzy" and all related names, logos, and marks are trademarks of the
+    Licensor. No license to use such trademarks is granted herein.
+
+================================================================================
+                          ARTICLE 5: DISCLAIMER
+================================================================================
+
+5.1 AS-IS BASIS
+    THE SOFTWARE IS PROVIDED "AS IS" WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+    IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+    FITNESS FOR A PARTICULAR PURPOSE, TITLE, AND NON-INFRINGEMENT.
+
+5.2 NO SUPPORT
+    The Licensor has no obligation to provide maintenance, support, updates,
+    enhancements, or modifications to the Software.
+
+5.3 ACCURACY
+    The Licensor makes no warranty regarding the accuracy, reliability,
+    completeness, or timeliness of the Software.
+
+================================================================================
+                      ARTICLE 6: LIMITATION OF LIABILITY
+================================================================================
+
+6.1 IN NO EVENT SHALL THE LICENSOR BE LIABLE FOR ANY INDIRECT, INCIDENTAL,
+    SPECIAL, CONSEQUENTIAL, PUNITIVE, OR EXEMPLARY DAMAGES, INCLUDING BUT NOT
+    LIMITED TO DAMAGES FOR LOSS OF PROFITS, GOODWILL, USE, DATA, OR OTHER
+    INTANGIBLE LOSSES.
+
+6.2 THE LICENSOR'S TOTAL LIABILITY SHALL NOT EXCEED ZERO DOLLARS ($0.00).
+
+================================================================================
+                          ARTICLE 7: ENFORCEMENT
+================================================================================
+
+7.1 VIOLATIONS
+    Any unauthorized use, copying, modification, or distribution of the
+    Software constitutes a material breach of this Agreement and an
+    infringement of the Licensor's intellectual property rights.
+
+7.2 REMEDIES
+    The Licensor reserves the right to pursue all available legal remedies,
+    including but not limited to:
+    - Injunctive relief
+    - Actual damages
+    - Statutory damages
+    - Attorneys' fees and costs
+    - Criminal prosecution where applicable
+
+7.3 MONITORING
+    The Licensor reserves the right to monitor for unauthorized use of the
+    Software and to take appropriate action against violators.
+
+================================================================================
+                        ARTICLE 8: GENERAL PROVISIONS
+================================================================================
+
+8.1 ENTIRE AGREEMENT
+    This Agreement constitutes the entire agreement between the parties
+    concerning the subject matter hereof.
+
+8.2 SEVERABILITY
+    If any provision of this Agreement is held invalid or unenforceable, the
+    remaining provisions shall remain in full force and effect.
+
+8.3 WAIVER
+    Failure to enforce any provision of this Agreement shall not constitute a
+    waiver of such provision or any other provision.
+
+8.4 GOVERNING LAW
+    This Agreement shall be governed by and construed in accordance with
+    applicable intellectual property and copyright laws.
+
+8.5 AMENDMENTS
+    The Licensor reserves the right to modify this Agreement at any time.
+    Continued access to the Software constitutes acceptance of modified terms.
+
+================================================================================
+                              CONTACT INFORMATION
+================================================================================
+
+For licensing inquiries, permissions, or commercial licensing opportunities,
+please contact the copyright holder directly through the repository.
+
+================================================================================
+                                  SUMMARY
+================================================================================
+
+    ╔══════════════════════════════════════════════════════════════════════╗
+    ║                         QUICK REFERENCE                              ║
+    ╠══════════════════════════════════════════════════════════════════════╣
+    ║  ✅ PERMITTED                    ║  ❌ PROHIBITED                    ║
+    ╠══════════════════════════════════╬═══════════════════════════════════╣
+    ║  • View source code              ║  • Copy any code                  ║
+    ║  • Read for learning             ║  • Use in your projects           ║
+    ║  • Evaluate for hiring           ║  • Modify or adapt                ║
+    ║  • Reference architecture        ║  • Distribute or share            ║
+    ║                                  ║  • Commercial use                 ║
+    ║                                  ║  • Create derivatives             ║
+    ║                                  ║  • Claim ownership                ║
+    ║                                  ║  • Extract algorithms             ║
+    ╚══════════════════════════════════╩═══════════════════════════════════╝
+
+================================================================================
+
+BY ACCESSING THIS REPOSITORY, YOU ACKNOWLEDGE THAT YOU HAVE READ, UNDERSTOOD,
+AND AGREE TO BE BOUND BY THE TERMS OF THIS PROPRIETARY LICENSE AGREEMENT.
+
+UNAUTHORIZED COPYING, DISTRIBUTION, OR USE IS STRICTLY PROHIBITED AND MAY
+RESULT IN SEVERE CIVIL AND CRIMINAL PENALTIES.
+
+© 2025 Quirzy - All Rights Reserved
+Unauthorized reproduction or distribution is prohibited by law.

@@ -3,7 +3,7 @@ class ApiConfig {
   ApiConfig._();
 
   // Backend API
-  static const String baseUrl = 'https://quirzy-be.onrender.com';
+  static const String baseUrl = 'https://quirzybackend.pratapsingh.me';
 
   // Endpoints
   static const String authLogin = '/auth/login';

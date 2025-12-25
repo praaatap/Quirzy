@@ -1,3 +1,15 @@
+// ============================================================================
+// QUIRZY - PROPRIETARY AND CONFIDENTIAL
+// ============================================================================
+// Copyright (c) 2025 Quirzy. All Rights Reserved.
+//
+// This source code is licensed under the Quirzy Proprietary License.
+// See the LICENSE file in the root directory for full terms.
+//
+// UNAUTHORIZED COPYING, MODIFICATION, DISTRIBUTION, OR USE IS STRICTLY
+// PROHIBITED. This code is provided for VIEWING PURPOSES ONLY.
+// ============================================================================
+
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';

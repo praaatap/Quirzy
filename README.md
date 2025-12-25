@@ -8,6 +8,24 @@
   <strong>Transform any content into interactive quizzes and flashcards using AI.</strong>
 </p>
 
+<p align="center">
+  <img src="https://img.shields.io/badge/License-Proprietary-red.svg" alt="License">
+  <img src="https://img.shields.io/badge/Status-Showcase%20Only-orange.svg" alt="Status">
+  <img src="https://img.shields.io/badge/Copying-Prohibited-critical.svg" alt="No Copying">
+</p>
+
+---
+
+> ⚠️ **PROPRIETARY SOFTWARE - READ BEFORE VIEWING**
+>
+> This repository is **PUBLIC FOR SHOWCASE PURPOSES ONLY**. All rights are reserved.
+>
+> ❌ **YOU MAY NOT:** Copy, modify, distribute, or use this code in any project.
+>
+> ✅ **YOU MAY:** View for portfolio evaluation, educational reference, and code review.
+>
+> See [LICENSE](./LICENSE) for full terms. Unauthorized use may result in legal action.
+
 ---
 
 ## 🚀 Features
@@ -87,8 +105,22 @@ flutter run
 
 ## 📄 License
 
-MIT License
+**PROPRIETARY LICENSE - ALL RIGHTS RESERVED**
+
+This software is proprietary and confidential. It is made publicly available for **viewing purposes only** as a portfolio showcase.
+
+| ✅ Permitted | ❌ Prohibited |
+|-------------|--------------|
+| Viewing source code | Copying any code |
+| Portfolio evaluation | Using in your projects |
+| Educational reference | Modifying or distributing |
+| Code review | Commercial use |
+
+See the [LICENSE](./LICENSE) file for complete terms.
+
+**© 2025 Quirzy - Unauthorized reproduction is prohibited by law.**
 
 ---
 
 <p align="center">Made with ❤️ using Flutter</p>
+<p align="center"><em>This project is public for showcase only. All rights reserved.</em></p>
