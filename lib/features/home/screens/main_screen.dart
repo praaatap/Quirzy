@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:google_fonts/google_fonts.dart';
+import 'package:quirzy/core/theme/app_theme.dart'; // Using your helper extension
 import 'package:quirzy/features/flashcards/screens/flashcards_screen.dart';
 import 'package:quirzy/features/history/screens/history_screen.dart';
 import 'package:quirzy/features/home/screens/home_screen.dart';
@@ -22,7 +22,7 @@ class _MainScreenState extends ConsumerState<MainScreen> {
     RepaintBoundary(child: HomeScreen()),
     RepaintBoundary(child: FlashcardsScreen()),
     RepaintBoundary(child: HistoryScreen()),
-    RepaintBoundary(child: ProfileScreen()),
+    RepaintBoundary(child: ProfileSettingsScreen()),
   ];
 
   @override
@@ -37,7 +37,7 @@ class _MainScreenState extends ConsumerState<MainScreen> {
           // IndexedStack - no swipe, just instant tab switching
           IndexedStack(index: selectedIndex, children: _screens),
 
-          // Navbar
+          // Navbar Logic
           if (navbarStyle == 'custom')
             Positioned(
               left: 20,
@@ -75,14 +75,13 @@ class _MainScreenState extends ConsumerState<MainScreen> {
 }
 
 // ==========================================
-// MODERN FLOATING NAVBAR (OPTIMIZED)
+// MODERN FLOATING NAVBAR (THEMED)
 // ==========================================
 
 class _ModernFloatingNavBar extends StatelessWidget {
   final int selectedIndex;
   final Function(int) onItemSelected;
 
-  // Cached constants for performance
   static const _animDuration = Duration(milliseconds: 350);
   static const _containerHeight = 72.0;
   static const _borderRadius = 36.0;
@@ -95,24 +94,23 @@ class _ModernFloatingNavBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
-
+    final theme = context.theme; // Uses your AppTheme helper
+    
     // Pre-compute alignment
     final double alignmentX = -1.0 + (selectedIndex * (2.0 / 3));
 
     return Container(
       height: _containerHeight,
       decoration: BoxDecoration(
-        color: theme.colorScheme.surfaceContainer.withOpacity(0.95),
+        color: theme.cardTheme.color?.withOpacity(0.95) ?? theme.colorScheme.surface,
         borderRadius: BorderRadius.circular(_borderRadius),
         border: Border.all(
-          color: theme.colorScheme.outlineVariant.withOpacity(0.2),
+          color: theme.colorScheme.outline.withOpacity(0.1),
           width: 1,
         ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(isDark ? 0.3 : 0.1),
+            color: theme.shadowColor.withOpacity(0.1),
             blurRadius: 20,
             offset: const Offset(0, 8),
             spreadRadius: -2,
@@ -123,6 +121,7 @@ class _ModernFloatingNavBar extends StatelessWidget {
         padding: const EdgeInsets.all(_padding),
         child: Stack(
           children: [
+            // Floating Indicator
             AnimatedAlign(
               alignment: Alignment(alignmentX, 0),
               duration: _animDuration,
@@ -137,7 +136,7 @@ class _ModernFloatingNavBar extends StatelessWidget {
                       gradient: LinearGradient(
                         colors: [
                           theme.colorScheme.primary,
-                          theme.colorScheme.primary.withOpacity(0.8),
+                          theme.colorScheme.primaryContainer,
                         ],
                         begin: Alignment.topLeft,
                         end: Alignment.bottomRight,
@@ -155,6 +154,7 @@ class _ModernFloatingNavBar extends StatelessWidget {
                 },
               ),
             ),
+            // Icons Row
             Row(
               children: [
                 _NavBarItem(
@@ -164,7 +164,6 @@ class _ModernFloatingNavBar extends StatelessWidget {
                   index: 0,
                   isSelected: selectedIndex == 0,
                   onTap: onItemSelected,
-                  theme: theme,
                 ),
                 _NavBarItem(
                   icon: Icons.style_outlined,
@@ -173,7 +172,6 @@ class _ModernFloatingNavBar extends StatelessWidget {
                   index: 1,
                   isSelected: selectedIndex == 1,
                   onTap: onItemSelected,
-                  theme: theme,
                 ),
                 _NavBarItem(
                   icon: Icons.history_outlined,
@@ -182,16 +180,14 @@ class _ModernFloatingNavBar extends StatelessWidget {
                   index: 2,
                   isSelected: selectedIndex == 2,
                   onTap: onItemSelected,
-                  theme: theme,
                 ),
                 _NavBarItem(
                   icon: Icons.person_outline_rounded,
                   activeIcon: Icons.person_rounded,
-                  label: "Profile",
+                  label: "Account",
                   index: 3,
                   isSelected: selectedIndex == 3,
                   onTap: onItemSelected,
-                  theme: theme,
                 ),
               ],
             ),
@@ -209,10 +205,6 @@ class _NavBarItem extends StatelessWidget {
   final int index;
   final bool isSelected;
   final Function(int) onTap;
-  final ThemeData theme;
-
-  // Cached constant durations
-  static const _animDuration = Duration(milliseconds: 250);
 
   const _NavBarItem({
     required this.icon,
@@ -221,12 +213,13 @@ class _NavBarItem extends StatelessWidget {
     required this.index,
     required this.isSelected,
     required this.onTap,
-    required this.theme,
   });
 
   @override
   Widget build(BuildContext context) {
-    // Cache colors to avoid repeated lookups
+    final theme = context.theme;
+    
+    // Theme-aware colors
     final activeColor = theme.colorScheme.onPrimary;
     final inactiveColor = theme.colorScheme.onSurfaceVariant;
     final color = isSelected ? activeColor : inactiveColor;
@@ -239,7 +232,7 @@ class _NavBarItem extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             AnimatedSwitcher(
-              duration: _animDuration,
+              duration: const Duration(milliseconds: 250),
               transitionBuilder: (child, anim) =>
                   ScaleTransition(scale: anim, child: child),
               child: Icon(
@@ -250,12 +243,13 @@ class _NavBarItem extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 4),
+            // Uses Theme Typography instead of hardcoded Fonts
             Text(
               label,
-              style: GoogleFonts.poppins(
-                fontSize: 10,
+              style: theme.textTheme.labelSmall?.copyWith(
                 fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
                 color: color,
+                fontSize: 10, 
               ),
               maxLines: 1,
             ),
@@ -267,7 +261,7 @@ class _NavBarItem extends StatelessWidget {
 }
 
 // ==========================================
-// MATERIAL 3 NAVBAR
+// MATERIAL 3 NAVBAR (THEMED)
 // ==========================================
 
 class _Material3NavBar extends StatelessWidget {
@@ -281,22 +275,18 @@ class _Material3NavBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
+    final theme = context.theme;
 
     return NavigationBarTheme(
       data: NavigationBarThemeData(
         labelTextStyle: WidgetStateProperty.resolveWith((states) {
-          if (states.contains(WidgetState.selected)) {
-            return GoogleFonts.poppins(
-              fontSize: 11,
-              fontWeight: FontWeight.w700,
-              color: theme.colorScheme.onSurface,
-            );
-          }
-          return GoogleFonts.poppins(
+          final isSelected = states.contains(WidgetState.selected);
+          return theme.textTheme.labelMedium?.copyWith(
             fontSize: 11,
-            fontWeight: FontWeight.w500,
-            color: theme.colorScheme.onSurfaceVariant,
+            fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+            color: isSelected 
+                ? theme.colorScheme.onSurface 
+                : theme.colorScheme.onSurfaceVariant,
           );
         }),
       ),
@@ -305,6 +295,7 @@ class _Material3NavBar extends StatelessWidget {
         onDestinationSelected: onItemSelected,
         backgroundColor: theme.colorScheme.surface,
         elevation: 3,
+        shadowColor: theme.shadowColor,
         indicatorColor: theme.colorScheme.primaryContainer,
         labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
         height: 70,
@@ -327,7 +318,7 @@ class _Material3NavBar extends StatelessWidget {
           NavigationDestination(
             icon: Icon(Icons.person_outline_rounded),
             selectedIcon: Icon(Icons.person_rounded),
-            label: 'Profile',
+            label: 'Account',
           ),
         ],
       ),

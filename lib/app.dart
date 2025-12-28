@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:showcaseview/showcaseview.dart';
+
 import 'package:quirzy/core/theme/app_theme.dart';
 import 'package:quirzy/core/widgets/app/app_widgets.dart';
 import 'package:quirzy/routes/router.dart';
@@ -15,23 +16,38 @@ class QuirzyApp extends ConsumerWidget {
     return MaterialApp.router(
       title: 'Quirzy',
       debugShowCheckedModeBanner: false,
-      theme: buildAppTheme(brightness: Brightness.light),
-      darkTheme: buildAppTheme(brightness: Brightness.dark),
-      themeMode: ThemeMode.system,
+
+      // ===========================================
+      // 🎨 BLUE + GREEN QUIZ THEME
+      // ===========================================
+      theme: AppTheme.light(),
+      darkTheme: AppTheme.dark(),
+      themeMode: ThemeMode.system, // System controlled (Light / Dark)
+
       routerConfig: router,
+
+      // ===========================================
+      // 🛠 GLOBAL BUILDER
+      // ===========================================
       builder: (context, child) {
-        ErrorWidget.builder = (details) =>
-            ProductionErrorWidget(details: details);
+        // Production-safe error widget
+        ErrorWidget.builder =
+            (details) => ProductionErrorWidget(details: details);
 
         return MediaQuery(
           data: MediaQuery.of(context).copyWith(
+            // Prevent text from breaking layouts
             textScaler: TextScaler.linear(
-              MediaQuery.of(context).textScaler.scale(1.0).clamp(0.8, 1.2),
+              MediaQuery.of(context).textScaler.scale(1.0).clamp(0.85, 1.15),
             ),
           ),
           child: Stack(
             children: [
-              if (child != null) ShowCaseWidget(builder: (context) => child),
+              if (child != null)
+                ShowCaseWidget(
+                  builder: (context) => child,
+                ),
+
               const ConnectivityOverlay(),
             ],
           ),

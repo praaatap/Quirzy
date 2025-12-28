@@ -7,7 +7,7 @@
 // See the LICENSE file in the root directory for full terms.
 //
 // UNAUTHORIZED COPYING, MODIFICATION, DISTRIBUTION, OR USE IS STRICTLY
-// PROHIBITED. This code is provided for VIEWING PURPOSES ONLY.
+// -PROHIBITED. This code is provided for VIEWING PURPOSES ONLY.
 // ============================================================================
 
 import 'package:image_picker/image_picker.dart';

@@ -128,7 +128,7 @@ final routerProvider = Provider<GoRouter>((ref) {
       ),
       GoRoute(
         path: AppRoutes.profile,
-        builder: (context, state) => const ProfileScreen(),
+        builder: (context, state) => const ProfileSettingsScreen(),
       ),
     ],
   );

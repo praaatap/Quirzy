@@ -1,8 +1,10 @@
+import 'dart:ui'; // For ImageFilter
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:showcaseview/showcaseview.dart';
 
+// --- YOUR IMPORTS ---
 import 'package:quirzy/features/auth/presentation/providers/auth_provider.dart';
 import 'package:quirzy/providers/tab_index_provider.dart';
 import 'package:quirzy/features/auth/presentation/screens/login_screen.dart';
@@ -20,34 +22,47 @@ class QuiryHome extends ConsumerStatefulWidget {
 }
 
 class _QuiryHomeState extends ConsumerState<QuiryHome>
-    with SingleTickerProviderStateMixin {
-  late final AnimationController _controller;
+    with TickerProviderStateMixin {
+  // Animation Controllers
+  late final AnimationController _fadeController;
   late final Animation<double> _fadeAnimation;
+  late final AnimationController _floatController;
+  late final Animation<double> _floatAnimation;
 
-  // Checkbox State
+  // Local State
   bool _isPrivacyPolicyAccepted = false;
-
-  // Local loading state for Google button
   bool _isGoogleLoading = false;
 
+  // Keys
   final GlobalKey _checkboxKey = GlobalKey();
   final GlobalKey _googleLoginKey = GlobalKey();
 
   @override
   void initState() {
     super.initState();
-    _controller = AnimationController(
-      duration: const Duration(milliseconds: 600),
+    
+    // 1. Entrance Fade
+    _fadeController = AnimationController(
+      duration: const Duration(milliseconds: 800),
       vsync: this,
     );
-
     _fadeAnimation = CurvedAnimation(
-      parent: _controller,
-      curve: Curves.easeOut,
+      parent: _fadeController,
+      curve: Curves.easeOutQuart,
+    );
+    _fadeController.forward();
+
+    // 2. Floating Animation
+    _floatController = AnimationController(
+      duration: const Duration(seconds: 4),
+      vsync: this,
+    )..repeat(reverse: true);
+    
+    _floatAnimation = Tween<double>(begin: 0, end: -12).animate(
+      CurvedAnimation(parent: _floatController, curve: Curves.easeInOut),
     );
 
-    _controller.forward();
-
+    // 3. Showcase Trigger
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!_isPrivacyPolicyAccepted) {
         ShowCaseWidget.of(context).startShowCase([_checkboxKey]);
@@ -57,26 +72,26 @@ class _QuiryHomeState extends ConsumerState<QuiryHome>
 
   @override
   void dispose() {
-    _controller.dispose();
+    _fadeController.dispose();
+    _floatController.dispose();
     super.dispose();
   }
+
+  // --- LOGIC ---
 
   void _showConsentRequiredMessage() {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Row(
           children: [
-            Icon(
-              Icons.warning_rounded,
-              color: Theme.of(context).colorScheme.onError,
-            ),
+            const Icon(Icons.warning_rounded, color: Colors.white),
             const SizedBox(width: 12),
             Expanded(
               child: Text(
                 'Please accept the Privacy Policy to continue',
-                style: GoogleFonts.poppins(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w500,
+                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold
                 ),
               ),
             ),
@@ -85,24 +100,20 @@ class _QuiryHomeState extends ConsumerState<QuiryHome>
         backgroundColor: Theme.of(context).colorScheme.error,
         behavior: SnackBarBehavior.floating,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        duration: const Duration(seconds: 2),
       ),
     );
   }
 
   Future<void> _handleGoogleSignIn() async {
-    // STRICT CHECK
     if (!_isPrivacyPolicyAccepted) {
       _showConsentRequiredMessage();
       return;
     }
-
     if (_isGoogleLoading) return;
     setState(() => _isGoogleLoading = true);
 
     try {
       await ref.read(authProvider.notifier).googleSignIn();
-
       if (!mounted) return;
 
       if (ref.read(authProvider).value != null) {
@@ -111,9 +122,8 @@ class _QuiryHomeState extends ConsumerState<QuiryHome>
         } catch (e) {
           debugPrint('⚠️ Could not send FCM token: $e');
         }
-
         if (!mounted) return;
-        // Navigate to Success Screen
+        
         ref.read(tabIndexProvider.notifier).state = 0;
         Navigator.pushReplacement(
           context,
@@ -134,13 +144,11 @@ class _QuiryHomeState extends ConsumerState<QuiryHome>
       }
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('Google Sign-in failed: $e')));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Google Sign-in failed: $e')),
+      );
     } finally {
-      if (mounted) {
-        setState(() => _isGoogleLoading = false);
-      }
+      if (mounted) setState(() => _isGoogleLoading = false);
     }
   }
 
@@ -152,7 +160,6 @@ class _QuiryHomeState extends ConsumerState<QuiryHome>
     Navigator.of(context).push(_createRoute(const SignInPage()));
   }
 
-  // Register Logic (Strictly checks Policy)
   void _onRegisterPressed() {
     if (!_isPrivacyPolicyAccepted) {
       _showConsentRequiredMessage();
@@ -164,112 +171,181 @@ class _QuiryHomeState extends ConsumerState<QuiryHome>
   Route _createRoute(Widget page) {
     return PageRouteBuilder(
       transitionDuration: const Duration(milliseconds: 300),
-      reverseTransitionDuration: const Duration(milliseconds: 220),
       pageBuilder: (context, animation, secondaryAnimation) => page,
       transitionsBuilder: (context, animation, secondaryAnimation, child) {
-        final fade = CurvedAnimation(parent: animation, curve: Curves.easeOut);
-        final offsetAnim = Tween<Offset>(
-          begin: const Offset(0, 0.03),
-          end: Offset.zero,
-        ).animate(CurvedAnimation(parent: animation, curve: Curves.easeOut));
-        final scaleAnim = Tween<double>(
-          begin: 0.995,
-          end: 1.0,
-        ).animate(CurvedAnimation(parent: animation, curve: Curves.easeOut));
-
-        return FadeTransition(
-          opacity: fade,
-          child: SlideTransition(
-            position: offsetAnim,
-            child: ScaleTransition(scale: scaleAnim, child: child),
-          ),
-        );
+        return FadeTransition(opacity: animation, child: child);
       },
     );
   }
 
+  // --- UI BUILD ---
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
     final size = MediaQuery.of(context).size;
 
-    // Only listen to isLoading, not whole auth state
+    // --- LOADING STATE ---
     final isAuthLoading = ref.watch(authProvider).isLoading;
-    final isProcessing = isAuthLoading || _isGoogleLoading;
+    final isProcessing = isAuthLoading || _isGoogleLoading; 
 
     return Scaffold(
-      backgroundColor: theme.scaffoldBackgroundColor,
       body: Stack(
         children: [
-          // Background Circles (theme-adaptive)
-          RepaintBoundary(
-            child: Builder(
-              builder: (context) {
-                final isDark = theme.brightness == Brightness.dark;
-                return Stack(
-                  children: [
-                    // Top-right circle
-                    Positioned(
-                      top: -100,
-                      right: -80,
-                      child: Container(
-                        width: 350,
-                        height: 350,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          color: isDark
-                              ? const Color(0xFF12292F)
-                              : theme.colorScheme.primary.withOpacity(0.08),
-                        ),
-                      ),
-                    ),
-                    // Bottom-left circle
-                    Positioned(
-                      bottom: 80,
-                      left: -100,
-                      child: Container(
-                        width: 320,
-                        height: 320,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          color: isDark
-                              ? const Color(0xFF0F2328)
-                              : theme.colorScheme.secondary.withOpacity(0.06),
-                        ),
-                      ),
-                    ),
-                  ],
-                );
-              },
+          // 1. DYNAMIC BACKGROUND BLOBS
+          Positioned(
+            top: -100, right: -50,
+            child: _buildBlurBlob(
+              theme.colorScheme.primary.withOpacity(isDark ? 0.15 : 0.1), 
+              400
             ),
           ),
-          // Main content
+          Positioned(
+            bottom: -50, left: -100,
+            child: _buildBlurBlob(
+              theme.colorScheme.secondary.withOpacity(isDark ? 0.15 : 0.1), 
+              500
+            ),
+          ),
+
+          // 2. MAIN CONTENT
           SafeArea(
             child: FadeTransition(
               opacity: _fadeAnimation,
               child: Padding(
-                padding: EdgeInsets.symmetric(horizontal: size.width * 0.08),
-                child: _Body(
-                  size: size,
-                  theme: theme,
-                  isProcessing: isProcessing,
-                  isPrivacyAccepted: _isPrivacyPolicyAccepted,
-                  onPrivacyChanged: (value) {
-                    setState(() {
-                      _isPrivacyPolicyAccepted = value;
-                    });
-                  },
-                  onGoogleSignIn: _handleGoogleSignIn,
-                  onEmailLogin: _onEmailLoginPressed,
-                  onRegister: _onRegisterPressed,
-                  onConsentRequired: _showConsentRequiredMessage,
-                  onPrivacyPolicyTap: () {
-                    Navigator.of(
-                      context,
-                    ).push(_createRoute(const PrivacyPolicyScreen()));
-                  },
-                  checkboxKey: _checkboxKey,
-                  googleLoginKey: _googleLoginKey,
+                padding: const EdgeInsets.symmetric(horizontal: 24.0),
+                child: Column(
+                  children: [
+                    const Spacer(flex: 1),
+                    
+                    // --- HERO IMAGE ---
+                    _buildHeroSection(size, isDark, theme),
+
+                    const Spacer(flex: 1),
+
+                    // --- HEADINGS ---
+                    Column(
+                      children: [
+                        RichText(
+                          textAlign: TextAlign.center,
+                          text: TextSpan(
+                            style: theme.textTheme.displayLarge, // Uses global theme
+                            children: [
+                              const TextSpan(text: "Unlock your potential with "),
+                              TextSpan(
+                                text: "Quizry", 
+                                style: TextStyle(color: theme.colorScheme.primary)
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+                        Text(
+                          "Master any subject with smart, AI-generated quizzes tailored just for you.",
+                          textAlign: TextAlign.center,
+                          style: theme.textTheme.bodyMedium?.copyWith(
+                            height: 1.5,
+                            fontSize: 16,
+                          ),
+                        ),
+                      ],
+                    ),
+
+                    const Spacer(flex: 2),
+
+                    // --- PRIVACY CHECKBOX ---
+                    _buildPrivacyCheckbox(isDark, theme),
+
+                    const SizedBox(height: 24),
+
+                    // --- BUTTONS ---
+                    Column(
+                      children: [
+                        // Google Button
+                        Showcase(
+                          key: _googleLoginKey,
+                          title: 'Login',
+                          description: 'Continue with Google',
+                          child: _AnimatedButton(
+                            onPressed: isProcessing ? null : _handleGoogleSignIn,
+                            backgroundColor: isDark ? theme.colorScheme.surface : Colors.white,
+                            borderColor: theme.colorScheme.outline,
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                if (isProcessing)
+                                  SizedBox(
+                                    height: 20, width: 20,
+                                    child: CircularProgressIndicator(strokeWidth: 2, color: theme.colorScheme.primary)
+                                  )
+                                else ...[
+                                  Image.asset('assets/icon/google_icon.png', height: 22),
+                                  const SizedBox(width: 12),
+                                  Text(
+                                    "Continue with Google",
+                                    style: theme.textTheme.bodyLarge?.copyWith(fontWeight: FontWeight.bold),
+                                  ),
+                                ]
+                              ],
+                            ),
+                          ),
+                        ),
+                        
+                        const SizedBox(height: 16),
+
+                        // Email Button
+                        _AnimatedButton(
+                          onPressed: _onEmailLoginPressed,
+                          backgroundColor: theme.colorScheme.primary,
+                          borderColor: Colors.transparent,
+                          // Uses theme shadow color logic
+                          shadowColor: theme.colorScheme.primary.withOpacity(0.4),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              const Icon(Icons.mail_outline_rounded, color: Colors.white, size: 22),
+                              const SizedBox(width: 12),
+                              Text(
+                                "Sign in with Email",
+                                style: theme.textTheme.bodyLarge?.copyWith(
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.white
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+
+                    const Spacer(flex: 2),
+
+                    // --- FOOTER ---
+                    GestureDetector(
+                      onTap: _onRegisterPressed,
+                      child: Padding(
+                        padding: const EdgeInsets.only(bottom: 16),
+                        child: RichText(
+                          text: TextSpan(
+                            style: theme.textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w600),
+                            children: [
+                              const TextSpan(text: "Don't have an account? "),
+                              TextSpan(
+                                text: "Register",
+                                style: TextStyle(
+                                  color: theme.colorScheme.primary,
+                                  fontWeight: FontWeight.bold,
+                                  decoration: TextDecoration.underline,
+                                  decorationColor: theme.colorScheme.primary,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ),
@@ -278,371 +354,252 @@ class _QuiryHomeState extends ConsumerState<QuiryHome>
       ),
     );
   }
-}
 
-class _Body extends StatelessWidget {
-  final Size size;
-  final ThemeData theme;
-  final bool isProcessing;
-  final bool isPrivacyAccepted;
-  final void Function(bool) onPrivacyChanged;
-  final VoidCallback onGoogleSignIn;
-  final VoidCallback onEmailLogin;
-  final VoidCallback onRegister;
-  final VoidCallback onConsentRequired;
-  final VoidCallback onPrivacyPolicyTap;
-  final GlobalKey checkboxKey;
-  final GlobalKey googleLoginKey;
+  // --- WIDGET BUILDERS ---
 
-  const _Body({
-    required this.size,
-    required this.theme,
-    required this.isProcessing,
-    required this.isPrivacyAccepted,
-    required this.onPrivacyChanged,
-    required this.onGoogleSignIn,
-    required this.onEmailLogin,
-    required this.onRegister,
-    required this.onConsentRequired,
-    required this.onPrivacyPolicyTap,
-    required this.checkboxKey,
-    required this.googleLoginKey,
-  });
+  Widget _buildBlurBlob(Color color, double size) {
+    return Container(
+      width: size, height: size,
+      decoration: BoxDecoration(shape: BoxShape.circle, color: color),
+      child: BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 80, sigmaY: 80),
+        child: const SizedBox(),
+      ),
+    );
+  }
 
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      children: [
-        const Spacer(flex: 2),
-
-        // Logo
-        RepaintBoundary(
-          child: Hero(
-            tag: 'welcome_logo',
-            child: Container(
-              height: size.height * 0.28,
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(24),
-                boxShadow: [
-                  BoxShadow(
-                    color: theme.colorScheme.primary.withOpacity(0.15),
-                    blurRadius: 20,
-                    offset: const Offset(0, 8),
+  Widget _buildHeroSection(Size size, bool isDark, ThemeData theme) {
+    return SizedBox(
+      height: size.height * 0.32, 
+      width: double.infinity,
+      child: Stack(
+        children: [
+          Container(
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(36),
+              border: Border.all(
+                color: Colors.white.withOpacity(isDark ? 0.15 : 0.4), 
+                width: 3
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: isDark ? Colors.white.withOpacity(0.05) : theme.shadowColor.withOpacity(0.1),
+                  blurRadius: 30, offset: const Offset(0, 25),
+                ),
+              ],
+            ),
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(33),
+              child: Stack(
+                fit: StackFit.expand,
+                children: [
+                  Image.asset('assets/welcome.png', fit: BoxFit.cover),
+                  Container(
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: Alignment.bottomCenter, end: Alignment.topCenter,
+                        colors: [
+                            // Adaptive gradient overlay
+                            theme.scaffoldBackgroundColor.withOpacity(isDark ? 0.7 : 0.4), 
+                            Colors.transparent
+                        ],
+                      ),
+                    ),
                   ),
                 ],
               ),
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(24),
-                child: Image.asset(
-                  'assets/welcome.png',
-                  fit: BoxFit.cover,
-                  cacheWidth:
-                      (size.width *
-                              0.84 *
-                              MediaQuery.of(context).devicePixelRatio)
-                          .round(),
+            ),
+          ),
+          AnimatedBuilder(
+            animation: _floatAnimation,
+            builder: (context, child) => Positioned(
+              bottom: 24 + _floatAnimation.value.abs(),
+              left: 20, right: 20,
+              child: child!,
+            ),
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(20),
+              child: BackdropFilter(
+                filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
+                child: Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: theme.cardTheme.color?.withOpacity(0.85),
+                    border: Border.all(
+                      color: isDark ? Colors.white.withOpacity(0.15) : Colors.white.withOpacity(0.6),
+                    ),
+                  ),
+                  child: Row(
+                    children: [
+                      Container(
+                        width: 44, height: 44,
+                        decoration: BoxDecoration(
+                          color: isDark ? const Color(0xFF27272a) : Colors.blue.shade50,
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Icon(Icons.smart_toy_rounded, color: theme.colorScheme.primary, size: 22),
+                      ),
+                      const SizedBox(width: 12),
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            "AI-GEN QUIZZES",
+                            style: theme.textTheme.labelSmall?.copyWith(
+                              fontWeight: FontWeight.w900, 
+                              letterSpacing: 0.5,
+                              color: theme.colorScheme.onSurface
+                            ),
+                          ),
+                          Text(
+                            "Personalized Learning",
+                            style: theme.textTheme.bodyMedium?.copyWith(
+                              fontWeight: FontWeight.w600
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
                 ),
               ),
             ),
           ),
-        ),
-
-        SizedBox(height: size.height * 0.05),
-
-        Text(
-          "Welcome to Quirzy",
-          style: GoogleFonts.poppins(
-            fontSize: 30,
-            fontWeight: FontWeight.bold,
-            color: theme.colorScheme.onBackground,
-            letterSpacing: -0.5,
-          ),
-          textAlign: TextAlign.center,
-        ),
-
-        SizedBox(height: size.height * 0.015),
-
-        Padding(
-          padding: EdgeInsets.symmetric(horizontal: size.width * 0.04),
-          child: Text(
-            "Challenge yourself with AI-generated quizzes and track your progress",
-            textAlign: TextAlign.center,
-            style: GoogleFonts.poppins(
-              fontSize: 15,
-              color: theme.colorScheme.onSurfaceVariant,
-              height: 1.5,
-            ),
-          ),
-        ),
-
-        const Spacer(flex: 2),
-
-        _PrivacyCheckbox(
-          theme: theme,
-          isAccepted: isPrivacyAccepted,
-          onChanged: onPrivacyChanged,
-          onPrivacyPolicyTap: onPrivacyPolicyTap,
-          checkboxKey: checkboxKey,
-        ),
-
-        SizedBox(height: size.height * 0.025),
-
-        _AuthButtons(
-          theme: theme,
-          isProcessing: isProcessing,
-          isPrivacyAccepted: isPrivacyAccepted,
-          onGoogleSignIn: onGoogleSignIn,
-          onEmailLogin: onEmailLogin,
-          onRegister: onRegister,
-          onConsentRequired: onConsentRequired,
-          googleLoginKey: googleLoginKey,
-        ),
-
-        const Spacer(flex: 3),
-      ],
+        ],
+      ),
     );
   }
-}
 
-class _PrivacyCheckbox extends StatelessWidget {
-  final ThemeData theme;
-  final bool isAccepted;
-  final ValueChanged<bool> onChanged;
-  final VoidCallback onPrivacyPolicyTap;
-  final GlobalKey checkboxKey;
-
-  const _PrivacyCheckbox({
-    required this.theme,
-    required this.isAccepted,
-    required this.onChanged,
-    required this.onPrivacyPolicyTap,
-    required this.checkboxKey,
-  });
-
-  @override
-  Widget build(BuildContext context) {
+  Widget _buildPrivacyCheckbox(bool isDark, ThemeData theme) {
     return Showcase(
-      key: checkboxKey,
-      title: 'Accept Privacy Policy',
-      description: 'You must check this box to agree to our Privacy Policy.',
-      targetShapeBorder: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Container(
-        padding: const EdgeInsets.all(12),
-        decoration: BoxDecoration(
-          color: isAccepted
-              ? theme.colorScheme.primaryContainer.withOpacity(0.3)
-              : theme.colorScheme.errorContainer.withOpacity(0.2),
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(
-            color: isAccepted
-                ? theme.colorScheme.primary.withOpacity(0.3)
-                : theme.colorScheme.error.withOpacity(0.3),
-            width: 1.5,
-          ),
-        ),
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Transform.scale(
-              scale: 1.1,
-              child: Checkbox(
-                value: isAccepted,
-                onChanged: (value) => onChanged(value ?? false),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(4),
-                ),
-                activeColor: theme.colorScheme.primary,
-              ),
+      key: _checkboxKey,
+      title: 'Accept Policy',
+      description: 'Required to continue',
+      child: GestureDetector(
+        onTap: () => setState(() => _isPrivacyPolicyAccepted = !_isPrivacyPolicyAccepted),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          decoration: BoxDecoration(
+            color: theme.cardTheme.color?.withOpacity(isDark ? 0.8 : 0.6),
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(
+              color: _isPrivacyPolicyAccepted 
+                  ? theme.colorScheme.primary 
+                  : theme.colorScheme.outline.withOpacity(0.5),
             ),
-            const SizedBox(width: 8),
-            Expanded(
-              child: Padding(
-                padding: const EdgeInsets.only(top: 12),
+          ),
+          child: Row(
+            children: [
+              SizedBox(
+                height: 24, width: 24,
+                child: Checkbox(
+                  value: _isPrivacyPolicyAccepted,
+                  onChanged: (v) => setState(() => _isPrivacyPolicyAccepted = v!),
+                  activeColor: theme.colorScheme.primary,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
+                  side: BorderSide(color: theme.colorScheme.outline, width: 1.5),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
                 child: GestureDetector(
-                  onTap: onPrivacyPolicyTap,
+                  onTap: () => Navigator.of(context).push(_createRoute(const PrivacyPolicyScreen())),
                   child: RichText(
                     text: TextSpan(
-                      style: GoogleFonts.poppins(
-                        fontSize: 13,
-                        color: theme.colorScheme.onSurfaceVariant,
-                        height: 1.4,
-                      ),
+                      style: theme.textTheme.bodyMedium?.copyWith(fontSize: 12, height: 1.4),
                       children: [
-                        const TextSpan(text: 'I have read and agree to the '),
+                        const TextSpan(text: "I agree to the "),
                         TextSpan(
-                          text: 'Privacy Policy',
-                          style: GoogleFonts.poppins(
-                            fontSize: 13,
-                            fontWeight: FontWeight.w600,
-                            color: theme.colorScheme.primary,
-                            decoration: TextDecoration.underline,
-                          ),
+                          text: "Privacy Policy", 
+                          style: TextStyle(fontWeight: FontWeight.bold, color: theme.colorScheme.onSurface)
                         ),
-                        const TextSpan(text: ' and Terms of Service'),
+                        const TextSpan(text: " & "),
+                        TextSpan(
+                          text: "Terms", 
+                          style: TextStyle(fontWeight: FontWeight.bold, color: theme.colorScheme.onSurface)
+                        ),
                       ],
                     ),
                   ),
                 ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
   }
 }
 
-class _AuthButtons extends StatelessWidget {
-  final ThemeData theme;
-  final bool isProcessing;
-  final bool isPrivacyAccepted;
-  final VoidCallback onGoogleSignIn;
-  final VoidCallback onEmailLogin;
-  final VoidCallback onRegister;
-  final VoidCallback onConsentRequired;
-  final GlobalKey googleLoginKey;
+// --- ANIMATED BUTTON COMPONENT ---
 
-  const _AuthButtons({
-    required this.theme,
-    required this.isProcessing,
-    required this.isPrivacyAccepted,
-    required this.onGoogleSignIn,
-    required this.onEmailLogin,
-    required this.onRegister,
-    required this.onConsentRequired,
-    required this.googleLoginKey,
+class _AnimatedButton extends StatefulWidget {
+  final VoidCallback? onPressed;
+  final Widget child;
+  final Color backgroundColor;
+  final Color? borderColor;
+  final Color? shadowColor;
+
+  const _AnimatedButton({
+    required this.onPressed,
+    required this.child,
+    required this.backgroundColor,
+    this.borderColor,
+    this.shadowColor,
   });
 
   @override
+  State<_AnimatedButton> createState() => _AnimatedButtonState();
+}
+
+class _AnimatedButtonState extends State<_AnimatedButton> with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+  late Animation<double> _scaleAnimation;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 100),
+    );
+    _scaleAnimation = Tween<double>(begin: 1.0, end: 0.98).animate(
+      CurvedAnimation(parent: _controller, curve: Curves.easeInOut),
+    );
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
-    return Column(
-      children: [
-        // GOOGLE BUTTON
-        Showcase(
-          key: googleLoginKey,
-          title: 'Quick Login',
-          description: 'Tap here to sign in quickly with Google.',
-          child: SizedBox(
-            width: double.infinity,
-            height: 56,
-            child: ElevatedButton(
-              onPressed: isProcessing
-                  ? null
-                  : (isPrivacyAccepted ? onGoogleSignIn : onConsentRequired),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: isPrivacyAccepted
-                    ? theme.colorScheme.surface
-                    : theme.colorScheme.surfaceContainerHighest.withOpacity(
-                        0.5,
-                      ),
-                foregroundColor: isPrivacyAccepted
-                    ? theme.colorScheme.onSurface
-                    : theme.colorScheme.onSurface.withOpacity(0.4),
-                elevation: 0,
-                side: BorderSide(
-                  color: isPrivacyAccepted
-                      ? theme.colorScheme.outline.withOpacity(0.5)
-                      : Colors.transparent,
-                ),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(16),
-                ),
-              ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  if (isProcessing)
-                    SizedBox(
-                      width: 20,
-                      height: 20,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2,
-                        color: theme.colorScheme.primary,
-                      ),
-                    )
-                  else
-                    Opacity(
-                      opacity: isPrivacyAccepted ? 1.0 : 0.5,
-                      child: Image.asset(
-                        'assets/icon/google_icon.png',
-                        height: 24,
-                        width: 24,
-                      ),
-                    ),
-                  const SizedBox(width: 12),
-                  Text(
-                    isProcessing ? 'Signing in...' : 'Continue with Google',
-                    style: GoogleFonts.poppins(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ),
-
-        const SizedBox(height: 16),
-
-        // EMAIL BUTTON
-        SizedBox(
-          width: double.infinity,
+    return GestureDetector(
+      onTapDown: (_) => _controller.forward(),
+      onTapUp: (_) {
+        _controller.reverse();
+        widget.onPressed?.call();
+      },
+      onTapCancel: () => _controller.reverse(),
+      child: ScaleTransition(
+        scale: _scaleAnimation,
+        child: Container(
           height: 56,
-          child: ElevatedButton(
-            onPressed: isPrivacyAccepted ? onEmailLogin : onConsentRequired,
-            style: ElevatedButton.styleFrom(
-              backgroundColor: isPrivacyAccepted
-                  ? theme.colorScheme.primary
-                  : theme.colorScheme.surfaceContainerHighest,
-              foregroundColor: isPrivacyAccepted
-                  ? theme.colorScheme.onPrimary
-                  : theme.colorScheme.onSurfaceVariant,
-              elevation: isPrivacyAccepted ? 2 : 0,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(16),
-              ),
-            ),
-            child: Text(
-              'Sign in with Email',
-              style: GoogleFonts.poppins(
-                fontSize: 16,
-                fontWeight: FontWeight.w600,
-                letterSpacing: 0.3,
-              ),
-            ),
+          width: double.infinity,
+          decoration: BoxDecoration(
+            color: widget.backgroundColor,
+            borderRadius: BorderRadius.circular(16),
+            border: widget.borderColor != null ? Border.all(color: widget.borderColor!) : null,
+            boxShadow: widget.shadowColor != null
+                ? [BoxShadow(color: widget.shadowColor!, blurRadius: 20, offset: const Offset(0, 10))]
+                : [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10, offset: const Offset(0, 4))],
           ),
+          alignment: Alignment.center,
+          child: widget.child,
         ),
-
-        const SizedBox(height: 24),
-
-        // REGISTER LINK
-        GestureDetector(
-          onTap: isPrivacyAccepted ? onRegister : onConsentRequired,
-          child: Text.rich(
-            TextSpan(
-              text: "Don't have an account? ",
-              style: GoogleFonts.poppins(
-                fontSize: 14,
-                color: theme.colorScheme.onSurfaceVariant,
-              ),
-              children: [
-                TextSpan(
-                  text: 'Register',
-                  style: GoogleFonts.poppins(
-                    fontWeight: FontWeight.bold,
-                    color: isPrivacyAccepted
-                        ? theme.colorScheme.primary
-                        : theme.colorScheme.onSurfaceVariant.withOpacity(0.5),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ],
+      ),
     );
   }
 }

@@ -1,13 +1,17 @@
+import 'dart:ui'; // For ImageFilter
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart'; // For SystemChrome
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
+
+// --- YOUR IMPORTS ---
 import 'package:quirzy/features/auth/presentation/providers/auth_provider.dart';
 import 'package:quirzy/providers/tab_index_provider.dart';
 import 'package:quirzy/features/auth/presentation/screens/login_screen.dart';
 import 'package:quirzy/features/auth/presentation/screens/success_screen.dart';
 import 'package:quirzy/features/home/screens/home_screen.dart';
 import 'package:quirzy/core/services/notification_service.dart';
-import 'package:quirzy/core/widgets/inputs/custom_text_field.dart';
+import 'package:quirzy/core/widgets/inputs/custom_text_field.dart'; // ✅ Using Custom Widget
 
 class SignUpPage extends ConsumerStatefulWidget {
   const SignUpPage({super.key});
@@ -94,12 +98,27 @@ class _SignUpPageState extends ConsumerState<SignUpPage>
     ScaffoldMessenger.of(context).clearSnackBars();
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text(
-          message,
-          style: GoogleFonts.plusJakartaSans(fontSize: 13),
+        content: Row(
+          children: [
+            const Icon(
+              Icons.error_outline_rounded,
+              color: Colors.white,
+              size: 20,
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                message,
+                style: GoogleFonts.plusJakartaSans(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ),
+          ],
         ),
         behavior: SnackBarBehavior.floating,
-        backgroundColor: Theme.of(context).colorScheme.error,
+        backgroundColor: Colors.redAccent,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         duration: const Duration(seconds: 3),
       ),
@@ -164,197 +183,242 @@ class _SignUpPageState extends ConsumerState<SignUpPage>
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
     final size = MediaQuery.of(context).size;
 
-    return Scaffold(
-      backgroundColor: theme.scaffoldBackgroundColor,
-      resizeToAvoidBottomInset: true,
-      extendBodyBehindAppBar: true,
-      appBar: AppBar(
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        leading: IconButton(
-          onPressed: () => Navigator.pop(context),
-          icon: Container(
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              color: theme.colorScheme.surfaceContainerHighest,
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Icon(
-              Icons.arrow_back_ios_new_rounded,
-              color: theme.colorScheme.onSurface,
-              size: 18,
-            ),
-          ),
-        ),
-      ),
-      body: Stack(
-        children: [
-          // Background Circles (theme-adaptive)
-          RepaintBoundary(
-            child: Builder(
-              builder: (context) {
-                final isDark = theme.brightness == Brightness.dark;
-                return Stack(
-                  children: [
-                    // Top-right circle
-                    Positioned(
-                      top: -100,
-                      right: -80,
-                      child: Container(
-                        width: 350,
-                        height: 350,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          color: isDark
-                              ? const Color(0xFF12292F)
-                              : theme.colorScheme.primary.withOpacity(0.08),
-                        ),
-                      ),
-                    ),
-                    // Bottom-left circle
-                    Positioned(
-                      bottom: 80,
-                      left: -100,
-                      child: Container(
-                        width: 320,
-                        height: 320,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          color: isDark
-                              ? const Color(0xFF0F2328)
-                              : theme.colorScheme.secondary.withOpacity(0.06),
-                        ),
-                      ),
-                    ),
-                  ],
-                );
-              },
-            ),
-          ),
-          // Main content
-          SafeArea(
-            child: FadeTransition(
-              opacity: _fadeAnimation,
-              child: SlideTransition(
-                position: _slideAnimation,
-                child: SingleChildScrollView(
-                  physics: const BouncingScrollPhysics(),
-                  padding: EdgeInsets.symmetric(horizontal: size.width * 0.07),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      SizedBox(height: size.height * 0.02),
-                      Text(
-                        "Create Account",
-                        style: GoogleFonts.plusJakartaSans(
-                          fontSize: 32,
-                          fontWeight: FontWeight.w800,
-                          color: theme.colorScheme.onBackground,
-                          height: 1.2,
-                          letterSpacing: -0.5,
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        "Start your learning journey",
-                        style: GoogleFonts.plusJakartaSans(
-                          fontSize: 15,
-                          color: theme.colorScheme.onSurfaceVariant,
-                          height: 1.5,
-                        ),
-                      ),
-                      SizedBox(height: size.height * 0.04),
+    // --- THEME COLORS ---
+    final primaryBlue = const Color(0xFF3B82F6);
+    final bgLight = const Color(0xFFF0F4F8);
+    final bgDark = Colors.black; // PURE BLACK
 
-                      const _ErrorMessageWidget(),
+    final textMain = isDark ? Colors.white : const Color(0xFF0F172A);
+    final textSub = isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B);
 
-                      ReusableTextField(
-                        controller: _usernameController,
-                        label: "Username",
-                        hintText: "Choose username",
-                      ),
-                      const SizedBox(height: 20),
-                      ReusableTextField(
-                        controller: _emailController,
-                        label: "Email",
-                        hintText: "Enter your email",
-                        keyboardType: TextInputType.emailAddress,
-                      ),
-                      const SizedBox(height: 20),
-                      ReusableTextField(
-                        controller: _passwordController,
-                        label: "Password",
-                        hintText: "Create password (min. 6 chars)",
-                        obscureText: !_isPasswordVisible,
-                        suffixIcon: IconButton(
-                          onPressed: () {
-                            setState(() {
-                              _isPasswordVisible = !_isPasswordVisible;
-                            });
-                          },
-                          icon: Icon(
-                            _isPasswordVisible
-                                ? Icons.visibility_rounded
-                                : Icons.visibility_off_rounded,
-                            color: theme.colorScheme.onSurfaceVariant,
+    return AnnotatedRegion<SystemUiOverlayStyle>(
+      value: isDark ? SystemUiOverlayStyle.light : SystemUiOverlayStyle.dark,
+      child: Scaffold(
+        backgroundColor: isDark ? bgDark : bgLight,
+        body: Stack(
+          children: [
+            // 1. Mesh Background Blobs (Same as other screens)
+            Positioned(
+              top: -100,
+              right: -50,
+              child: _buildBlurBlob(
+                primaryBlue.withOpacity(isDark ? 0.12 : 0.15),
+                400,
+              ),
+            ),
+            Positioned(
+              bottom: -50,
+              left: -100,
+              child: _buildBlurBlob(
+                isDark
+                    ? const Color(0xFF6366F1).withOpacity(0.12)
+                    : const Color(0xFF818CF8).withOpacity(0.15),
+                500,
+              ),
+            ),
+
+            // 2. Main Content
+            SafeArea(
+              child: FadeTransition(
+                opacity: _fadeAnimation,
+                child: SlideTransition(
+                  position: _slideAnimation,
+                  child: SingleChildScrollView(
+                    physics: const BouncingScrollPhysics(),
+                    padding: const EdgeInsets.symmetric(horizontal: 24.0),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const SizedBox(height: 16),
+
+                        // --- Back Button ---
+                        GestureDetector(
+                          onTap: () => Navigator.pop(context),
+                          child: Container(
+                            padding: const EdgeInsets.all(12),
+                            decoration: BoxDecoration(
+                              color: isDark
+                                  ? const Color(0xFF18181b)
+                                  : Colors.white,
+                              borderRadius: BorderRadius.circular(14),
+                              border: Border.all(
+                                color: isDark
+                                    ? Colors.white.withOpacity(0.1)
+                                    : Colors.grey.withOpacity(0.2),
+                              ),
+                            ),
+                            child: Icon(
+                              Icons.arrow_back_rounded,
+                              size: 20,
+                              color: textMain,
+                            ),
                           ),
                         ),
-                      ),
 
-                      SizedBox(height: size.height * 0.04),
+                        SizedBox(height: size.height * 0.04),
 
-                      _SignUpButtonWidget(
-                        signUpCallback: _signUp,
-                        isProcessing: _isProcessing,
-                      ),
+                        // --- Headings ---
+                        Text(
+                          "Create Account",
+                          style: GoogleFonts.plusJakartaSans(
+                            fontSize: 32,
+                            fontWeight: FontWeight.w800,
+                            color: textMain,
+                            height: 1.1,
+                            letterSpacing: -0.5,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          "Start your learning journey today",
+                          style: GoogleFonts.plusJakartaSans(
+                            fontSize: 16,
+                            color: textSub,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
 
-                      SizedBox(height: size.height * 0.04),
+                        SizedBox(height: size.height * 0.05),
 
-                      Center(
-                        child: GestureDetector(
-                          onTap: () {
-                            Navigator.pushReplacement(
-                              context,
-                              _createRoute(const SignInPage()),
-                            );
-                          },
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(
-                              vertical: 8,
-                              horizontal: 16,
+                        // --- Error Message ---
+                        const _ErrorMessageWidget(),
+
+                        // --- Input Fields using ReusableTextField ---
+                        ReusableTextField(
+                          controller: _usernameController,
+                          label: "Username",
+                          hintText: "Choose a username",
+                          prefixIcon: Icon(
+                            Icons.person_outline_rounded,
+                            color: textSub,
+                            size: 20,
+                          ),
+                          borderSideColor: isDark
+                              ? Colors.white.withOpacity(0.1)
+                              : Colors.grey.withOpacity(0.2),
+                        ),
+
+                        const SizedBox(height: 16),
+
+                        ReusableTextField(
+                          controller: _emailController,
+                          label: "Email",
+                          hintText: "Enter your email",
+                          keyboardType: TextInputType.emailAddress,
+                          prefixIcon: Icon(
+                            Icons.mail_outline_rounded,
+                            color: textSub,
+                            size: 20,
+                          ),
+                          borderSideColor: isDark
+                              ? Colors.white.withOpacity(0.1)
+                              : Colors.grey.withOpacity(0.2),
+                        ),
+
+                        const SizedBox(height: 16),
+
+                        ReusableTextField(
+                          controller: _passwordController,
+                          label: "Password",
+                          hintText: "Create a password (min. 6 chars)",
+                          obscureText: !_isPasswordVisible,
+                          prefixIcon: Icon(
+                            Icons.lock_outline_rounded,
+                            color: textSub,
+                            size: 20,
+                          ),
+                          borderSideColor: isDark
+                              ? Colors.white.withOpacity(0.1)
+                              : Colors.grey.withOpacity(0.2),
+                          suffixIcon: IconButton(
+                            onPressed: () => setState(
+                              () => _isPasswordVisible = !_isPasswordVisible,
                             ),
-                            color: Colors.transparent,
-                            child: Text.rich(
-                              TextSpan(
-                                text: "Already have an account? ",
-                                style: GoogleFonts.plusJakartaSans(
-                                  fontSize: 14,
-                                  color: theme.colorScheme.onSurfaceVariant,
-                                ),
-                                children: [
-                                  TextSpan(
-                                    text: 'Sign In',
-                                    style: TextStyle(
-                                      fontWeight: FontWeight.bold,
-                                      color: theme.colorScheme.primary,
-                                    ),
+                            icon: Icon(
+                              _isPasswordVisible
+                                  ? Icons.visibility_rounded
+                                  : Icons.visibility_off_rounded,
+                              color: textSub,
+                              size: 20,
+                            ),
+                          ),
+                        ),
+
+                        SizedBox(height: size.height * 0.05),
+
+                        // --- Sign Up Button ---
+                        _AnimatedButton(
+                          onPressed: _signUp,
+                          isProcessing: _isProcessing,
+                          primaryColor: primaryBlue,
+                        ),
+
+                        SizedBox(height: size.height * 0.04),
+
+                        // --- Footer ---
+                        Center(
+                          child: GestureDetector(
+                            onTap: () {
+                              Navigator.pushReplacement(
+                                context,
+                                _createRoute(const SignInPage()),
+                              );
+                            },
+                            child: Container(
+                              padding: const EdgeInsets.all(8),
+                              color: Colors.transparent,
+                              child: RichText(
+                                text: TextSpan(
+                                  style: GoogleFonts.plusJakartaSans(
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w600,
+                                    color: textSub,
                                   ),
-                                ],
+                                  children: [
+                                    const TextSpan(
+                                      text: "Already have an account? ",
+                                    ),
+                                    TextSpan(
+                                      text: 'Sign In',
+                                      style: TextStyle(
+                                        color: primaryBlue,
+                                        fontWeight: FontWeight.bold,
+                                        decoration: TextDecoration.underline,
+                                        decorationColor: primaryBlue,
+                                      ),
+                                    ),
+                                  ],
+                                ),
                               ),
                             ),
                           ),
                         ),
-                      ),
 
-                      SizedBox(height: size.height * 0.02),
-                    ],
+                        const SizedBox(height: 24),
+                      ],
+                    ),
                   ),
                 ),
               ),
             ),
-          ),
-        ],
+          ],
+        ),
+      ),
+    );
+  }
+
+  // Background Blobs Helper
+  Widget _buildBlurBlob(Color color, double size) {
+    return Container(
+      width: size,
+      height: size,
+      decoration: BoxDecoration(shape: BoxShape.circle, color: color),
+      child: BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 80, sigmaY: 80),
+        child: const SizedBox(),
       ),
     );
   }
@@ -369,7 +433,6 @@ class _ErrorMessageWidget extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final authState = ref.watch(authProvider);
     final error = authState.error?.toString();
-    final theme = Theme.of(context);
 
     if (error != null && error.isNotEmpty) {
       return Padding(
@@ -377,15 +440,15 @@ class _ErrorMessageWidget extends ConsumerWidget {
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
           decoration: BoxDecoration(
-            color: theme.colorScheme.errorContainer.withOpacity(0.5),
+            color: Colors.redAccent.withOpacity(0.1),
             borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: theme.colorScheme.error.withOpacity(0.2)),
+            border: Border.all(color: Colors.redAccent.withOpacity(0.3)),
           ),
           child: Row(
             children: [
-              Icon(
+              const Icon(
                 Icons.error_outline_rounded,
-                color: theme.colorScheme.error,
+                color: Colors.redAccent,
                 size: 20,
               ),
               const SizedBox(width: 12),
@@ -394,8 +457,8 @@ class _ErrorMessageWidget extends ConsumerWidget {
                   error,
                   style: GoogleFonts.plusJakartaSans(
                     fontSize: 13,
-                    color: theme.colorScheme.onErrorContainer,
                     fontWeight: FontWeight.w500,
+                    color: Colors.redAccent,
                   ),
                 ),
               ),
@@ -408,52 +471,91 @@ class _ErrorMessageWidget extends ConsumerWidget {
   }
 }
 
-class _SignUpButtonWidget extends ConsumerWidget {
-  final VoidCallback signUpCallback;
+class _AnimatedButton extends ConsumerStatefulWidget {
+  final VoidCallback onPressed;
   final bool isProcessing;
+  final Color primaryColor;
 
-  const _SignUpButtonWidget({
-    required this.signUpCallback,
+  const _AnimatedButton({
+    required this.onPressed,
     required this.isProcessing,
+    required this.primaryColor,
   });
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final isAuthLoading = ref.watch(authProvider).isLoading;
-    final theme = Theme.of(context);
-    final isLoading = isAuthLoading || isProcessing;
+  ConsumerState<_AnimatedButton> createState() => _AnimatedButtonState();
+}
 
-    return SizedBox(
-      width: double.infinity,
-      height: 58,
-      child: ElevatedButton(
-        onPressed: isLoading ? null : signUpCallback,
-        style: ElevatedButton.styleFrom(
-          backgroundColor: theme.colorScheme.primary,
-          foregroundColor: theme.colorScheme.onPrimary,
-          elevation: 0,
-          disabledBackgroundColor: theme.colorScheme.primary.withOpacity(0.7),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(18),
-          ),
-        ),
-        child: isLoading
-            ? SizedBox(
-                width: 24,
-                height: 24,
-                child: CircularProgressIndicator(
-                  color: theme.colorScheme.onPrimary,
-                  strokeWidth: 2.5,
-                ),
-              )
-            : Text(
-                "Create Account",
-                style: GoogleFonts.plusJakartaSans(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w700,
-                  letterSpacing: 0.5,
-                ),
+class _AnimatedButtonState extends ConsumerState<_AnimatedButton>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+  late Animation<double> _scaleAnimation;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 100),
+    );
+    _scaleAnimation = Tween<double>(
+      begin: 1.0,
+      end: 0.98,
+    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeInOut));
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final isLoading = ref.watch(authProvider).isLoading || widget.isProcessing;
+
+    return GestureDetector(
+      onTapDown: (_) => _controller.forward(),
+      onTapUp: (_) {
+        _controller.reverse();
+        if (!isLoading) widget.onPressed();
+      },
+      onTapCancel: () => _controller.reverse(),
+      child: ScaleTransition(
+        scale: _scaleAnimation,
+        child: Container(
+          height: 56,
+          width: double.infinity,
+          decoration: BoxDecoration(
+            color: widget.primaryColor,
+            borderRadius: BorderRadius.circular(16),
+            boxShadow: [
+              BoxShadow(
+                color: widget.primaryColor.withOpacity(0.4),
+                blurRadius: 20,
+                offset: const Offset(0, 10),
               ),
+            ],
+          ),
+          alignment: Alignment.center,
+          child: isLoading
+              ? const SizedBox(
+                  width: 24,
+                  height: 24,
+                  child: CircularProgressIndicator(
+                    color: Colors.white,
+                    strokeWidth: 2.5,
+                  ),
+                )
+              : Text(
+                  "Create Account",
+                  style: GoogleFonts.plusJakartaSans(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white,
+                  ),
+                ),
+        ),
       ),
     );
   }
