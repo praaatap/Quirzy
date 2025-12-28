@@ -4,7 +4,7 @@ import 'package:flutter/scheduler.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'dart:async';
 
-import 'package:quirzy/features/quiz/screens/quiz_completed_screen.dart';
+import 'package:quirzy/features/quiz/screens/quiz_complete_screen.dart';
 
 class QuizQuestionScreen extends ConsumerStatefulWidget {
   final String quizTitle;

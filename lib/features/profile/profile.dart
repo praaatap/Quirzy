@@ -1,5 +1,5 @@
 /// Profile Feature exports
-library profile;
+library;
 
-export 'screens/profile_screen.dart';
+export 'presentation/screens/profile_screen.dart';
 export 'services/profile_service.dart';

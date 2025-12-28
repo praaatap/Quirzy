@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:quirzy/service/user_data_service.dart';
+import 'package:quirzy/features/settings/services/user_data_service.dart';
 
 // ==========================================
 // DATA DOWNLOAD HANDLER

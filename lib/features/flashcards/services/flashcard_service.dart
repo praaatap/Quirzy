@@ -2,7 +2,7 @@ import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:http/http.dart' as http;
-import 'package:quirzy/utils/constant.dart';
+import 'package:quirzy/core/constants/constant.dart';
 import 'package:quirzy/features/flashcards/services/flashcard_cache_service.dart';
 
 class FlashcardService {

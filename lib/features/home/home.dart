@@ -1,5 +1,4 @@
 /// Home Feature exports
-library home;
+library;
 
-export 'screens/main_screen.dart';
 export 'screens/home_screen.dart';

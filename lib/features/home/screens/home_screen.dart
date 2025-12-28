@@ -2,10 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:quirzy/features/quiz/services/quiz_service.dart';
-import 'package:quirzy/service/ad_service.dart';
 import 'package:quirzy/features/quiz/screens/start_quiz_screen.dart';
-import 'package:quirzy/core/platform/platform_adaptive.dart';
+import 'package:quirzy/features/quiz/services/quiz_service.dart';
+import 'package:quirzy/core/services/ad_service.dart';
+import 'package:quirzy/core/widgets/platform/platform_adaptive.dart';
 
 // ==========================================
 // PREMIUM HOME SCREEN

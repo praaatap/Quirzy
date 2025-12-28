@@ -1,5 +1,3 @@
-import 'package:flutter/cupertino.dart';
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -7,8 +5,8 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:quirzy/features/flashcards/services/flashcard_service.dart';
 import 'package:quirzy/features/flashcards/services/flashcard_cache_service.dart';
 import 'package:quirzy/features/flashcards/screens/flashcard_study_screen.dart';
-import 'package:quirzy/shared/widgets/loading/shimmer_loading.dart';
-import 'package:quirzy/core/platform/platform_adaptive.dart';
+import 'package:quirzy/core/widgets/loading/shimmer_loading.dart';
+import 'package:quirzy/core/widgets/platform/platform_adaptive.dart';
 import 'package:timeago/timeago.dart' as timeago;
 
 class FlashcardsScreen extends ConsumerStatefulWidget {
@@ -121,7 +119,6 @@ class _FlashcardsScreenState extends ConsumerState<FlashcardsScreen>
       ).then((_) => _loadFlashcardSets());
 
       _topicController.clear();
-      _showSnackBar('✨ Flashcards created!');
     } catch (e) {
       if (!mounted) return;
       setState(() => _isGenerating = false);
@@ -183,6 +180,7 @@ class _FlashcardsScreenState extends ConsumerState<FlashcardsScreen>
       if (!mounted) return;
       Navigator.pop(context); // Dismiss loading
 
+      // Navigate to study screen
       Navigator.push(
         context,
         MaterialPageRoute(

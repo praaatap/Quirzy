@@ -2,7 +2,7 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:quirzy/features/quiz/services/quiz_service.dart';
-import 'package:quirzy/core/storage/hive_cache_service.dart';
+import 'package:quirzy/core/services/storage/hive_cache_service.dart';
 
 /// ===========================================
 /// HIGH-PERFORMANCE QUIZ HISTORY STATE

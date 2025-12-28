@@ -5,8 +5,8 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:quirzy/providers/tab_index_provider.dart';
 import 'package:quirzy/providers/quiz_history_provider.dart';
 import 'package:quirzy/features/history/screens/quiz_stats_screen.dart';
-import 'package:quirzy/shared/widgets/loading/shimmer_loading.dart';
-import 'package:quirzy/core/platform/platform_adaptive.dart';
+import 'package:quirzy/core/widgets/loading/shimmer_loading.dart';
+import 'package:quirzy/core/widgets/platform/platform_adaptive.dart';
 import 'package:timeago/timeago.dart' as timeago;
 
 // ==========================================

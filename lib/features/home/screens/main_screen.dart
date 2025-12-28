@@ -5,7 +5,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:quirzy/features/flashcards/screens/flashcards_screen.dart';
 import 'package:quirzy/features/history/screens/history_screen.dart';
 import 'package:quirzy/features/home/screens/home_screen.dart';
-import 'package:quirzy/features/profile/screens/profile_screen.dart';
+import 'package:quirzy/features/profile/presentation/screens/profile_screen.dart';
 import 'package:quirzy/features/settings/providers/settings_provider.dart';
 import 'package:quirzy/providers/tab_index_provider.dart';
 
