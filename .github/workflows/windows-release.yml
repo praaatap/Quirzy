@@ -2,9 +2,9 @@ name: Windows Release Build
 
 on:
   push:
-    tags:
-      - 'v*' # Triggers on version tags like v1.0.0
-  workflow_dispatch: # Manual trigger
+    branches:
+      - main
+
 
 jobs:
   build:
@@ -41,11 +41,12 @@ jobs:
           files: build/windows/x64/runner/Release/quirzy-windows-x64.tar.gz
           draft: false
           prerelease: false
+          generate_release_notes: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Upload Build Artifacts
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
-          name: windows-release
+          name: windows-release-${{ github.sha }}
           path: build/windows/x64/runner/Release/
