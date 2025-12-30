@@ -1,52 +1,53 @@
-name: Windows Release Build
+name: Android Release Build
 
 on:
   push:
     branches:
       - main
-
+    
 
 jobs:
   build:
-    runs-on: windows-latest
-    
+    runs-on: ubuntu-latest
+
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
 
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
         with:
-          flutter-version: '3.32.7' # Or 'stable'
-          channel: 'stable'
+          flutter-version: '3.32.7'
+          channel: stable
 
-      - name: Enable Windows Desktop
-        run: flutter config --enable-windows-desktop
+      - name: Flutter Doctor
+        run: flutter doctor
 
       - name: Get Dependencies
         run: flutter pub get
 
-      - name: Build Windows Release
-        run: flutter build windows --release
+      - name: Build APK (Release)
+        run: flutter build apk --release
 
-      - name: Create Build Archive
-        run: |
-          cd build\windows\x64\runner\Release
-          tar -czf quirzy-windows-x64.tar.gz *
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: android-apk
+          path: build/app/outputs/flutter-apk/app-release.apk
 
       - name: Create GitHub Release
-        uses: softprops/action-gh-release@v1
         if: startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@v1
         with:
-          files: build/windows/x64/runner/Release/quirzy-windows-x64.tar.gz
-          draft: false
-          prerelease: false
+          files: |
+            build/app/outputs/flutter-apk/app-release.apk
+            build/app/outputs/bundle/release/app-release.aab
           generate_release_notes: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Upload Build Artifacts
-        uses: actions/upload-artifact@v4
-        with:
-          name: windows-release-${{ github.sha }}
-          path: build/windows/x64/runner/Release/
