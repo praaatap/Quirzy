@@ -1,16 +1,19 @@
+import 'dart:math';
 import 'dart:ui'; // For ImageFilter
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:showcaseview/showcaseview.dart';
+import 'package:go_router/go_router.dart';
 
 // --- YOUR IMPORTS ---
+import 'package:quirzy/routes/app_routes.dart';
 import 'package:quirzy/features/auth/presentation/providers/auth_provider.dart';
 import 'package:quirzy/providers/tab_index_provider.dart';
 import 'package:quirzy/features/auth/presentation/screens/login_screen.dart';
 import 'package:quirzy/features/auth/presentation/screens/signup_screen.dart';
 import 'package:quirzy/features/auth/presentation/screens/success_screen.dart';
-import 'package:quirzy/features/home/screens/home_screen.dart';
 import 'package:quirzy/features/settings/presentation/screens/privacy_policy_screen.dart';
 import 'package:quirzy/core/services/notification_service.dart';
 
@@ -24,10 +27,18 @@ class QuiryHome extends ConsumerStatefulWidget {
 class _QuiryHomeState extends ConsumerState<QuiryHome>
     with TickerProviderStateMixin {
   // Animation Controllers
-  late final AnimationController _fadeController;
-  late final Animation<double> _fadeAnimation;
+  late final AnimationController _entranceController;
+  late final AnimationController _backgroundController;
   late final AnimationController _floatController;
   late final Animation<double> _floatAnimation;
+
+  // Staggered Animations
+  late final Animation<double> _fadeHero;
+  late final Animation<Offset> _slideHero;
+  late final Animation<double> _fadeText;
+  late final Animation<Offset> _slideText;
+  late final Animation<double> _fadeButtons;
+  late final Animation<Offset> _slideButtons;
 
   // Local State
   bool _isPrivacyPolicyAccepted = false;
@@ -37,32 +48,75 @@ class _QuiryHomeState extends ConsumerState<QuiryHome>
   final GlobalKey _checkboxKey = GlobalKey();
   final GlobalKey _googleLoginKey = GlobalKey();
 
+  // Colors
+  static const primaryColor = Color(0xFF5B13EC);
+  static const primaryLight = Color(0xFFEFE9FD);
+
   @override
   void initState() {
     super.initState();
-    
-    // 1. Entrance Fade
-    _fadeController = AnimationController(
-      duration: const Duration(milliseconds: 800),
+
+    // 1. Entrance Controller (Staggered)
+    _entranceController = AnimationController(
+      duration: const Duration(milliseconds: 1200),
       vsync: this,
     );
-    _fadeAnimation = CurvedAnimation(
-      parent: _fadeController,
-      curve: Curves.easeOutQuart,
-    );
-    _fadeController.forward();
 
-    // 2. Floating Animation
-    _floatController = AnimationController(
-      duration: const Duration(seconds: 4),
+    _fadeHero = CurvedAnimation(
+      parent: _entranceController,
+      curve: const Interval(0.0, 0.6, curve: Curves.easeOut),
+    );
+    _slideHero = Tween<Offset>(begin: const Offset(0, 0.1), end: Offset.zero)
+        .animate(
+          CurvedAnimation(
+            parent: _entranceController,
+            curve: const Interval(0.0, 0.6, curve: Curves.easeOutCubic),
+          ),
+        );
+
+    _fadeText = CurvedAnimation(
+      parent: _entranceController,
+      curve: const Interval(0.3, 0.8, curve: Curves.easeOut),
+    );
+    _slideText = Tween<Offset>(begin: const Offset(0, 0.2), end: Offset.zero)
+        .animate(
+          CurvedAnimation(
+            parent: _entranceController,
+            curve: const Interval(0.3, 0.8, curve: Curves.easeOutCubic),
+          ),
+        );
+
+    _fadeButtons = CurvedAnimation(
+      parent: _entranceController,
+      curve: const Interval(0.6, 1.0, curve: Curves.easeOut),
+    );
+    _slideButtons = Tween<Offset>(begin: const Offset(0, 0.3), end: Offset.zero)
+        .animate(
+          CurvedAnimation(
+            parent: _entranceController,
+            curve: const Interval(0.6, 1.0, curve: Curves.easeOutCubic),
+          ),
+        );
+
+    _entranceController.forward();
+
+    // 2. Background Animation
+    _backgroundController = AnimationController(
+      duration: const Duration(seconds: 10),
       vsync: this,
     )..repeat(reverse: true);
-    
-    _floatAnimation = Tween<double>(begin: 0, end: -12).animate(
-      CurvedAnimation(parent: _floatController, curve: Curves.easeInOut),
+
+    // 3. Floating Animation
+    _floatController = AnimationController(
+      duration: const Duration(seconds: 5),
+      vsync: this,
+    )..repeat(reverse: true);
+
+    _floatAnimation = Tween<double>(begin: -10, end: 10).animate(
+      CurvedAnimation(parent: _floatController, curve: Curves.easeInOutSine),
     );
 
-    // 3. Showcase Trigger
+    // 4. Showcase Trigger
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!_isPrivacyPolicyAccepted) {
         ShowCaseWidget.of(context).startShowCase([_checkboxKey]);
@@ -72,7 +126,8 @@ class _QuiryHomeState extends ConsumerState<QuiryHome>
 
   @override
   void dispose() {
-    _fadeController.dispose();
+    _entranceController.dispose();
+    _backgroundController.dispose();
     _floatController.dispose();
     super.dispose();
   }
@@ -80,6 +135,7 @@ class _QuiryHomeState extends ConsumerState<QuiryHome>
   // --- LOGIC ---
 
   void _showConsentRequiredMessage() {
+    HapticFeedback.lightImpact();
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Row(
@@ -89,17 +145,18 @@ class _QuiryHomeState extends ConsumerState<QuiryHome>
             Expanded(
               child: Text(
                 'Please accept the Privacy Policy to continue',
-                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                style: GoogleFonts.plusJakartaSans(
                   color: Colors.white,
-                  fontWeight: FontWeight.bold
+                  fontWeight: FontWeight.bold,
                 ),
               ),
             ),
           ],
         ),
-        backgroundColor: Theme.of(context).colorScheme.error,
+        backgroundColor: const Color(0xFFEF4444),
         behavior: SnackBarBehavior.floating,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        margin: const EdgeInsets.all(16),
       ),
     );
   }
@@ -110,31 +167,31 @@ class _QuiryHomeState extends ConsumerState<QuiryHome>
       return;
     }
     if (_isGoogleLoading) return;
+
     setState(() => _isGoogleLoading = true);
+    HapticFeedback.mediumImpact();
 
     try {
       await ref.read(authProvider.notifier).googleSignIn();
       if (!mounted) return;
 
       if (ref.read(authProvider).value != null) {
+        // Try getting FCM token
         try {
           await ref.read(notificationProvider.notifier).sendTokenAfterLogin();
         } catch (e) {
           debugPrint('⚠️ Could not send FCM token: $e');
         }
         if (!mounted) return;
-        
+
         ref.read(tabIndexProvider.notifier).state = 0;
+
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(
             builder: (context) => SuccessScreen(
               onComplete: () {
-                Navigator.pushAndRemoveUntil(
-                  context,
-                  MaterialPageRoute(builder: (_) => const HomeScreen()),
-                  (route) => false,
-                );
+                context.go(AppRoutes.home);
               },
               message: 'Signed In!',
               subtitle: 'Welcome back to Quirzy',
@@ -144,9 +201,9 @@ class _QuiryHomeState extends ConsumerState<QuiryHome>
       }
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Google Sign-in failed: $e')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Google Sign-in failed: $e')));
     } finally {
       if (mounted) setState(() => _isGoogleLoading = false);
     }
@@ -157,6 +214,7 @@ class _QuiryHomeState extends ConsumerState<QuiryHome>
       _showConsentRequiredMessage();
       return;
     }
+    HapticFeedback.lightImpact();
     Navigator.of(context).push(_createRoute(const SignInPage()));
   }
 
@@ -165,6 +223,7 @@ class _QuiryHomeState extends ConsumerState<QuiryHome>
       _showConsentRequiredMessage();
       return;
     }
+    HapticFeedback.lightImpact();
     Navigator.of(context).push(_createRoute(const SignUpPage()));
   }
 
@@ -178,230 +237,207 @@ class _QuiryHomeState extends ConsumerState<QuiryHome>
     );
   }
 
-  // --- UI BUILD ---
-
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
     final size = MediaQuery.of(context).size;
 
-    // --- LOADING STATE ---
     final isAuthLoading = ref.watch(authProvider).isLoading;
-    final isProcessing = isAuthLoading || _isGoogleLoading; 
+    final isProcessing = isAuthLoading || _isGoogleLoading;
 
     return Scaffold(
+      backgroundColor: isDark ? const Color(0xFF0F0A18) : Colors.white,
       body: Stack(
         children: [
-          // 1. DYNAMIC BACKGROUND BLOBS
-          Positioned(
-            top: -100, right: -50,
-            child: _buildBlurBlob(
-              theme.colorScheme.primary.withOpacity(isDark ? 0.15 : 0.1), 
-              400
-            ),
-          ),
-          Positioned(
-            bottom: -50, left: -100,
-            child: _buildBlurBlob(
-              theme.colorScheme.secondary.withOpacity(isDark ? 0.15 : 0.1), 
-              500
-            ),
+          // 1. Animated Radial Background
+          AnimatedBuilder(
+            animation: _backgroundController,
+            builder: (context, child) {
+              return CustomPaint(
+                painter: _BackgroundPainter(
+                  animationValue: _backgroundController.value,
+                  isDark: isDark,
+                  primaryColor: primaryColor,
+                ),
+                size: Size.infinite,
+              );
+            },
           ),
 
-          // 2. MAIN CONTENT
+          // 2. Content
           SafeArea(
-            child: FadeTransition(
-              opacity: _fadeAnimation,
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 24.0),
-                child: Column(
-                  children: [
-                    const Spacer(flex: 1),
-                    
-                    // --- HERO IMAGE ---
-                    _buildHeroSection(size, isDark, theme),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 24.0),
+              child: Column(
+                children: [
+                  const Spacer(flex: 1),
 
-                    const Spacer(flex: 1),
-
-                    // --- HEADINGS ---
-                    Column(
-                      children: [
-                        RichText(
-                          textAlign: TextAlign.center,
-                          text: TextSpan(
-                            style: theme.textTheme.displayLarge, // Uses global theme
-                            children: [
-                              const TextSpan(text: "Unlock your potential with "),
-                              TextSpan(
-                                text: "Quizry", 
-                                style: TextStyle(color: theme.colorScheme.primary)
-                              ),
-                            ],
-                          ),
-                        ),
-                        const SizedBox(height: 16),
-                        Text(
-                          "Master any subject with smart, AI-generated quizzes tailored just for you.",
-                          textAlign: TextAlign.center,
-                          style: theme.textTheme.bodyMedium?.copyWith(
-                            height: 1.5,
-                            fontSize: 16,
-                          ),
-                        ),
-                      ],
+                  // --- HERO SECTION ---
+                  FadeTransition(
+                    opacity: _fadeHero,
+                    child: SlideTransition(
+                      position: _slideHero,
+                      child: _buildHeroSection(size, isDark),
                     ),
+                  ),
 
-                    const Spacer(flex: 2),
+                  const Spacer(flex: 1),
 
-                    // --- PRIVACY CHECKBOX ---
-                    _buildPrivacyCheckbox(isDark, theme),
+                  // --- TEXT SECTION ---
+                  FadeTransition(
+                    opacity: _fadeText,
+                    child: SlideTransition(
+                      position: _slideText,
+                      child: Column(
+                        children: [
+                          Text(
+                            "Unlock your potential\nwith Quirzy",
+                            textAlign: TextAlign.center,
+                            style: GoogleFonts.plusJakartaSans(
+                              fontSize: 32,
+                              fontWeight: FontWeight.bold,
+                              color: isDark
+                                  ? Colors.white
+                                  : const Color(0xFF1E293B),
+                              height: 1.2,
+                              letterSpacing: -0.5,
+                            ),
+                          ),
+                          const SizedBox(height: 16),
+                          Text(
+                            "Master any subject with smart, AI-generated quizzes tailored just for you.",
+                            textAlign: TextAlign.center,
+                            style: GoogleFonts.plusJakartaSans(
+                              fontSize: 16,
+                              color: isDark
+                                  ? const Color(0xFF94A3B8)
+                                  : const Color(0xFF64748B),
+                              height: 1.5,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
 
-                    const SizedBox(height: 24),
+                  const Spacer(flex: 2),
 
-                    // --- BUTTONS ---
-                    Column(
-                      children: [
-                        // Google Button
-                        Showcase(
-                          key: _googleLoginKey,
-                          title: 'Login',
-                          description: 'Continue with Google',
-                          child: _AnimatedButton(
-                            onPressed: isProcessing ? null : _handleGoogleSignIn,
-                            backgroundColor: isDark ? theme.colorScheme.surface : Colors.white,
-                            borderColor: theme.colorScheme.outline,
+                  // --- BOTTOM SECTION ---
+                  FadeTransition(
+                    opacity: _fadeButtons,
+                    child: SlideTransition(
+                      position: _slideButtons,
+                      child: Column(
+                        children: [
+                          _buildPrivacyCheckbox(isDark),
+                          const SizedBox(height: 24),
+
+                          // Google Button
+                          Showcase(
+                            key: _googleLoginKey,
+                            title: 'Login',
+                            description: 'Continue with Google',
+                            child: _AnimatedButton(
+                              onPressed: isProcessing
+                                  ? null
+                                  : _handleGoogleSignIn,
+                              backgroundColor: isDark
+                                  ? const Color(0xFF1E1730)
+                                  : Colors.white,
+                              borderColor: isDark
+                                  ? const Color(0xFF2D2540)
+                                  : const Color(0xFFE2E8F0),
+                              child: isProcessing
+                                  ? SizedBox(
+                                      height: 20,
+                                      width: 20,
+                                      child: CircularProgressIndicator(
+                                        strokeWidth: 2,
+                                        color: primaryColor,
+                                      ),
+                                    )
+                                  : Row(
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.center,
+                                      children: [
+                                        Image.asset(
+                                          'assets/icon/google_icon.png',
+                                          height: 22,
+                                        ),
+                                        const SizedBox(width: 12),
+                                        Text(
+                                          "Continue with Google",
+                                          style: GoogleFonts.plusJakartaSans(
+                                            fontWeight: FontWeight.bold,
+                                            fontSize: 16,
+                                            color: isDark
+                                                ? Colors.white
+                                                : const Color(0xFF1E293B),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                            ),
+                          ),
+
+                          const SizedBox(height: 12),
+
+                          // Email Button
+                          _AnimatedButton(
+                            onPressed: _onEmailLoginPressed,
+                            backgroundColor: primaryColor,
                             child: Row(
                               mainAxisAlignment: MainAxisAlignment.center,
                               children: [
-                                if (isProcessing)
-                                  SizedBox(
-                                    height: 20, width: 20,
-                                    child: CircularProgressIndicator(strokeWidth: 2, color: theme.colorScheme.primary)
-                                  )
-                                else ...[
-                                  Image.asset('assets/icon/google_icon.png', height: 22),
-                                  const SizedBox(width: 12),
-                                  Text(
-                                    "Continue with Google",
-                                    style: theme.textTheme.bodyLarge?.copyWith(fontWeight: FontWeight.bold),
+                                const Icon(
+                                  Icons.mail_outline_rounded,
+                                  color: Colors.white,
+                                  size: 22,
+                                ),
+                                const SizedBox(width: 12),
+                                Text(
+                                  "Sign in with Email",
+                                  style: GoogleFonts.plusJakartaSans(
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 16,
+                                    color: Colors.white,
                                   ),
-                                ]
+                                ),
                               ],
                             ),
                           ),
-                        ),
-                        
-                        const SizedBox(height: 16),
 
-                        // Email Button
-                        _AnimatedButton(
-                          onPressed: _onEmailLoginPressed,
-                          backgroundColor: theme.colorScheme.primary,
-                          borderColor: Colors.transparent,
-                          // Uses theme shadow color logic
-                          shadowColor: theme.colorScheme.primary.withOpacity(0.4),
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              const Icon(Icons.mail_outline_rounded, color: Colors.white, size: 22),
-                              const SizedBox(width: 12),
-                              Text(
-                                "Sign in with Email",
-                                style: theme.textTheme.bodyLarge?.copyWith(
-                                  fontWeight: FontWeight.bold,
-                                  color: Colors.white
+                          const SizedBox(height: 24),
+
+                          // Register Link
+                          GestureDetector(
+                            onTap: _onRegisterPressed,
+                            child: RichText(
+                              text: TextSpan(
+                                style: GoogleFonts.plusJakartaSans(
+                                  color: isDark
+                                      ? const Color(0xFF94A3B8)
+                                      : const Color(0xFF64748B),
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w600,
                                 ),
+                                children: [
+                                  const TextSpan(
+                                    text: "Don't have an account? ",
+                                  ),
+                                  TextSpan(
+                                    text: "Register",
+                                    style: TextStyle(
+                                      color: primaryColor,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                ],
                               ),
-                            ],
+                            ),
                           ),
-                        ),
-                      ],
-                    ),
-
-                    const Spacer(flex: 2),
-
-                    // --- FOOTER ---
-                    GestureDetector(
-                      onTap: _onRegisterPressed,
-                      child: Padding(
-                        padding: const EdgeInsets.only(bottom: 16),
-                        child: RichText(
-                          text: TextSpan(
-                            style: theme.textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w600),
-                            children: [
-                              const TextSpan(text: "Don't have an account? "),
-                              TextSpan(
-                                text: "Register",
-                                style: TextStyle(
-                                  color: theme.colorScheme.primary,
-                                  fontWeight: FontWeight.bold,
-                                  decoration: TextDecoration.underline,
-                                  decorationColor: theme.colorScheme.primary,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  // --- WIDGET BUILDERS ---
-
-  Widget _buildBlurBlob(Color color, double size) {
-    return Container(
-      width: size, height: size,
-      decoration: BoxDecoration(shape: BoxShape.circle, color: color),
-      child: BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: 80, sigmaY: 80),
-        child: const SizedBox(),
-      ),
-    );
-  }
-
-  Widget _buildHeroSection(Size size, bool isDark, ThemeData theme) {
-    return SizedBox(
-      height: size.height * 0.32, 
-      width: double.infinity,
-      child: Stack(
-        children: [
-          Container(
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(36),
-              border: Border.all(
-                color: Colors.white.withOpacity(isDark ? 0.15 : 0.4), 
-                width: 3
-              ),
-              boxShadow: [
-                BoxShadow(
-                  color: isDark ? Colors.white.withOpacity(0.05) : theme.shadowColor.withOpacity(0.1),
-                  blurRadius: 30, offset: const Offset(0, 25),
-                ),
-              ],
-            ),
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(33),
-              child: Stack(
-                fit: StackFit.expand,
-                children: [
-                  Image.asset('assets/welcome.png', fit: BoxFit.cover),
-                  Container(
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        begin: Alignment.bottomCenter, end: Alignment.topCenter,
-                        colors: [
-                            // Adaptive gradient overlay
-                            theme.scaffoldBackgroundColor.withOpacity(isDark ? 0.7 : 0.4), 
-                            Colors.transparent
+                          const SizedBox(height: 16),
                         ],
                       ),
                     ),
@@ -410,58 +446,146 @@ class _QuiryHomeState extends ConsumerState<QuiryHome>
               ),
             ),
           ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildHeroSection(Size size, bool isDark) {
+    return SizedBox(
+      height: size.height * 0.35,
+      width: double.infinity,
+      child: Stack(
+        alignment: Alignment.center,
+        children: [
+          // Background Glow
+          Container(
+            width: size.width * 0.7,
+            height: size.width * 0.7,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              gradient: RadialGradient(
+                colors: [primaryColor.withOpacity(0.4), Colors.transparent],
+                stops: const [0.0, 0.7],
+              ),
+            ),
+            child: BackdropFilter(
+              filter: ImageFilter.blur(sigmaX: 50, sigmaY: 50),
+              child: const SizedBox(),
+            ),
+          ),
+
+          // Main Image Container
+          Transform.rotate(
+            angle: -0.05,
+            child: Container(
+              width: size.width * 0.8,
+              height: size.width * 0.8, // Square aspect ratio
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(40),
+                color: isDark ? const Color(0xFF1E1730) : Colors.white,
+                boxShadow: [
+                  BoxShadow(
+                    color: primaryColor.withOpacity(0.25),
+                    blurRadius: 30,
+                    offset: const Offset(0, 15),
+                  ),
+                ],
+                border: Border.all(
+                  color: Colors.white.withOpacity(isDark ? 0.1 : 0.8),
+                  width: 4,
+                ),
+              ),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(36),
+                child: Stack(
+                  fit: StackFit.expand,
+                  children: [
+                    Image.asset('assets/welcome.png', fit: BoxFit.cover),
+                    Container(
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          begin: Alignment.topCenter,
+                          end: Alignment.bottomCenter,
+                          colors: [
+                            Colors.transparent,
+                            (isDark ? const Color(0xFF0F0A18) : Colors.white)
+                                .withOpacity(0.2),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+
+          // Floating Badge
           AnimatedBuilder(
             animation: _floatAnimation,
-            builder: (context, child) => Positioned(
-              bottom: 24 + _floatAnimation.value.abs(),
-              left: 20, right: 20,
-              child: child!,
-            ),
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(20),
-              child: BackdropFilter(
-                filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
-                child: Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: theme.cardTheme.color?.withOpacity(0.85),
-                    border: Border.all(
-                      color: isDark ? Colors.white.withOpacity(0.15) : Colors.white.withOpacity(0.6),
+            builder: (context, child) {
+              return Positioned(
+                bottom: 40 + _floatAnimation.value,
+                right: 30,
+                child: Transform.rotate(angle: 0.1, child: child!),
+              );
+            },
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              decoration: BoxDecoration(
+                color: isDark ? const Color(0xFF2D2540) : Colors.white,
+                borderRadius: BorderRadius.circular(20),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.1),
+                    blurRadius: 20,
+                    offset: const Offset(0, 10),
+                  ),
+                ],
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: primaryLight,
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: const Icon(
+                      Icons.auto_awesome_rounded,
+                      color: primaryColor,
+                      size: 20,
                     ),
                   ),
-                  child: Row(
+                  const SizedBox(width: 12),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Container(
-                        width: 44, height: 44,
-                        decoration: BoxDecoration(
-                          color: isDark ? const Color(0xFF27272a) : Colors.blue.shade50,
-                          borderRadius: BorderRadius.circular(12),
+                      Text(
+                        "AI Gen",
+                        style: GoogleFonts.plusJakartaSans(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 14,
+                          color: isDark
+                              ? Colors.white
+                              : const Color(0xFF1E293B),
                         ),
-                        child: Icon(Icons.smart_toy_rounded, color: theme.colorScheme.primary, size: 22),
                       ),
-                      const SizedBox(width: 12),
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            "AI-GEN QUIZZES",
-                            style: theme.textTheme.labelSmall?.copyWith(
-                              fontWeight: FontWeight.w900, 
-                              letterSpacing: 0.5,
-                              color: theme.colorScheme.onSurface
-                            ),
-                          ),
-                          Text(
-                            "Personalized Learning",
-                            style: theme.textTheme.bodyMedium?.copyWith(
-                              fontWeight: FontWeight.w600
-                            ),
-                          ),
-                        ],
+                      Text(
+                        "Latest Tech",
+                        style: GoogleFonts.plusJakartaSans(
+                          fontWeight: FontWeight.w500,
+                          fontSize: 12,
+                          color: isDark
+                              ? const Color(0xFF94A3B8)
+                              : const Color(0xFF64748B),
+                        ),
                       ),
                     ],
                   ),
-                ),
+                ],
               ),
             ),
           ),
@@ -470,53 +594,92 @@ class _QuiryHomeState extends ConsumerState<QuiryHome>
     );
   }
 
-  Widget _buildPrivacyCheckbox(bool isDark, ThemeData theme) {
+  Widget _buildPrivacyCheckbox(bool isDark) {
     return Showcase(
       key: _checkboxKey,
       title: 'Accept Policy',
       description: 'Required to continue',
       child: GestureDetector(
-        onTap: () => setState(() => _isPrivacyPolicyAccepted = !_isPrivacyPolicyAccepted),
+        onTap: () {
+          HapticFeedback.lightImpact();
+          setState(() => _isPrivacyPolicyAccepted = !_isPrivacyPolicyAccepted);
+        },
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
           decoration: BoxDecoration(
-            color: theme.cardTheme.color?.withOpacity(isDark ? 0.8 : 0.6),
+            color: isDark ? const Color(0xFF1E1730) : const Color(0xFFF8FAFC),
             borderRadius: BorderRadius.circular(16),
             border: Border.all(
-              color: _isPrivacyPolicyAccepted 
-                  ? theme.colorScheme.primary 
-                  : theme.colorScheme.outline.withOpacity(0.5),
+              color: _isPrivacyPolicyAccepted
+                  ? primaryColor
+                  : (isDark
+                        ? const Color(0xFF2D2540)
+                        : const Color(0xFFE2E8F0)),
+              width: 1.5,
             ),
           ),
           child: Row(
             children: [
-              SizedBox(
-                height: 24, width: 24,
-                child: Checkbox(
-                  value: _isPrivacyPolicyAccepted,
-                  onChanged: (v) => setState(() => _isPrivacyPolicyAccepted = v!),
-                  activeColor: theme.colorScheme.primary,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
-                  side: BorderSide(color: theme.colorScheme.outline, width: 1.5),
+              Container(
+                width: 24,
+                height: 24,
+                decoration: BoxDecoration(
+                  color: _isPrivacyPolicyAccepted
+                      ? primaryColor
+                      : Colors.transparent,
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(
+                    color: _isPrivacyPolicyAccepted
+                        ? primaryColor
+                        : (isDark
+                              ? const Color(0xFF475569)
+                              : const Color(0xFFCBD5E1)),
+                    width: 2,
+                  ),
                 ),
+                child: _isPrivacyPolicyAccepted
+                    ? const Icon(
+                        Icons.check_rounded,
+                        color: Colors.white,
+                        size: 16,
+                      )
+                    : null,
               ),
               const SizedBox(width: 12),
               Expanded(
                 child: GestureDetector(
-                  onTap: () => Navigator.of(context).push(_createRoute(const PrivacyPolicyScreen())),
+                  onTap: () => Navigator.of(
+                    context,
+                  ).push(_createRoute(const PrivacyPolicyScreen())),
                   child: RichText(
                     text: TextSpan(
-                      style: theme.textTheme.bodyMedium?.copyWith(fontSize: 12, height: 1.4),
+                      style: GoogleFonts.plusJakartaSans(
+                        fontSize: 13,
+                        color: isDark
+                            ? const Color(0xFFA78BFA)
+                            : const Color(0xFF64748B),
+                        height: 1.4,
+                      ),
                       children: [
                         const TextSpan(text: "I agree to the "),
                         TextSpan(
-                          text: "Privacy Policy", 
-                          style: TextStyle(fontWeight: FontWeight.bold, color: theme.colorScheme.onSurface)
+                          text: "Privacy Policy",
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            color: isDark
+                                ? Colors.white
+                                : const Color(0xFF1E293B),
+                          ),
                         ),
                         const TextSpan(text: " & "),
                         TextSpan(
-                          text: "Terms", 
-                          style: TextStyle(fontWeight: FontWeight.bold, color: theme.colorScheme.onSurface)
+                          text: "Terms",
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            color: isDark
+                                ? Colors.white
+                                : const Color(0xFF1E293B),
+                          ),
                         ),
                       ],
                     ),
@@ -531,28 +694,25 @@ class _QuiryHomeState extends ConsumerState<QuiryHome>
   }
 }
 
-// --- ANIMATED BUTTON COMPONENT ---
-
 class _AnimatedButton extends StatefulWidget {
   final VoidCallback? onPressed;
   final Widget child;
   final Color backgroundColor;
   final Color? borderColor;
-  final Color? shadowColor;
 
   const _AnimatedButton({
     required this.onPressed,
     required this.child,
     required this.backgroundColor,
     this.borderColor,
-    this.shadowColor,
   });
 
   @override
   State<_AnimatedButton> createState() => _AnimatedButtonState();
 }
 
-class _AnimatedButtonState extends State<_AnimatedButton> with SingleTickerProviderStateMixin {
+class _AnimatedButtonState extends State<_AnimatedButton>
+    with SingleTickerProviderStateMixin {
   late AnimationController _controller;
   late Animation<double> _scaleAnimation;
 
@@ -563,9 +723,10 @@ class _AnimatedButtonState extends State<_AnimatedButton> with SingleTickerProvi
       vsync: this,
       duration: const Duration(milliseconds: 100),
     );
-    _scaleAnimation = Tween<double>(begin: 1.0, end: 0.98).animate(
-      CurvedAnimation(parent: _controller, curve: Curves.easeInOut),
-    );
+    _scaleAnimation = Tween<double>(
+      begin: 1.0,
+      end: 0.98,
+    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeInOut));
   }
 
   @override
@@ -591,15 +752,77 @@ class _AnimatedButtonState extends State<_AnimatedButton> with SingleTickerProvi
           decoration: BoxDecoration(
             color: widget.backgroundColor,
             borderRadius: BorderRadius.circular(16),
-            border: widget.borderColor != null ? Border.all(color: widget.borderColor!) : null,
-            boxShadow: widget.shadowColor != null
-                ? [BoxShadow(color: widget.shadowColor!, blurRadius: 20, offset: const Offset(0, 10))]
-                : [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10, offset: const Offset(0, 4))],
+            border: widget.borderColor != null
+                ? Border.all(color: widget.borderColor!)
+                : null,
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.05),
+                blurRadius: 10,
+                offset: const Offset(0, 4),
+              ),
+            ],
           ),
           alignment: Alignment.center,
           child: widget.child,
         ),
       ),
     );
+  }
+}
+
+class _BackgroundPainter extends CustomPainter {
+  final double animationValue;
+  final bool isDark;
+  final Color primaryColor;
+
+  _BackgroundPainter({
+    required this.animationValue,
+    required this.isDark,
+    required this.primaryColor,
+  });
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint();
+
+    // Base Blob 1
+    final colors1 = [
+      primaryColor.withOpacity(isDark ? 0.15 : 0.08),
+      Colors.transparent,
+    ];
+    // Move slightly with animation
+    final offset1 = Offset(
+      size.width * 0.8 + (sin(animationValue * 2 * pi) * 20),
+      size.height * 0.1 + (cos(animationValue * 2 * pi) * 20),
+    );
+    paint.shader = RadialGradient(
+      colors: colors1,
+      stops: const [0.0, 1.0],
+    ).createShader(Rect.fromCircle(center: offset1, radius: 250));
+    canvas.drawCircle(offset1, 250, paint);
+
+    // Base Blob 2
+    final colors2 = [
+      (isDark ? const Color(0xFF9333EA) : const Color(0xFFC084FC)).withOpacity(
+        isDark ? 0.15 : 0.08,
+      ),
+      Colors.transparent,
+    ];
+    final offset2 = Offset(
+      size.width * 0.1 + (cos(animationValue * 2 * pi) * 20),
+      size.height * 0.9 + (sin(animationValue * 2 * pi) * 20),
+    );
+    paint.shader = RadialGradient(
+      colors: colors2,
+      stops: const [0.0, 1.0],
+    ).createShader(Rect.fromCircle(center: offset2, radius: 300));
+    canvas.drawCircle(offset2, 300, paint);
+  }
+
+  @override
+  bool shouldRepaint(_BackgroundPainter oldDelegate) {
+    return oldDelegate.animationValue != animationValue ||
+        oldDelegate.isDark != isDark;
   }
 }

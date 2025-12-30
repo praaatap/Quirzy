@@ -1,10 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:quirzy/core/theme/app_theme.dart';
+import 'package:google_fonts/google_fonts.dart';
+
 import 'package:quirzy/features/quiz/screens/start_quiz_screen.dart';
 import 'package:quirzy/features/quiz/services/quiz_service.dart';
-import 'package:quirzy/core/services/ad_service.dart';
+
+// ==========================================
+// REDESIGNED HOME SCREEN
+// Full Dark/Light Theme Support
+// ==========================================
 
 class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key});
@@ -14,531 +19,258 @@ class HomeScreen extends ConsumerStatefulWidget {
 }
 
 class _HomeScreenState extends ConsumerState<HomeScreen>
-    with SingleTickerProviderStateMixin, AutomaticKeepAliveClientMixin {
-  final TextEditingController _quizIdeaController = TextEditingController();
+    with TickerProviderStateMixin, AutomaticKeepAliveClientMixin {
+  final TextEditingController _topicController = TextEditingController();
   final FocusNode _inputFocusNode = FocusNode();
-  final TextEditingController _controller = TextEditingController();
   bool _isGenerating = false;
-  int _remainingFree = 0;
-  
-  // Kept for logic, but we won't strictly select them in the UI anymore to match the new design
-  String? _selectedQuickTopic; 
+  int _remainingFree = 5;
 
-  late AnimationController _animController;
+  late AnimationController _fadeController;
+  late AnimationController _pulseController;
   late Animation<double> _fadeAnim;
-  late Animation<Offset> _slideAnim;
 
   @override
   bool get wantKeepAlive => true;
 
-  // Using your existing data structure, but will render as "Recent/Quick" list
-  static const List<Map<String, dynamic>> _quickTopics = [
-    {'icon': '🔬', 'topic': 'Science', 'colors': [Color(0xFF4CAF50), Color(0xFF81C784)]},
-    {'icon': '📐', 'topic': 'Math', 'colors': [Color(0xFF2196F3), Color(0xFF64B5F6)]},
-    {'icon': '🌍', 'topic': 'Geography', 'colors': [Color(0xFFFF9800), Color(0xFFFFB74D)]},
-    {'icon': '💻', 'topic': 'Tech', 'colors': [Color(0xFF00BCD4), Color(0xFF4DD0E1)]},
-  ];
+  // Static colors
+  static const primaryColor = Color(0xFF5B13EC);
+  static const primaryLight = Color(0xFFEFE9FD);
 
   @override
   void initState() {
     super.initState();
-    _loadAdInfo();
-    _setupAnimations();
+    _initAnimations();
   }
 
-  void _setupAnimations() {
-    _animController = AnimationController(
+  void _initAnimations() {
+    _fadeController = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 800),
+      duration: const Duration(milliseconds: 600),
     );
+    _fadeAnim = CurvedAnimation(parent: _fadeController, curve: Curves.easeOut);
 
-    _fadeAnim = CurvedAnimation(
-      parent: _animController,
-      curve: const Interval(0.0, 0.6, curve: Curves.easeOut),
-    );
+    _pulseController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 2000),
+    )..repeat(reverse: true);
 
-    _slideAnim = Tween<Offset>(begin: const Offset(0, 0.05), end: Offset.zero)
-        .animate(CurvedAnimation(
-          parent: _animController,
-          curve: const Interval(0.2, 1.0, curve: Curves.easeOutCubic),
-        ));
-
-    _animController.forward();
-  }
-
-  Future<void> _loadAdInfo() async {
-    await AdService().initialize();
-    _refreshRemainingCount();
-  }
-
-  void _refreshRemainingCount() {
-    if (!mounted) return;
-    setState(() => _remainingFree = AdService().getRemainingFreeQuizzes());
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _fadeController.forward();
+    });
   }
 
   @override
   void dispose() {
-    _quizIdeaController.dispose();
+    _topicController.dispose();
     _inputFocusNode.dispose();
-    _animController.dispose();
+    _fadeController.dispose();
+    _pulseController.dispose();
     super.dispose();
   }
 
-  // Logic to populate text field from list
-  void _selectQuickTopic(String topic) {
-    HapticFeedback.selectionClick();
-    _quizIdeaController.text = topic;
-    _handleGeneratePress();
-  }
-
-  Future<void> _handleGeneratePress() async {
-    _inputFocusNode.unfocus();
-    HapticFeedback.mediumImpact();
-
-    if (_quizIdeaController.text.trim().isEmpty) {
-      _showSnackBar('Please enter a topic', isError: true);
+  Future<void> _handleGenerate() async {
+    final topic = _topicController.text.trim();
+    if (topic.isEmpty) {
+      HapticFeedback.heavyImpact();
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            'Please enter a topic first',
+            style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w600),
+          ),
+          backgroundColor: primaryColor,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+        ),
+      );
       return;
     }
 
-    if (AdService().isLimitReached()) {
-      _showAdConfirmationDialog();
-    } else {
-      await _generateQuiz();
-    }
-  }
-
-  Future<void> _playAdAndGenerate() async {
-    await AdService().showRewardedAd(
-      onRewardEarned: () async => await _generateQuiz(),
-      onAdFailed: () =>
-          _showSnackBar('Ad failed to load.', isError: true),
-    );
-  }
-
-  Future<void> _generateQuiz() async {
-    if (!mounted) return;
     setState(() => _isGenerating = true);
+    HapticFeedback.mediumImpact();
 
     try {
       final quizService = ref.read(quizServiceProvider);
-      final result = await quizService.generateQuiz(
-        _quizIdeaController.text.trim(),
-        questionCount: 15,
-      );
+      final result = await quizService.generateQuiz(topic);
 
-      await AdService().incrementQuizCount();
-      _refreshRemainingCount();
+      if (mounted) {
+        _topicController.clear();
+        final quizId =
+            result['quizId']?.toString() ?? result['id']?.toString() ?? '';
+        final quizTitle = result['title']?.toString() ?? topic;
+        final questions = List<Map<String, dynamic>>.from(
+          result['questions'] ?? [],
+        );
 
-      if (!mounted) return;
-      setState(() => _isGenerating = false);
-
-      if (result['questions'] == null || result['questions'].isEmpty) {
-        _showErrorDialog('No questions generated. Try a simpler topic.');
-        return;
+        Navigator.push(
+          context,
+          PageRouteBuilder(
+            pageBuilder: (context, animation, secondaryAnimation) =>
+                StartQuizScreen(
+                  quizId: quizId,
+                  quizTitle: quizTitle,
+                  questions: questions,
+                ),
+            transitionsBuilder:
+                (context, animation, secondaryAnimation, child) {
+                  return FadeTransition(
+                    opacity: animation,
+                    child: SlideTransition(
+                      position:
+                          Tween<Offset>(
+                            begin: const Offset(0.02, 0),
+                            end: Offset.zero,
+                          ).animate(
+                            CurvedAnimation(
+                              parent: animation,
+                              curve: Curves.easeOutCubic,
+                            ),
+                          ),
+                      child: child,
+                    ),
+                  );
+                },
+            transitionDuration: const Duration(milliseconds: 300),
+          ),
+        );
       }
-
-      final questions = List<Map<String, dynamic>>.from(result['questions']);
-
-      Navigator.push(
-        context,
-        PageRouteBuilder(
-          pageBuilder: (_, __, ___) => StartQuizScreen(
-            quizId: result['quizId'].toString(),
-            quizTitle: result['title'] ?? _quizIdeaController.text.trim(),
-            questions: questions,
-            difficulty: null,
-          ),
-          transitionsBuilder: (_, a, __, c) => FadeTransition(opacity: a, child: c),
-        ),
-      );
-
-      _quizIdeaController.clear();
     } catch (e) {
-      if (!mounted) return;
-      setState(() => _isGenerating = false);
-      _showErrorDialog('Error generating quiz. Please try again.');
-    }
-  }
-
-  void _showSnackBar(String message, {bool isError = false}) {
-    if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message, style: context.theme.textTheme.bodyMedium?.copyWith(color: Colors.white)),
-        backgroundColor: isError ? context.quizColors.error : context.theme.colorScheme.primary,
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-      ),
-    );
-  }
-
-  void _showErrorDialog(String message) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Oops'),
-        content: Text(message),
-        actions: [TextButton(onPressed: () => Navigator.pop(context), child: const Text('OK'))],
-      ),
-    );
-  }
-
-  void _showAdConfirmationDialog() {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Daily Limit Reached'),
-        content: const Text('Watch a short ad to generate another quiz?'),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancel')),
-          FilledButton(
-            onPressed: () {
-              Navigator.pop(context);
-              _playAdAndGenerate();
-            },
-            child: const Text('Watch Ad'),
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to generate quiz: $e'),
+            backgroundColor: Colors.red,
           ),
-        ],
-      ),
-    );
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isGenerating = false);
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     super.build(context);
-    final theme = context.theme;
-    final quizColors = context.quizColors;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    // Theme-aware colors
+    final bgColor = isDark ? const Color(0xFF161022) : const Color(0xFFF9F8FC);
+    final surfaceColor = isDark ? const Color(0xFF1E1730) : Colors.white;
+    final textMain = isDark ? Colors.white : const Color(0xFF120D1B);
+    final textSub = isDark ? const Color(0xFFA78BFA) : const Color(0xFF664C9A);
 
     return Scaffold(
-      backgroundColor: theme.scaffoldBackgroundColor,
-      body: Stack(
-        children: [
-          // Subtle top gradient (Clean, no blobs)
-          Positioned(
-            top: 0,
-            left: 0,
-            right: 0,
-            height: 400,
-            child: Container(
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
-                  colors: [
-                    theme.colorScheme.primary.withOpacity(0.05),
-                    theme.scaffoldBackgroundColor.withOpacity(0),
-                  ],
+      backgroundColor: bgColor,
+      body: SafeArea(
+        bottom: false,
+        child: FadeTransition(
+          opacity: _fadeAnim,
+          child: CustomScrollView(
+            physics: const BouncingScrollPhysics(),
+            slivers: [
+              SliverToBoxAdapter(
+                child: _buildAppBar(isDark, textMain, textSub),
+              ),
+              SliverToBoxAdapter(
+                child: _buildHeroSection(
+                  isDark,
+                  surfaceColor,
+                  textMain,
+                  textSub,
                 ),
               ),
-            ),
-          ),
-
-          SafeArea(
-            child: FadeTransition(
-              opacity: _fadeAnim,
-              child: SlideTransition(
-                position: _slideAnim,
-                child: CustomScrollView(
-                  physics: const BouncingScrollPhysics(),
-                  slivers: [
-                    SliverPadding(
-                      padding: const EdgeInsets.symmetric(horizontal: 24),
-                      sliver: SliverList(
-                        delegate: SliverChildListDelegate([
-                          const SizedBox(height: 20),
-                          
-                          // 1. Header (Logo + Free Badge)
-                          _buildHeader(theme, quizColors),
-                          
-                          const SizedBox(height: 24),
-
-                          // 2. Greeting Pill
-                          _buildGreetingPill(theme),
-
-                          const SizedBox(height: 24),
-
-                          // 3. Hero Text (Gradient)
-                          _buildHeroText(theme),
-
-                          const SizedBox(height: 32),
-
-                          // 4. Feature Circles (AI, Fast, Smart, Learn)
-                          _buildFeatureRow(theme, quizColors),
-
-                          const SizedBox(height: 32),
-
-                          // 5. Input Card (White box, big input, mic/image icons)
-                          _buildCreationCard(theme, quizColors),
-
-                          const SizedBox(height: 24),
-
-                          // 6. Generate Button
-                          _buildGenerateButton(theme),
-
-                          const SizedBox(height: 32),
-
-                          // 7. Recent Generations (Using _quickTopics as data source)
-                          _buildRecentSection(theme),
-
-                          const SizedBox(height: 120), // Bottom padding
-                        ]),
-                      ),
-                    ),
-                  ],
+              SliverToBoxAdapter(
+                child: _buildQuickActions(isDark, surfaceColor, textSub),
+              ),
+              SliverToBoxAdapter(
+                child: _buildCreateSection(
+                  isDark,
+                  surfaceColor,
+                  textMain,
+                  textSub,
                 ),
               ),
-            ),
+              SliverToBoxAdapter(child: _buildGenerateButton()),
+              SliverToBoxAdapter(
+                child: _buildRecentSection(
+                  isDark,
+                  surfaceColor,
+                  textMain,
+                  textSub,
+                ),
+              ),
+              const SliverToBoxAdapter(child: SizedBox(height: 100)),
+            ],
           ),
-        ],
+        ),
       ),
     );
   }
 
-  // --- WIDGET BUILDERS ---
-
-  Widget _buildHeader(ThemeData theme, QuizColors quizColors) {
-    return Row(
-      children: [
-        // Logo
-        Container(
-          padding: const EdgeInsets.all(10),
-          decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            gradient: LinearGradient(
-              colors: [theme.colorScheme.primary, theme.colorScheme.secondary],
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-            ),
-            boxShadow: [
-              BoxShadow(
-                color: theme.colorScheme.primary.withOpacity(0.3),
-                blurRadius: 10,
-                offset: const Offset(0, 4),
-              ),
-            ],
-          ),
-          child: Icon(Icons.bolt_rounded, color: theme.colorScheme.onPrimary, size: 24),
-        ),
-        const SizedBox(width: 12),
-        Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Quirzy',
-              style: theme.textTheme.titleLarge?.copyWith(
-                fontWeight: FontWeight.w800,
-                height: 1.0,
-              ),
-            ),
-            Text(
-              'AI Quiz Generator',
-              style: theme.textTheme.bodySmall?.copyWith(
-                color: theme.colorScheme.onSurfaceVariant,
-                fontSize: 11,
-              ),
-            ),
-          ],
-        ),
-        const Spacer(),
-        // Free Badge
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-          decoration: BoxDecoration(
-            color: theme.colorScheme.primaryContainer.withOpacity(0.5),
-            borderRadius: BorderRadius.circular(20),
-            border: Border.all(color: theme.colorScheme.primary.withOpacity(0.2)),
-          ),
-          child: Row(
+  Widget _buildAppBar(bool isDark, Color textMain, Color textSub) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(24, 16, 24, 8),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Row(
             children: [
-              Icon(Icons.bolt, size: 14, color: theme.colorScheme.primary),
-              const SizedBox(width: 4),
-              Text(
-                '$_remainingFree free',
-                style: theme.textTheme.labelSmall?.copyWith(
-                  color: theme.colorScheme.primary,
-                  fontWeight: FontWeight.w700,
+              Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: primaryColor,
+                  borderRadius: BorderRadius.circular(14),
+                ),
+                child: const Icon(
+                  Icons.flash_on_rounded,
+                  color: Colors.white,
+                  size: 22,
                 ),
               ),
-            ],
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildGreetingPill(ThemeData theme) {
-    return Align(
-      alignment: Alignment.centerLeft,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-        decoration: BoxDecoration(
-          color: theme.cardTheme.color,
-          borderRadius: BorderRadius.circular(30),
-          boxShadow: [
-            BoxShadow(
-              color: theme.shadowColor.withOpacity(0.05),
-              blurRadius: 10,
-              offset: const Offset(0, 2),
-            ),
-          ],
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(Icons.nightlight_round, size: 18, color: theme.colorScheme.primary),
-            const SizedBox(width: 8),
-            Text(
-              'Good Evening',
-              style: theme.textTheme.bodyMedium?.copyWith(
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-            const SizedBox(width: 6),
-            const Text('👋', style: TextStyle(fontSize: 16)),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildHeroText(ThemeData theme) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          'What do you want to',
-          style: theme.textTheme.displaySmall?.copyWith(
-            fontSize: 28,
-            fontWeight: FontWeight.w800,
-            height: 1.1,
-          ),
-        ),
-        ShaderMask(
-          shaderCallback: (bounds) => LinearGradient(
-            colors: [theme.colorScheme.primary, theme.colorScheme.secondary],
-          ).createShader(bounds),
-          child: Text(
-            'learn today?',
-            style: theme.textTheme.displaySmall?.copyWith(
-              fontSize: 28,
-              fontWeight: FontWeight.w800,
-              color: Colors.white, // Required for ShaderMask
-              height: 1.2,
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildFeatureRow(ThemeData theme, QuizColors quizColors) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        _FeatureCircle(
-          icon: Icons.auto_awesome,
-          label: 'AI',
-          color: theme.colorScheme.primary,
-          theme: theme,
-        ),
-        _FeatureCircle(
-          icon: Icons.bolt_rounded,
-          label: 'Fast',
-          color: quizColors.warning, // Orange
-          theme: theme,
-        ),
-        _FeatureCircle(
-          icon: Icons.psychology,
-          label: 'Smart',
-          color: theme.colorScheme.secondary, // Purple/Indigo
-          theme: theme,
-        ),
-        _FeatureCircle(
-          icon: Icons.school,
-          label: 'Learn',
-          color: quizColors.success, // Teal/Green
-          theme: theme,
-        ),
-      ],
-    );
-  }
-
-  Widget _buildCreationCard(ThemeData theme, QuizColors quizColors) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(24),
-      decoration: BoxDecoration(
-        color: theme.cardTheme.color,
-        borderRadius: BorderRadius.circular(24),
-        boxShadow: [
-          BoxShadow(
-            color: theme.shadowColor.withOpacity(0.05),
-            blurRadius: 24,
-            offset: const Offset(0, 8),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            'Create from topic',
-            style: theme.textTheme.titleMedium?.copyWith(
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-          const SizedBox(height: 16),
-          Container(
-            height: 160, // Fixed height for text area
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: theme.colorScheme.surfaceContainerHighest.withOpacity(0.3),
-              borderRadius: BorderRadius.circular(20),
-            ),
-            child: Column(
-              children: [
-                Expanded(
-                  child: TextField(
-                    controller: _controller,
-                    focusNode: _inputFocusNode,
-                    maxLines: null,
-                    expands: true,
-                    textAlignVertical: TextAlignVertical.top,
-                    style: theme.textTheme.bodyLarge?.copyWith(height: 1.5),
-                    decoration: InputDecoration(
-                      hintText:
-                          "Enter a topic or paste your notes here...\ne.g., 'Photosynthesis process' or 'History of Rome'",
-                      hintStyle: theme.textTheme.bodyMedium?.copyWith(
-                        color: theme.colorScheme.onSurfaceVariant.withOpacity(0.5),
-                        height: 1.5,
-                      ),
-                      border: InputBorder.none,
-                      contentPadding: EdgeInsets.zero,
+              const SizedBox(width: 12),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Quirzy',
+                    style: GoogleFonts.plusJakartaSans(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                      color: textMain,
+                      letterSpacing: -0.3,
                     ),
                   ),
-                ),
-                const SizedBox(height: 10),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.end,
-                  children: [
-                    _IconAction(
-                      icon: Icons.mic_rounded,
-                      theme: theme,
-                      onTap: () {
-                        HapticFeedback.selectionClick();
-                        // Placeholder for voice logic
-                      },
+                  Text(
+                    'AI Quiz Generator',
+                    style: GoogleFonts.plusJakartaSans(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w500,
+                      color: textSub,
                     ),
-                    const SizedBox(width: 12),
-                    _IconAction(
-                      icon: Icons.image_rounded,
-                      theme: theme,
-                      onTap: () {
-                        HapticFeedback.selectionClick();
-                        // Placeholder for image logic
-                      },
-                    ),
-                  ],
+                  ),
+                ],
+              ),
+            ],
+          ),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+            decoration: BoxDecoration(
+              color: isDark ? primaryColor.withOpacity(0.2) : primaryLight,
+              borderRadius: BorderRadius.circular(9999),
+            ),
+            child: Row(
+              children: [
+                Icon(Icons.bolt_rounded, color: primaryColor, size: 18),
+                const SizedBox(width: 6),
+                Text(
+                  '$_remainingFree free',
+                  style: GoogleFonts.plusJakartaSans(
+                    fontSize: 13,
+                    fontWeight: FontWeight.bold,
+                    color: primaryColor,
+                  ),
                 ),
               ],
             ),
@@ -548,223 +280,532 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
     );
   }
 
-  Widget _buildGenerateButton(ThemeData theme) {
-    return SizedBox(
-      width: double.infinity,
-      height: 56,
-      child: FilledButton.icon(
-        onPressed: _isGenerating ? null : _handleGeneratePress,
-        style: FilledButton.styleFrom(
-          backgroundColor: theme.colorScheme.primary,
-          foregroundColor: theme.colorScheme.onPrimary,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
+  Widget _buildHeroSection(
+    bool isDark,
+    Color surfaceColor,
+    Color textMain,
+    Color textSub,
+  ) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(24, 24, 24, 24),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          TweenAnimationBuilder<double>(
+            tween: Tween(begin: 0.0, end: 1.0),
+            duration: const Duration(milliseconds: 600),
+            curve: Curves.easeOut,
+            builder: (context, value, child) {
+              return Opacity(
+                opacity: value,
+                child: Transform.translate(
+                  offset: Offset(0, 10 * (1 - value)),
+                  child: child,
+                ),
+              );
+            },
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+              decoration: BoxDecoration(
+                color: surfaceColor,
+                borderRadius: BorderRadius.circular(9999),
+                boxShadow: isDark
+                    ? null
+                    : [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.03),
+                          blurRadius: 10,
+                          offset: const Offset(0, 2),
+                        ),
+                      ],
+                border: isDark
+                    ? Border.all(color: const Color(0xFF2D2540))
+                    : null,
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Icon(
+                    Icons.wb_sunny_rounded,
+                    color: Colors.amber,
+                    size: 18,
+                  ),
+                  const SizedBox(width: 8),
+                  Text(
+                    _getGreeting(),
+                    style: GoogleFonts.plusJakartaSans(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                      color: textMain,
+                    ),
+                  ),
+                ],
+              ),
+            ),
           ),
-          elevation: 4,
-          shadowColor: theme.colorScheme.primary.withOpacity(0.4),
-        ),
-        icon: _isGenerating
-            ? const SizedBox(
-                width: 20,
-                height: 20,
-                child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
-              )
-            : const Icon(Icons.auto_awesome, size: 20),
-        label: Text(
-          _isGenerating ? 'Generating...' : 'Generate Quiz',
-          style: theme.textTheme.titleMedium?.copyWith(
-            color: theme.colorScheme.onPrimary,
-            fontWeight: FontWeight.bold,
+          const SizedBox(height: 20),
+          TweenAnimationBuilder<double>(
+            tween: Tween(begin: 0.0, end: 1.0),
+            duration: const Duration(milliseconds: 700),
+            curve: Curves.easeOut,
+            builder: (context, value, child) {
+              return Opacity(
+                opacity: value,
+                child: Transform.translate(
+                  offset: Offset(0, 20 * (1 - value)),
+                  child: child,
+                ),
+              );
+            },
+            child: RichText(
+              text: TextSpan(
+                style: GoogleFonts.plusJakartaSans(
+                  fontSize: 32,
+                  fontWeight: FontWeight.bold,
+                  color: textMain,
+                  height: 1.1,
+                  letterSpacing: -0.5,
+                ),
+                children: [
+                  const TextSpan(text: 'What do you want to\n'),
+                  TextSpan(
+                    text: 'learn today?',
+                    style: TextStyle(color: primaryColor),
+                  ),
+                ],
+              ),
+            ),
           ),
-        ),
+        ],
       ),
     );
   }
 
-  Widget _buildRecentSection(ThemeData theme) {
-    return Column(
-      children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Text(
-              'Recent generations',
-              style: theme.textTheme.titleMedium?.copyWith(
-                fontWeight: FontWeight.bold,
+  String _getGreeting() {
+    final hour = DateTime.now().hour;
+    if (hour < 12) return 'Good Morning 👋';
+    if (hour < 17) return 'Good Afternoon 👋';
+    return 'Good Evening 👋';
+  }
+
+  Widget _buildQuickActions(bool isDark, Color surfaceColor, Color textSub) {
+    final quickActions = [
+      {
+        'icon': Icons.auto_awesome_rounded,
+        'label': 'AI Gen',
+        'color': const Color(0xFFEC4899),
+      },
+      {
+        'icon': Icons.bolt_rounded,
+        'label': 'Quick',
+        'color': const Color(0xFFF59E0B),
+      },
+      {
+        'icon': Icons.psychology_rounded,
+        'label': 'Deep',
+        'color': primaryColor,
+      },
+      {
+        'icon': Icons.school_rounded,
+        'label': 'Study',
+        'color': const Color(0xFF10B981),
+      },
+    ];
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 24),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: quickActions.asMap().entries.map((entry) {
+          final delay = entry.key * 100;
+          return TweenAnimationBuilder<double>(
+            tween: Tween(begin: 0.0, end: 1.0),
+            duration: Duration(milliseconds: 400 + delay),
+            curve: Curves.easeOutBack,
+            builder: (context, value, child) =>
+                Transform.scale(scale: value, child: child),
+            child: GestureDetector(
+              onTap: () => HapticFeedback.lightImpact(),
+              child: Column(
+                children: [
+                  Container(
+                    width: 64,
+                    height: 64,
+                    decoration: BoxDecoration(
+                      color: surfaceColor,
+                      borderRadius: BorderRadius.circular(20),
+                      border: isDark
+                          ? Border.all(color: const Color(0xFF2D2540))
+                          : null,
+                      boxShadow: isDark
+                          ? null
+                          : [
+                              BoxShadow(
+                                color: Colors.black.withOpacity(0.04),
+                                blurRadius: 15,
+                                offset: const Offset(0, 5),
+                              ),
+                            ],
+                    ),
+                    child: Icon(
+                      entry.value['icon'] as IconData,
+                      color: entry.value['color'] as Color,
+                      size: 28,
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+                  Text(
+                    entry.value['label'] as String,
+                    style: GoogleFonts.plusJakartaSans(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                      color: textSub,
+                    ),
+                  ),
+                ],
               ),
             ),
-            TextButton(
-              onPressed: () {},
-              child: Text(
-                'View all',
-                style: theme.textTheme.bodyMedium?.copyWith(
-                  color: theme.colorScheme.primary,
-                  fontWeight: FontWeight.w600,
+          );
+        }).toList(),
+      ),
+    );
+  }
+
+  Widget _buildCreateSection(
+    bool isDark,
+    Color surfaceColor,
+    Color textMain,
+    Color textSub,
+  ) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(24, 32, 24, 16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(Icons.edit_note_rounded, color: primaryColor, size: 22),
+              const SizedBox(width: 8),
+              Text(
+                'Create from topic',
+                style: GoogleFonts.plusJakartaSans(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  color: textMain,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          TextField(
+            controller: _topicController,
+            focusNode: _inputFocusNode,
+            maxLines: 3,
+            minLines: 1,
+            style: GoogleFonts.plusJakartaSans(
+              fontSize: 16,
+              color: textMain,
+              fontWeight: FontWeight.w500,
+            ),
+            decoration: InputDecoration(
+              filled: true,
+              fillColor: isDark ? surfaceColor : Colors.white,
+              hintText: "Enter a topic (e.g., 'Photosynthesis')",
+              hintStyle: GoogleFonts.plusJakartaSans(
+                fontSize: 15,
+                color: textSub.withOpacity(0.6),
+              ),
+              contentPadding: const EdgeInsets.all(16),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(16),
+                borderSide: BorderSide(
+                  color: isDark ? Colors.white12 : const Color(0xFFE2E8F0),
+                  width: 1,
+                ),
+              ),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(16),
+                borderSide: BorderSide(
+                  color: isDark ? Colors.white10 : const Color(0xFFE2E8F0),
+                  width: 1,
+                ),
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(16),
+                borderSide: const BorderSide(color: primaryColor, width: 2),
+              ),
+              suffixIcon: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  _buildInputAction(Icons.mic_none_rounded, isDark),
+                  const SizedBox(width: 8),
+                  _buildInputAction(Icons.image_outlined, isDark),
+                  const SizedBox(width: 8),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildInputAction(IconData icon, bool isDark) {
+    return GestureDetector(
+      onTap: () => HapticFeedback.lightImpact(),
+      child: Container(
+        padding: const EdgeInsets.all(10),
+        decoration: BoxDecoration(
+          color: isDark
+              ? primaryColor.withOpacity(0.2)
+              : primaryLight.withOpacity(0.5),
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Icon(icon, color: primaryColor, size: 20),
+      ),
+    );
+  }
+
+  Widget _buildGenerateButton() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 24),
+      child: AnimatedBuilder(
+        animation: _pulseController,
+        builder: (context, child) {
+          final scale = _isGenerating
+              ? 1.0
+              : 1.0 + (_pulseController.value * 0.015);
+          return Transform.scale(
+            scale: scale,
+            child: GestureDetector(
+              onTap: _isGenerating ? null : _handleGenerate,
+              child: Container(
+                height: 56,
+                decoration: BoxDecoration(
+                  color: primaryColor,
+                  borderRadius: BorderRadius.circular(9999),
+                  boxShadow: [
+                    BoxShadow(
+                      color: primaryColor.withOpacity(0.35),
+                      blurRadius: 25,
+                      offset: const Offset(0, 10),
+                    ),
+                  ],
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    if (_isGenerating)
+                      const SizedBox(
+                        width: 22,
+                        height: 22,
+                        child: CircularProgressIndicator(
+                          color: Colors.white,
+                          strokeWidth: 2.5,
+                        ),
+                      )
+                    else ...[
+                      const Icon(
+                        Icons.auto_awesome_rounded,
+                        color: Colors.white,
+                        size: 22,
+                      ),
+                      const SizedBox(width: 10),
+                      Text(
+                        'Generate Quiz',
+                        style: GoogleFonts.plusJakartaSans(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                          letterSpacing: 0.3,
+                        ),
+                      ),
+                    ],
+                  ],
                 ),
               ),
             ),
-          ],
-        ),
-        const SizedBox(height: 8),
-        
-        // Rendering the _quickTopics list as if they were recent items
-        // to match the UI visual style requested.
-        ListView.builder(
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          itemCount: _quickTopics.length,
-          itemBuilder: (context, index) {
-            final topic = _quickTopics[index];
-            return Container(
-              margin: const EdgeInsets.only(bottom: 12),
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: theme.cardTheme.color,
-                borderRadius: BorderRadius.circular(20),
-                boxShadow: [
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _buildRecentSection(
+    bool isDark,
+    Color surfaceColor,
+    Color textMain,
+    Color textSub,
+  ) {
+    final recentItems = [
+      {
+        'title': 'Biology 101',
+        'subtitle': 'Cell Structure',
+        'icon': Icons.science_rounded,
+        'iconBg': const Color(0xFFE3F2FD),
+        'iconColor': const Color(0xFF1565C0),
+        'count': '15 cards',
+      },
+      {
+        'title': 'World History',
+        'subtitle': 'Ancient Civilizations',
+        'icon': Icons.history_edu_rounded,
+        'iconBg': const Color(0xFFFFF3E0),
+        'iconColor': const Color(0xFFEF6C00),
+        'count': '20 cards',
+      },
+      {
+        'title': 'Mathematics',
+        'subtitle': 'Algebra Basics',
+        'icon': Icons.calculate_rounded,
+        'iconBg': const Color(0xFFE8F5E9),
+        'iconColor': const Color(0xFF2E7D32),
+        'count': '12 cards',
+      },
+    ];
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(24, 32, 24, 0),
+      child: Column(
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                'Recent Generations',
+                style: GoogleFonts.plusJakartaSans(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: textMain,
+                ),
+              ),
+              GestureDetector(
+                onTap: () => HapticFeedback.lightImpact(),
+                child: Text(
+                  'View All',
+                  style: GoogleFonts.plusJakartaSans(
+                    fontSize: 14,
+                    fontWeight: FontWeight.bold,
+                    color: primaryColor,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          ...recentItems.asMap().entries.map((entry) {
+            final delay = entry.key * 80;
+            return TweenAnimationBuilder<double>(
+              tween: Tween(begin: 0.0, end: 1.0),
+              duration: Duration(milliseconds: 500 + delay),
+              curve: Curves.easeOut,
+              builder: (context, value, child) {
+                return Opacity(
+                  opacity: value,
+                  child: Transform.translate(
+                    offset: Offset(0, 20 * (1 - value)),
+                    child: child,
+                  ),
+                );
+              },
+              child: _buildRecentItem(
+                entry.value,
+                isDark,
+                surfaceColor,
+                textMain,
+                textSub,
+              ),
+            );
+          }),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildRecentItem(
+    Map<String, dynamic> item,
+    bool isDark,
+    Color surfaceColor,
+    Color textMain,
+    Color textSub,
+  ) {
+    return GestureDetector(
+      onTap: () => HapticFeedback.lightImpact(),
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 12),
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: surfaceColor,
+          borderRadius: BorderRadius.circular(20),
+          border: isDark ? Border.all(color: const Color(0xFF2D2540)) : null,
+          boxShadow: isDark
+              ? null
+              : [
                   BoxShadow(
-                    color: theme.shadowColor.withOpacity(0.05),
+                    color: Colors.black.withOpacity(0.03),
                     blurRadius: 10,
                     offset: const Offset(0, 4),
                   ),
                 ],
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 52,
+              height: 52,
+              decoration: BoxDecoration(
+                color: isDark
+                    ? (item['iconColor'] as Color).withOpacity(0.2)
+                    : item['iconBg'] as Color,
+                borderRadius: BorderRadius.circular(14),
               ),
-              child: InkWell(
-                onTap: () => _selectQuickTopic(topic['topic'] as String),
-                child: Row(
-                  children: [
-                    Container(
-                      width: 48,
-                      height: 48,
-                      decoration: BoxDecoration(
-                        color: (topic['colors'] as List<Color>)[0].withOpacity(0.1),
-                        shape: BoxShape.circle,
-                      ),
-                      child: Center(
-                        child: Text(
-                          topic['icon'] as String,
-                          style: const TextStyle(fontSize: 20),
-                        ),
-                      ),
+              child: Icon(
+                item['icon'] as IconData,
+                color: item['iconColor'] as Color,
+                size: 26,
+              ),
+            ),
+            const SizedBox(width: 14),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    item['title'] as String,
+                    style: GoogleFonts.plusJakartaSans(
+                      fontSize: 15,
+                      fontWeight: FontWeight.bold,
+                      color: textMain,
                     ),
-                    const SizedBox(width: 16),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            topic['topic'] as String,
-                            style: theme.textTheme.bodyLarge?.copyWith(
-                              fontWeight: FontWeight.w700,
-                            ),
-                          ),
-                          const SizedBox(height: 4),
-                          Text(
-                            'Tap to generate',
-                            style: theme.textTheme.bodySmall?.copyWith(
-                              color: theme.colorScheme.onSurfaceVariant,
-                            ),
-                          ),
-                        ],
-                      ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    item['subtitle'] as String,
+                    style: GoogleFonts.plusJakartaSans(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w500,
+                      color: textSub,
                     ),
-                    Icon(
-                      Icons.chevron_right_rounded,
-                      color: theme.colorScheme.outline.withOpacity(0.5),
-                    ),
-                  ],
+                  ),
+                ],
+              ),
+            ),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+              decoration: BoxDecoration(
+                color: isDark ? primaryColor.withOpacity(0.2) : primaryLight,
+                borderRadius: BorderRadius.circular(9999),
+              ),
+              child: Text(
+                item['count'] as String,
+                style: GoogleFonts.plusJakartaSans(
+                  fontSize: 11,
+                  fontWeight: FontWeight.bold,
+                  color: primaryColor,
                 ),
               ),
-            );
-          },
-        ),
-      ],
-    );
-  }
-}
-
-// --- SUB WIDGETS ---
-
-class _FeatureCircle extends StatelessWidget {
-  final IconData icon;
-  final String label;
-  final Color color;
-  final ThemeData theme;
-
-  const _FeatureCircle({
-    required this.icon,
-    required this.label,
-    required this.color,
-    required this.theme,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      children: [
-        Container(
-          width: 64,
-          height: 64,
-          decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            gradient: LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: [
-                color,
-                color.withOpacity(0.8),
-              ],
             ),
-            boxShadow: [
-              BoxShadow(
-                color: color.withOpacity(0.3),
-                blurRadius: 12,
-                offset: const Offset(0, 6),
-              ),
-            ],
-          ),
-          child: Icon(icon, color: Colors.white, size: 28),
-        ),
-        const SizedBox(height: 8),
-        Text(
-          label,
-          style: theme.textTheme.labelMedium?.copyWith(
-            fontWeight: FontWeight.w600,
-            color: theme.colorScheme.onSurface,
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-class _IconAction extends StatelessWidget {
-  final IconData icon;
-  final ThemeData theme;
-  final VoidCallback onTap;
-
-  const _IconAction({
-    required this.icon,
-    required this.theme,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(12),
-      child: Container(
-        padding: const EdgeInsets.all(8),
-        decoration: BoxDecoration(
-          color: theme.colorScheme.surface, // Clean background for icon
-          borderRadius: BorderRadius.circular(12),
-          // border: Border.all(color: theme.colorScheme.outline.withOpacity(0.1)),
-        ),
-        child: Icon(
-          icon,
-          size: 22,
-          color: theme.colorScheme.onSurfaceVariant,
+          ],
         ),
       ),
     );

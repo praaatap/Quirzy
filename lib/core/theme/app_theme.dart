@@ -3,30 +3,35 @@ import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 /// =========================================================
-/// 🎨 1. PALETTE (Your New Blue Definitions)
+/// 🎨 1. PALETTE (Purple Theme - #5B13EC)
 /// =========================================================
 class AppColors {
-  // Light Theme
-  static const Color lightPrimary = Color(0xFF1976D2); // Blue 700
-  static const Color lightPrimaryLight = Color(0xFF42A5F5); // Blue 400
-  static const Color lightSecondary = Color(0xFF00ACC1); // Cyan 600
-  static const Color lightBackground = Color(0xFFF8FAFC); // Slight off-white for depth
-  static const Color lightSurface = Color(0xFFFFFFFF);
-  static const Color lightSurfaceVariant = Color(0xFFF1F5F9);
-  static const Color lightText = Color(0xFF0F172A); // Slate 900
-  static const Color lightTextSecondary = Color(0xFF64748B); // Slate 500
+  // Light Theme Colors
+  static const Color lightPrimary = Color(0xFF5B13EC); // Main Purple
+  static const Color lightPrimaryLight = Color(0xFFEFE9FD); // Light Purple Tint
+  static const Color lightPrimaryDark = Color(0xFF4A0FBF); // Darker Purple
+  static const Color lightSecondary = Color(0xFFEC4899); // Pink accent
+  static const Color lightBackground = Color(
+    0xFFF9F8FC,
+  ); // Off-white with purple tint
+  static const Color lightSurface = Color(0xFFFFFFFF); // Pure white
+  static const Color lightSurfaceVariant = Color(0xFFF1F5F9); // Light gray
+  static const Color lightText = Color(0xFF120D1B); // Near black
+  static const Color lightTextSecondary = Color(0xFF664C9A); // Muted purple
 
-  // Dark Theme
-  static const Color darkPrimary = Color(0xFF42A5F5); // Blue 400
-  static const Color darkPrimaryDark = Color(0xFF1565C0); // Blue 800
-  static const Color darkSecondary = Color(0xFF26C6DA); // Cyan 400
-  static const Color darkBackground = Color(0xFF0F172A); // Slate 900
-  static const Color darkSurface = Color(0xFF1E293B); // Slate 800
-  static const Color darkText = Color(0xFFF8FAFC); // Slate 50
-  static const Color darkTextSecondary = Color(0xFF94A3B8); // Slate 400
+  // Dark Theme Colors
+  static const Color darkPrimary = Color(0xFF5B13EC); // Same purple
+  static const Color darkPrimaryLight = Color(0xFF9333EA); // Lighter purple
+  static const Color darkPrimaryDark = Color(0xFF4A0FBF); // Deeper purple
+  static const Color darkSecondary = Color(0xFFEC4899); // Pink accent
+  static const Color darkBackground = Color(0xFF161022); // Deep purple-black
+  static const Color darkSurface = Color(0xFF1E1730); // Purple-tinted dark
+  static const Color darkSurfaceVariant = Color(0xFF2D2540); // Lighter surface
+  static const Color darkText = Color(0xFFFAFAFA); // Pure white
+  static const Color darkTextSecondary = Color(0xFFA78BFA); // Light purple
 
   // Semantic Colors
-  static const Color success = Color(0xFF22C55E);
+  static const Color success = Color(0xFF10B981);
   static const Color warning = Color(0xFFF59E0B);
   static const Color error = Color(0xFFEF4444);
   static const Color info = Color(0xFF3B82F6);
@@ -52,7 +57,13 @@ class QuizColors extends ThemeExtension<QuizColors> {
   });
 
   @override
-  QuizColors copyWith({Color? success, Color? error, Color? warning, Color? info, Color? surfaceSubtle}) {
+  QuizColors copyWith({
+    Color? success,
+    Color? error,
+    Color? warning,
+    Color? info,
+    Color? surfaceSubtle,
+  }) {
     return QuizColors(
       success: success ?? this.success,
       error: error ?? this.error,
@@ -92,11 +103,19 @@ class AppTheme {
   }
 
   static TextTheme _buildTextTheme(Color primary, Color secondary) {
-    // You can swap this back to Roboto if you prefer, 
+    // You can swap this back to Roboto if you prefer,
     // but Plus Jakarta Sans looks more modern for "Quiz" apps.
     return GoogleFonts.plusJakartaSansTextTheme().copyWith(
-      displayLarge: TextStyle(fontSize: 32, fontWeight: FontWeight.bold, color: primary),
-      displayMedium: TextStyle(fontSize: 28, fontWeight: FontWeight.bold, color: primary),
+      displayLarge: TextStyle(
+        fontSize: 32,
+        fontWeight: FontWeight.bold,
+        color: primary,
+      ),
+      displayMedium: TextStyle(
+        fontSize: 28,
+        fontWeight: FontWeight.bold,
+        color: primary,
+      ),
       bodyLarge: TextStyle(fontSize: 16, color: primary),
       bodyMedium: TextStyle(fontSize: 14, color: secondary),
     );
@@ -133,7 +152,10 @@ class AppTheme {
         ),
       ],
 
-      textTheme: _buildTextTheme(AppColors.lightText, AppColors.lightTextSecondary),
+      textTheme: _buildTextTheme(
+        AppColors.lightText,
+        AppColors.lightTextSecondary,
+      ),
 
       appBarTheme: const AppBarTheme(
         backgroundColor: Colors.transparent,
@@ -157,7 +179,10 @@ class AppTheme {
           backgroundColor: AppColors.lightPrimary,
           foregroundColor: Colors.white,
           elevation: 0,
-          minimumSize: const Size(double.infinity, 56), // Taller buttons are easier to tap
+          minimumSize: const Size(
+            double.infinity,
+            56,
+          ), // Taller buttons are easier to tap
           shape: RoundedRectangleBorder(borderRadius: _defaultRadius),
           textStyle: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w700),
         ),
@@ -166,9 +191,12 @@ class AppTheme {
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
         fillColor: AppColors.lightSurfaceVariant,
-        border: OutlineInputBorder(borderRadius: _defaultRadius, borderSide: BorderSide.none),
+        border: OutlineInputBorder(
+          borderRadius: _defaultRadius,
+          borderSide: BorderSide.none,
+        ),
         focusedBorder: OutlineInputBorder(
-          borderRadius: _defaultRadius, 
+          borderRadius: _defaultRadius,
           borderSide: const BorderSide(color: AppColors.lightPrimary, width: 2),
         ),
       ),
@@ -185,12 +213,13 @@ class AppTheme {
 
       colorScheme: const ColorScheme.dark(
         primary: AppColors.darkPrimary,
-        onPrimary: Colors.black, // Dark mode primary text is usually black on blue
+        onPrimary: Colors.white, // White text on purple buttons
         primaryContainer: AppColors.darkPrimaryDark,
         secondary: AppColors.darkSecondary,
         surface: AppColors.darkSurface,
         onSurface: AppColors.darkText,
         onSurfaceVariant: AppColors.darkTextSecondary,
+        surfaceContainerHighest: AppColors.darkSurfaceVariant,
         error: AppColors.error,
       ),
 
@@ -201,11 +230,14 @@ class AppTheme {
           error: AppColors.error,
           warning: AppColors.warning,
           info: AppColors.info,
-          surfaceSubtle: Color(0xFF334155), // Slate 700
+          surfaceSubtle: AppColors.darkSurfaceVariant, // Purple-tinted dark
         ),
       ],
 
-      textTheme: _buildTextTheme(AppColors.darkText, AppColors.darkTextSecondary),
+      textTheme: _buildTextTheme(
+        AppColors.darkText,
+        AppColors.darkTextSecondary,
+      ),
 
       appBarTheme: const AppBarTheme(
         backgroundColor: Colors.transparent,
@@ -220,14 +252,14 @@ class AppTheme {
         elevation: 0,
         shape: RoundedRectangleBorder(
           borderRadius: _defaultRadius,
-          side: const BorderSide(color: Color(0xFF334155)),
+          side: const BorderSide(color: AppColors.darkSurfaceVariant),
         ),
       ),
 
       elevatedButtonTheme: ElevatedButtonThemeData(
         style: ElevatedButton.styleFrom(
           backgroundColor: AppColors.darkPrimary,
-          foregroundColor: Colors.black, // High contrast text
+          foregroundColor: Colors.white, // High contrast text on purple
           elevation: 0,
           minimumSize: const Size(double.infinity, 56),
           shape: RoundedRectangleBorder(borderRadius: _defaultRadius),
@@ -237,10 +269,13 @@ class AppTheme {
 
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
-        fillColor: const Color(0xFF1E293B), // Slate 800
-        border: OutlineInputBorder(borderRadius: _defaultRadius, borderSide: BorderSide.none),
+        fillColor: AppColors.darkSurfaceVariant, // Dark surface
+        border: OutlineInputBorder(
+          borderRadius: _defaultRadius,
+          borderSide: BorderSide.none,
+        ),
         focusedBorder: OutlineInputBorder(
-          borderRadius: _defaultRadius, 
+          borderRadius: _defaultRadius,
           borderSide: const BorderSide(color: AppColors.darkPrimary, width: 2),
         ),
       ),

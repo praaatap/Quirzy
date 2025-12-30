@@ -2,19 +2,24 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
-import 'package:quirzy/core/theme/app_theme.dart'; // ✅ Make sure app_theme.dart is saved!
+import 'package:google_fonts/google_fonts.dart';
+import 'package:go_router/go_router.dart';
+import 'package:quirzy/routes/app_routes.dart';
 import 'package:quirzy/features/auth/presentation/providers/auth_provider.dart';
 import 'package:quirzy/features/settings/providers/settings_provider.dart';
 import 'package:quirzy/providers/quiz_history_provider.dart';
-import 'package:quirzy/features/auth/presentation/screens/welcome_screen.dart';
-// import 'package:quirzy/features/settings/services/user_data_service.dart';
-// import 'package:quirzy/features/settings/services/data_download_handler.dart';
+
+// ==========================================
+// REDESIGNED PROFILE SCREEN
+// Full Dark/Light Theme Support
+// ==========================================
 
 class ProfileSettingsScreen extends ConsumerStatefulWidget {
   const ProfileSettingsScreen({super.key});
 
   @override
-  ConsumerState<ProfileSettingsScreen> createState() => _ProfileSettingsScreenState();
+  ConsumerState<ProfileSettingsScreen> createState() =>
+      _ProfileSettingsScreenState();
 }
 
 class _ProfileSettingsScreenState extends ConsumerState<ProfileSettingsScreen>
@@ -23,40 +28,27 @@ class _ProfileSettingsScreenState extends ConsumerState<ProfileSettingsScreen>
   bool get wantKeepAlive => true;
 
   final FlutterSecureStorage _storage = const FlutterSecureStorage();
-  late final AnimationController _animController;
-  late final Animation<double> _fadeAnim;
-  late final Animation<Offset> _slideAnim;
 
-  // Profile State
+  late AnimationController _fadeController;
+  late Animation<double> _fadeAnim;
+
   String _userName = 'Quiz Master';
   String _userEmail = 'user@quirzy.com';
-  bool _isLoadingProfile = true;
+  bool _isLoading = true;
+
+  // Static colors
+  static const primaryColor = Color(0xFF5B13EC);
+  static const primaryLight = Color(0xFFEFE9FD);
 
   @override
   void initState() {
     super.initState();
-    _initAnimations();
-    _loadUserData();
-  }
-
-  void _initAnimations() {
-    _animController = AnimationController(
+    _fadeController = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 800),
+      duration: const Duration(milliseconds: 600),
     );
-
-    _fadeAnim = CurvedAnimation(
-      parent: _animController,
-      curve: const Interval(0.0, 0.6, curve: Curves.easeOut),
-    );
-
-    _slideAnim = Tween<Offset>(
-      begin: const Offset(0, 0.1),
-      end: Offset.zero,
-    ).animate(CurvedAnimation(
-      parent: _animController,
-      curve: const Interval(0.2, 1.0, curve: Curves.easeOutCubic),
-    ));
+    _fadeAnim = CurvedAnimation(parent: _fadeController, curve: Curves.easeOut);
+    _loadUserData();
   }
 
   Future<void> _loadUserData() async {
@@ -68,551 +60,841 @@ class _ProfileSettingsScreenState extends ConsumerState<ProfileSettingsScreen>
       setState(() {
         _userName = name?.isNotEmpty == true ? name! : 'Quiz Master';
         _userEmail = email?.isNotEmpty == true ? email! : 'user@quirzy.com';
-        _isLoadingProfile = false;
+        _isLoading = false;
       });
-      _animController.forward();
+      _fadeController.forward();
     } catch (_) {
-      if (mounted) setState(() => _isLoadingProfile = false);
-      _animController.forward();
+      if (mounted) setState(() => _isLoading = false);
+      _fadeController.forward();
     }
   }
 
   @override
   void dispose() {
-    _animController.dispose();
+    _fadeController.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
     super.build(context);
-    final theme = context.theme;
-    final quizColors = context.quizColors;
     final settingsState = ref.watch(settingsProvider);
+    final historyState = ref.watch(quizHistoryProvider);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    // Theme-aware colors
+    final bgColor = isDark ? const Color(0xFF161022) : const Color(0xFFF9F8FC);
+    final surfaceColor = isDark ? const Color(0xFF1E1730) : Colors.white;
+    final textMain = isDark ? Colors.white : const Color(0xFF120D1B);
+    final textSub = isDark ? const Color(0xFFA78BFA) : const Color(0xFF664C9A);
 
     return Scaffold(
-      backgroundColor: theme.scaffoldBackgroundColor,
-      extendBodyBehindAppBar: true,
-      appBar: AppBar(
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        centerTitle: true,
-        systemOverlayStyle: SystemUiOverlayStyle(
-          statusBarColor: Colors.transparent,
-          statusBarIconBrightness:
-              theme.brightness == Brightness.dark ? Brightness.light : Brightness.dark,
-        ),
-        title: Text(
-          'Account',
-          style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
-        ),
-        actions: [
-          IconButton(
-            icon: Icon(Icons.logout_rounded, color: quizColors.error),
-            onPressed: () => _showLogoutDialog(context),
-          ),
-          const SizedBox(width: 8),
-        ],
-      ),
-      body: Stack(
-        children: [
-          // 1. Premium Background
-          const RepaintBoundary(child: _BackgroundDecoration()),
-
-          // 2. Main Content
-          if (_isLoadingProfile)
-            Center(
-              child: CircularProgressIndicator(color: theme.colorScheme.primary),
-            )
-          else
-            FadeTransition(
-              opacity: _fadeAnim,
-              child: SlideTransition(
-                position: _slideAnim,
+      backgroundColor: bgColor,
+      body: SafeArea(
+        bottom: false,
+        child: _isLoading
+            ? const Center(
+                child: CircularProgressIndicator(color: primaryColor),
+              )
+            : FadeTransition(
+                opacity: _fadeAnim,
                 child: CustomScrollView(
                   physics: const BouncingScrollPhysics(),
                   slivers: [
-                    // A. Top Padding for AppBar
-                    const SliverToBoxAdapter(child: SizedBox(height: 100)),
-
-                    // B. Profile Header (Avatar/Name)
+                    SliverToBoxAdapter(child: _buildHeader(textMain)),
                     SliverToBoxAdapter(
-                      child: _ProfileHeader(
-                        userName: _userName,
-                        userEmail: _userEmail,
+                      child: _buildProfileCard(
+                        isDark,
+                        surfaceColor,
+                        textMain,
+                        textSub,
                       ),
                     ),
-
-                    // C. Stats Section
-                    const SliverToBoxAdapter(child: SizedBox(height: 24)),
-                    const SliverToBoxAdapter(child: _StatsSection()),
-                    const SliverToBoxAdapter(child: SizedBox(height: 32)),
-
-                    // D. Settings Sections
-                    SliverPadding(
-                      padding: const EdgeInsets.symmetric(horizontal: 20),
-                      sliver: SliverList(
-                        delegate: SliverChildListDelegate([
-                          // --- Appearance ---
-                          _SectionHeader(title: 'Preferences'),
-                          _SwitchTile(
-                            icon: Icons.dark_mode_rounded,
-                            title: 'Dark Mode',
-                            subtitle: 'Easier on the eyes',
-                            value: settingsState.darkMode,
-                            activeColor: theme.colorScheme.primary, // Blue
-                            onChanged: (val) =>
-                                ref.read(settingsProvider.notifier).toggleDarkMode(val),
-                          ),
-                          _SettingTile(
-                            icon: Icons.language_rounded,
-                            title: 'Language',
-                            subtitle: settingsState.language,
-                            iconColor: quizColors.success, // Green
-                            onTap: () {
-                              // Language dialog logic
-                            },
-                          ),
-
-                          // --- Notifications ---
-                          const SizedBox(height: 24),
-                          _SectionHeader(title: 'Notifications'),
-                          _SwitchTile(
-                            icon: Icons.notifications_active_rounded,
-                            title: 'Push Notifications',
-                            subtitle: 'Daily reminders & updates',
-                            value: settingsState.notificationsEnabled,
-                            activeColor: quizColors.warning, // Orange
-                            onChanged: (val) => ref
-                                .read(settingsProvider.notifier)
-                                .toggleNotifications(val),
-                          ),
-                          _SwitchTile(
-                            icon: Icons.volume_up_rounded,
-                            title: 'Sound Effects',
-                            subtitle: 'Play sounds during quizzes',
-                            value: settingsState.soundEnabled,
-                            activeColor: theme.colorScheme.secondary, // Cyan
-                            onChanged: (val) =>
-                                ref.read(settingsProvider.notifier).toggleSound(val),
-                          ),
-
-                          // --- Data & Privacy ---
-                          const SizedBox(height: 24),
-                          _SectionHeader(title: 'Data & Privacy'),
-                          _SettingTile(
-                            icon: Icons.download_rounded,
-                            title: 'Download My Data',
-                            subtitle: 'Export history as JSON',
-                            iconColor: quizColors.info, // Blue Info
-                            onTap: () {
-                              // Call your DataDownloadHandler here
-                            },
-                          ),
-                          _SettingTile(
-                            icon: Icons.delete_forever_rounded,
-                            title: 'Clear History',
-                            subtitle: 'Remove all quiz records',
-                            iconColor: quizColors.error, // Red
-                            onTap: () => _showClearHistoryDialog(context),
-                          ),
-
-                          // --- Support ---
-                          const SizedBox(height: 24),
-                          _SectionHeader(title: 'Support'),
-                          _SettingTile(
-                            icon: Icons.info_outline_rounded,
-                            title: 'About Quirzy',
-                            subtitle: 'Version 1.0.0',
-                            iconColor: theme.colorScheme.secondary, // Cyan
-                            onTap: () {},
-                          ),
-                          _SettingTile(
-                            icon: Icons.policy_rounded,
-                            title: 'Privacy Policy',
-                            subtitle: 'Read our terms',
-                            iconColor: theme.colorScheme.onSurfaceVariant, // Grey
-                            onTap: () {},
-                          ),
-
-                          // Bottom Padding
-                          const SizedBox(height: 50),
-                          
-                          const SizedBox(height: 120),
-                        ]),
+                    SliverToBoxAdapter(
+                      child: _buildStatsCards(
+                        historyState,
+                        isDark,
+                        surfaceColor,
+                        textMain,
+                        textSub,
                       ),
                     ),
+                    SliverToBoxAdapter(
+                      child: _buildPreferencesSection(
+                        settingsState,
+                        isDark,
+                        surfaceColor,
+                        textMain,
+                        textSub,
+                      ),
+                    ),
+                    SliverToBoxAdapter(
+                      child: _buildNotificationsSection(
+                        settingsState,
+                        isDark,
+                        surfaceColor,
+                        textMain,
+                        textSub,
+                      ),
+                    ),
+                    SliverToBoxAdapter(
+                      child: _buildDataSection(
+                        isDark,
+                        surfaceColor,
+                        textMain,
+                        textSub,
+                      ),
+                    ),
+                    SliverToBoxAdapter(
+                      child: _buildSupportSection(
+                        isDark,
+                        surfaceColor,
+                        textMain,
+                        textSub,
+                      ),
+                    ),
+                    SliverToBoxAdapter(child: _buildLogoutButton(isDark)),
+                    const SliverToBoxAdapter(child: SizedBox(height: 100)),
                   ],
                 ),
               ),
-            ),
-        ],
       ),
     );
   }
 
-  // --- Actions ---
-
-  void _showLogoutDialog(BuildContext context) {
-    HapticFeedback.mediumImpact();
-    showDialog(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        backgroundColor: context.theme.cardTheme.color,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: const Text('Log Out?'),
-        content: const Text('Are you sure you want to sign out of your account?'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: const Text('Cancel'),
-          ),
-          FilledButton(
-            onPressed: () async {
-              Navigator.pop(ctx);
-              await ref.read(authProvider.notifier).logout();
-              if (mounted) {
-                Navigator.of(context).pushAndRemoveUntil(
-                  MaterialPageRoute(builder: (_) => const QuiryHome()),
-                  (route) => false,
-                );
-              }
-            },
-            style: FilledButton.styleFrom(
-              backgroundColor: context.quizColors.error,
+  Widget _buildHeader(Color textMain) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(24, 16, 24, 8),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Text(
+            'Profile',
+            style: GoogleFonts.plusJakartaSans(
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+              color: textMain,
+              letterSpacing: -0.3,
             ),
-            child: const Text('Log Out'),
           ),
         ],
       ),
     );
   }
 
-  void _showClearHistoryDialog(BuildContext context) {
-    // Implement similar to logout
-  }
-}
-
-// ==========================================
-// 🎨 WIDGETS (Internal for Simplicity)
-// ==========================================
-
-class _ProfileHeader extends StatelessWidget {
-  final String userName;
-  final String userEmail;
-
-  const _ProfileHeader({required this.userName, required this.userEmail});
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = context.theme;
-    final initial = userName.isNotEmpty ? userName[0].toUpperCase() : 'Q';
-
-    return Column(
-      children: [
-        // Avatar
-        Container(
-          width: 100,
-          height: 100,
-          decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            gradient: LinearGradient(
-              colors: [theme.colorScheme.primary, theme.colorScheme.secondary],
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-            ),
-            boxShadow: [
-              BoxShadow(
-                color: theme.colorScheme.primary.withOpacity(0.3),
-                blurRadius: 20,
-                offset: const Offset(0, 10),
+  Widget _buildProfileCard(
+    bool isDark,
+    Color surfaceColor,
+    Color textMain,
+    Color textSub,
+  ) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(24, 16, 24, 24),
+      child: Column(
+        children: [
+          // Avatar
+          TweenAnimationBuilder<double>(
+            tween: Tween(begin: 0.0, end: 1.0),
+            duration: const Duration(milliseconds: 600),
+            curve: Curves.easeOutBack,
+            builder: (context, value, child) =>
+                Transform.scale(scale: value, child: child),
+            child: Container(
+              width: 100,
+              height: 100,
+              decoration: BoxDecoration(
+                gradient: const LinearGradient(
+                  colors: [primaryColor, Color(0xFF9333EA)],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+                shape: BoxShape.circle,
+                boxShadow: [
+                  BoxShadow(
+                    color: primaryColor.withOpacity(0.3),
+                    blurRadius: 20,
+                    offset: const Offset(0, 8),
+                  ),
+                ],
               ),
-            ],
-          ),
-          child: Center(
-            child: Text(
-              initial,
-              style: theme.textTheme.displayMedium?.copyWith(
-                color: theme.colorScheme.onPrimary,
-                fontSize: 40,
+              child: Center(
+                child: Text(
+                  _userName.isNotEmpty ? _userName[0].toUpperCase() : 'Q',
+                  style: GoogleFonts.plusJakartaSans(
+                    fontSize: 40,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white,
+                  ),
+                ),
               ),
             ),
           ),
-        ),
-        const SizedBox(height: 16),
-        // Name
-        Text(
-          userName,
-          style: theme.textTheme.headlineSmall?.copyWith(
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-        const SizedBox(height: 4),
-        // Email Badge
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-          decoration: BoxDecoration(
-            color: theme.colorScheme.surfaceContainerHighest,
-            borderRadius: BorderRadius.circular(20),
-          ),
-          child: Text(
-            userEmail,
-            style: theme.textTheme.bodyMedium?.copyWith(
-              color: theme.colorScheme.onSurfaceVariant,
+          const SizedBox(height: 16),
+          Text(
+            _userName,
+            style: GoogleFonts.plusJakartaSans(
+              fontSize: 24,
+              fontWeight: FontWeight.bold,
+              color: textMain,
             ),
           ),
-        ),
-      ],
-    );
-  }
-}
-
-class _StatsSection extends ConsumerWidget {
-  const _StatsSection();
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final theme = context.theme;
-    final quizColors = context.quizColors;
-
-    final totalQuizzes = ref.watch(quizHistoryProvider.select((s) => s.totalQuizzes));
-    final averageScore = ref.watch(quizHistoryProvider.select((s) => s.averageScore));
-    final correct = ref.watch(quizHistoryProvider.select((s) => s.totalCorrectAnswers));
-
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 20),
-      child: Container(
-        padding: const EdgeInsets.all(20),
-        decoration: BoxDecoration(
-          color: theme.cardTheme.color,
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: theme.colorScheme.outline.withOpacity(0.1)),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.05),
-              blurRadius: 15,
-              offset: const Offset(0, 5),
+          const SizedBox(height: 4),
+          Text(
+            _userEmail,
+            style: GoogleFonts.plusJakartaSans(
+              fontSize: 14,
+              fontWeight: FontWeight.w500,
+              color: textSub,
             ),
-          ],
-        ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceAround,
-          children: [
-            _StatItem(
-              value: '$totalQuizzes',
-              label: 'Quizzes',
-              color: theme.colorScheme.primary,
-            ),
-            Container(width: 1, height: 40, color: theme.dividerColor),
-            _StatItem(
-              value: '${averageScore.toInt()}%',
-              label: 'Avg Score',
-              color: quizColors.warning,
-            ),
-            Container(width: 1, height: 40, color: theme.dividerColor),
-            _StatItem(
-              value: '$correct',
-              label: 'Correct',
-              color: quizColors.success,
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _StatItem extends StatelessWidget {
-  final String value;
-  final String label;
-  final Color color;
-
-  const _StatItem({required this.value, required this.label, required this.color});
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = context.theme;
-    return Column(
-      children: [
-        Text(
-          value,
-          style: theme.textTheme.headlineSmall?.copyWith(
-            fontWeight: FontWeight.bold,
-            color: color,
           ),
-        ),
-        const SizedBox(height: 4),
-        Text(
-          label,
-          style: theme.textTheme.bodySmall?.copyWith(
-            color: theme.colorScheme.onSurfaceVariant,
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-class _SectionHeader extends StatelessWidget {
-  final String title;
-  const _SectionHeader({required this.title});
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 12, left: 4),
-      child: Text(
-        title,
-        style: context.theme.textTheme.titleMedium?.copyWith(
-          fontWeight: FontWeight.bold,
-          color: context.theme.colorScheme.onSurface,
-        ),
-      ),
-    );
-  }
-}
-
-class _SettingTile extends StatelessWidget {
-  final IconData icon;
-  final String title;
-  final String subtitle;
-  final Color iconColor;
-  final VoidCallback onTap;
-
-  const _SettingTile({
-    required this.icon,
-    required this.title,
-    required this.subtitle,
-    required this.iconColor,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = context.theme;
-    return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      decoration: BoxDecoration(
-        color: theme.cardTheme.color,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: theme.colorScheme.outline.withOpacity(0.05)),
-      ),
-      child: ListTile(
-        onTap: onTap,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        leading: Container(
-          padding: const EdgeInsets.all(10),
-          decoration: BoxDecoration(
-            color: iconColor.withOpacity(0.1),
-            borderRadius: BorderRadius.circular(10),
-          ),
-          child: Icon(icon, color: iconColor, size: 22),
-        ),
-        title: Text(title, style: theme.textTheme.bodyLarge?.copyWith(fontWeight: FontWeight.w600)),
-        subtitle: Text(subtitle, style: theme.textTheme.bodySmall),
-        trailing: Icon(Icons.arrow_forward_ios_rounded, size: 16, color: theme.iconTheme.color?.withOpacity(0.3)),
-      ),
-    );
-  }
-}
-
-class _SwitchTile extends StatelessWidget {
-  final IconData icon;
-  final String title;
-  final String subtitle;
-  final bool value;
-  final Color activeColor;
-  final ValueChanged<bool> onChanged;
-
-  const _SwitchTile({
-    required this.icon,
-    required this.title,
-    required this.subtitle,
-    required this.value,
-    required this.activeColor,
-    required this.onChanged,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = context.theme;
-    return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      decoration: BoxDecoration(
-        color: theme.cardTheme.color,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: theme.colorScheme.outline.withOpacity(0.05)),
-      ),
-      child: ListTile(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        leading: Container(
-          padding: const EdgeInsets.all(10),
-          decoration: BoxDecoration(
-            color: activeColor.withOpacity(0.1),
-            borderRadius: BorderRadius.circular(10),
-          ),
-          child: Icon(icon, color: activeColor, size: 22),
-        ),
-        title: Text(title, style: theme.textTheme.bodyLarge?.copyWith(fontWeight: FontWeight.w600)),
-        subtitle: Text(subtitle, style: theme.textTheme.bodySmall),
-        trailing: Switch.adaptive(
-          value: value,
-          activeColor: activeColor,
-          onChanged: onChanged,
-        ),
-      ),
-    );
-  }
-}
-
-class _LargeLogoutButton extends StatelessWidget {
-  final VoidCallback onTap;
-  const _LargeLogoutButton({required this.onTap});
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = context.theme;
-    return SizedBox(
-      width: double.infinity,
-      height: 56,
-      child: OutlinedButton.icon(
-        onPressed: onTap,
-        icon: Icon(Icons.logout_rounded, color: context.quizColors.error),
-        label: Text('Log Out', style: TextStyle(color: context.quizColors.error, fontWeight: FontWeight.bold)),
-        style: OutlinedButton.styleFrom(
-          side: BorderSide(color: context.quizColors.error.withOpacity(0.5)),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        ),
-      ),
-    );
-  }
-}
-
-class _BackgroundDecoration extends StatelessWidget {
-  const _BackgroundDecoration();
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = context.theme;
-    final isDark = theme.brightness == Brightness.dark;
-    return Stack(
-      children: [
-        Positioned(
-          top: 0, left: 0, right: 0, height: 350,
-          child: Container(
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
-                colors: [
-                  theme.colorScheme.primary.withOpacity(isDark ? 0.1 : 0.15),
-                  theme.scaffoldBackgroundColor.withOpacity(0),
+          const SizedBox(height: 16),
+          GestureDetector(
+            onTap: () => HapticFeedback.lightImpact(),
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+              decoration: BoxDecoration(
+                color: isDark ? primaryColor.withOpacity(0.2) : primaryLight,
+                borderRadius: BorderRadius.circular(9999),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Icon(Icons.edit_rounded, color: primaryColor, size: 16),
+                  const SizedBox(width: 8),
+                  Text(
+                    'Edit Profile',
+                    style: GoogleFonts.plusJakartaSans(
+                      fontSize: 13,
+                      fontWeight: FontWeight.bold,
+                      color: primaryColor,
+                    ),
+                  ),
                 ],
               ),
             ),
           ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildStatsCards(
+    QuizHistoryState historyState,
+    bool isDark,
+    Color surfaceColor,
+    Color textMain,
+    Color textSub,
+  ) {
+    final totalQuizzes = historyState.quizzes.length;
+    int totalScore = 0;
+    int totalQuestions = 0;
+    for (final quiz in historyState.quizzes) {
+      totalScore += (quiz['score'] ?? 0) as int;
+      totalQuestions +=
+          (quiz['totalQuestions'] ?? quiz['questionCount'] ?? 0) as int;
+    }
+    final avgScore = totalQuestions > 0
+        ? (totalScore / totalQuestions * 100).round()
+        : 0;
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 24),
+      child: Row(
+        children: [
+          Expanded(
+            child: _buildStatCard(
+              icon: Icons.quiz_rounded,
+              label: 'QUIZZES',
+              value: '$totalQuizzes',
+              isPrimary: true,
+              isDark: isDark,
+              surfaceColor: surfaceColor,
+              textMain: textMain,
+              textSub: textSub,
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: _buildStatCard(
+              icon: Icons.trending_up_rounded,
+              label: 'AVG SCORE',
+              value: '$avgScore%',
+              isPrimary: false,
+              isDark: isDark,
+              surfaceColor: surfaceColor,
+              textMain: textMain,
+              textSub: textSub,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildStatCard({
+    required IconData icon,
+    required String label,
+    required String value,
+    required bool isPrimary,
+    required bool isDark,
+    required Color surfaceColor,
+    required Color textMain,
+    required Color textSub,
+  }) {
+    return TweenAnimationBuilder<double>(
+      tween: Tween(begin: 0.0, end: 1.0),
+      duration: const Duration(milliseconds: 500),
+      curve: Curves.easeOut,
+      builder: (context, animValue, child) => Transform.scale(
+        scale: 0.8 + (0.2 * animValue),
+        child: Opacity(opacity: animValue, child: child),
+      ),
+      child: Container(
+        height: 90,
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: isPrimary
+              ? (isDark
+                    ? primaryColor.withOpacity(0.15)
+                    : primaryLight.withOpacity(0.5))
+              : surfaceColor,
+          borderRadius: BorderRadius.circular(20),
+          border: isPrimary
+              ? Border.all(color: primaryColor.withOpacity(isDark ? 0.3 : 0.1))
+              : (isDark ? Border.all(color: const Color(0xFF2D2540)) : null),
+          boxShadow: isPrimary || isDark
+              ? null
+              : [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.03),
+                    blurRadius: 10,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Row(
+              children: [
+                Icon(icon, size: 16, color: isPrimary ? primaryColor : textSub),
+                const SizedBox(width: 6),
+                Text(
+                  label,
+                  style: GoogleFonts.plusJakartaSans(
+                    fontSize: 10,
+                    fontWeight: FontWeight.bold,
+                    color: textSub,
+                    letterSpacing: 1,
+                  ),
+                ),
+              ],
+            ),
+            Text(
+              value,
+              style: GoogleFonts.plusJakartaSans(
+                fontSize: 28,
+                fontWeight: FontWeight.bold,
+                color: isPrimary ? primaryColor : textMain,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildPreferencesSection(
+    SettingsState settingsState,
+    bool isDark,
+    Color surfaceColor,
+    Color textMain,
+    Color textSub,
+  ) {
+    return _buildSection(
+      title: 'Preferences',
+      textMain: textMain,
+      children: [
+        _buildSwitchTile(
+          icon: Icons.dark_mode_rounded,
+          title: 'Dark Mode',
+          subtitle: 'Easier on the eyes',
+          value: settingsState.darkMode,
+          iconColor: const Color(0xFF6366F1),
+          isDark: isDark,
+          surfaceColor: surfaceColor,
+          textMain: textMain,
+          textSub: textSub,
+          onChanged: (val) =>
+              ref.read(settingsProvider.notifier).toggleDarkMode(val),
+        ),
+        _buildSettingTile(
+          icon: Icons.language_rounded,
+          title: 'Language',
+          subtitle: settingsState.language,
+          iconColor: const Color(0xFF10B981),
+          isDark: isDark,
+          surfaceColor: surfaceColor,
+          textMain: textMain,
+          textSub: textSub,
+          onTap: () {},
         ),
       ],
+    );
+  }
+
+  Widget _buildNotificationsSection(
+    SettingsState settingsState,
+    bool isDark,
+    Color surfaceColor,
+    Color textMain,
+    Color textSub,
+  ) {
+    return _buildSection(
+      title: 'Notifications',
+      textMain: textMain,
+      children: [
+        _buildSwitchTile(
+          icon: Icons.notifications_active_rounded,
+          title: 'Push Notifications',
+          subtitle: 'Daily reminders & updates',
+          value: settingsState.notificationsEnabled,
+          iconColor: const Color(0xFFF59E0B),
+          isDark: isDark,
+          surfaceColor: surfaceColor,
+          textMain: textMain,
+          textSub: textSub,
+          onChanged: (val) =>
+              ref.read(settingsProvider.notifier).toggleNotifications(val),
+        ),
+        _buildSwitchTile(
+          icon: Icons.volume_up_rounded,
+          title: 'Sound Effects',
+          subtitle: 'Play sounds during quizzes',
+          value: settingsState.soundEnabled,
+          iconColor: const Color(0xFFEC4899),
+          isDark: isDark,
+          surfaceColor: surfaceColor,
+          textMain: textMain,
+          textSub: textSub,
+          onChanged: (val) =>
+              ref.read(settingsProvider.notifier).toggleSound(val),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildDataSection(
+    bool isDark,
+    Color surfaceColor,
+    Color textMain,
+    Color textSub,
+  ) {
+    return _buildSection(
+      title: 'Data & Privacy',
+      textMain: textMain,
+      children: [
+        _buildSettingTile(
+          icon: Icons.download_rounded,
+          title: 'Download My Data',
+          subtitle: 'Export history as JSON',
+          iconColor: const Color(0xFF3B82F6),
+          isDark: isDark,
+          surfaceColor: surfaceColor,
+          textMain: textMain,
+          textSub: textSub,
+          onTap: () {},
+        ),
+        _buildSettingTile(
+          icon: Icons.delete_forever_rounded,
+          title: 'Clear History',
+          subtitle: 'Remove all quiz records',
+          iconColor: const Color(0xFFEF4444),
+          isDark: isDark,
+          surfaceColor: surfaceColor,
+          textMain: textMain,
+          textSub: textSub,
+          onTap: () => _showClearHistoryDialog(),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildSupportSection(
+    bool isDark,
+    Color surfaceColor,
+    Color textMain,
+    Color textSub,
+  ) {
+    return _buildSection(
+      title: 'Support',
+      textMain: textMain,
+      children: [
+        _buildSettingTile(
+          icon: Icons.info_outline_rounded,
+          title: 'About Quirzy',
+          subtitle: 'Version 1.0.0',
+          iconColor: primaryColor,
+          isDark: isDark,
+          surfaceColor: surfaceColor,
+          textMain: textMain,
+          textSub: textSub,
+          onTap: () {},
+        ),
+        _buildSettingTile(
+          icon: Icons.help_outline_rounded,
+          title: 'Help & Feedback',
+          subtitle: 'Get support or send feedback',
+          iconColor: const Color(0xFF10B981),
+          isDark: isDark,
+          surfaceColor: surfaceColor,
+          textMain: textMain,
+          textSub: textSub,
+          onTap: () {},
+        ),
+      ],
+    );
+  }
+
+  Widget _buildSection({
+    required String title,
+    required Color textMain,
+    required List<Widget> children,
+  }) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(24, 24, 24, 0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            title,
+            style: GoogleFonts.plusJakartaSans(
+              fontSize: 16,
+              fontWeight: FontWeight.bold,
+              color: textMain,
+            ),
+          ),
+          const SizedBox(height: 12),
+          ...children,
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSettingTile({
+    required IconData icon,
+    required String title,
+    required String subtitle,
+    required Color iconColor,
+    required bool isDark,
+    required Color surfaceColor,
+    required Color textMain,
+    required Color textSub,
+    required VoidCallback onTap,
+  }) {
+    return GestureDetector(
+      onTap: () {
+        HapticFeedback.lightImpact();
+        onTap();
+      },
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 12),
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: surfaceColor,
+          borderRadius: BorderRadius.circular(16),
+          border: isDark ? Border.all(color: const Color(0xFF2D2540)) : null,
+          boxShadow: isDark
+              ? null
+              : [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.03),
+                    blurRadius: 10,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 44,
+              height: 44,
+              decoration: BoxDecoration(
+                color: isDark
+                    ? iconColor.withOpacity(0.2)
+                    : iconColor.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Icon(icon, color: iconColor, size: 22),
+            ),
+            const SizedBox(width: 14),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: GoogleFonts.plusJakartaSans(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w600,
+                      color: textMain,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    subtitle,
+                    style: GoogleFonts.plusJakartaSans(
+                      fontSize: 12,
+                      color: textSub,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            Icon(Icons.chevron_right_rounded, color: textSub.withOpacity(0.5)),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSwitchTile({
+    required IconData icon,
+    required String title,
+    required String subtitle,
+    required bool value,
+    required Color iconColor,
+    required bool isDark,
+    required Color surfaceColor,
+    required Color textMain,
+    required Color textSub,
+    required ValueChanged<bool> onChanged,
+  }) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: surfaceColor,
+        borderRadius: BorderRadius.circular(16),
+        border: isDark ? Border.all(color: const Color(0xFF2D2540)) : null,
+        boxShadow: isDark
+            ? null
+            : [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.03),
+                  blurRadius: 10,
+                  offset: const Offset(0, 2),
+                ),
+              ],
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 44,
+            height: 44,
+            decoration: BoxDecoration(
+              color: isDark
+                  ? iconColor.withOpacity(0.2)
+                  : iconColor.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Icon(icon, color: iconColor, size: 22),
+          ),
+          const SizedBox(width: 14),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: GoogleFonts.plusJakartaSans(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w600,
+                    color: textMain,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  subtitle,
+                  style: GoogleFonts.plusJakartaSans(
+                    fontSize: 12,
+                    color: textSub,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Switch.adaptive(
+            value: value,
+            onChanged: (val) {
+              HapticFeedback.lightImpact();
+              onChanged(val);
+            },
+            activeColor: primaryColor,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildLogoutButton(bool isDark) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(24, 32, 24, 0),
+      child: GestureDetector(
+        onTap: () => _showLogoutDialog(),
+        child: Container(
+          height: 56,
+          decoration: BoxDecoration(
+            color: isDark
+                ? const Color(0xFFEF4444).withOpacity(0.15)
+                : const Color(0xFFEF4444).withOpacity(0.1),
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(
+              color: const Color(0xFFEF4444).withOpacity(isDark ? 0.3 : 0.2),
+            ),
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const Icon(
+                Icons.logout_rounded,
+                color: Color(0xFFEF4444),
+                size: 22,
+              ),
+              const SizedBox(width: 10),
+              Text(
+                'Log Out',
+                style: GoogleFonts.plusJakartaSans(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  color: const Color(0xFFEF4444),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _showLogoutDialog() {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    HapticFeedback.mediumImpact();
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: isDark ? const Color(0xFF1E1730) : Colors.white,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: Text(
+          'Log Out?',
+          style: GoogleFonts.plusJakartaSans(
+            fontWeight: FontWeight.bold,
+            color: isDark ? Colors.white : const Color(0xFF120D1B),
+          ),
+        ),
+        content: Text(
+          'Are you sure you want to log out of your account?',
+          style: GoogleFonts.plusJakartaSans(
+            color: isDark ? const Color(0xFFA78BFA) : const Color(0xFF664C9A),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text(
+              'Cancel',
+              style: GoogleFonts.plusJakartaSans(
+                color: isDark
+                    ? const Color(0xFFA78BFA)
+                    : const Color(0xFF664C9A),
+              ),
+            ),
+          ),
+          TextButton(
+            onPressed: () async {
+              Navigator.pop(context); // Close dialog
+              await ref.read(authProvider.notifier).logout();
+              if (mounted) {
+                // Use GoRouter to switch to auth route correctly
+                context.go(AppRoutes.auth);
+              }
+            },
+            child: Text(
+              'Log Out',
+              style: GoogleFonts.plusJakartaSans(
+                color: const Color(0xFFEF4444),
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showClearHistoryDialog() {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    HapticFeedback.mediumImpact();
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: isDark ? const Color(0xFF1E1730) : Colors.white,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: Text(
+          'Clear History?',
+          style: GoogleFonts.plusJakartaSans(
+            fontWeight: FontWeight.bold,
+            color: isDark ? Colors.white : const Color(0xFF120D1B),
+          ),
+        ),
+        content: Text(
+          'This will permanently delete all your quiz history. This action cannot be undone.',
+          style: GoogleFonts.plusJakartaSans(
+            color: isDark ? const Color(0xFFA78BFA) : const Color(0xFF664C9A),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text(
+              'Cancel',
+              style: GoogleFonts.plusJakartaSans(
+                color: isDark
+                    ? const Color(0xFFA78BFA)
+                    : const Color(0xFF664C9A),
+              ),
+            ),
+          ),
+          TextButton(
+            onPressed: () {
+              Navigator.pop(context);
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text(
+                    'History cleared',
+                    style: GoogleFonts.plusJakartaSans(
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  backgroundColor: primaryColor,
+                  behavior: SnackBarBehavior.floating,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+              );
+            },
+            child: Text(
+              'Clear',
+              style: GoogleFonts.plusJakartaSans(
+                color: const Color(0xFFEF4444),
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

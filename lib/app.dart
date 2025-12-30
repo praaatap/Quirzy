@@ -18,11 +18,11 @@ class QuirzyApp extends ConsumerWidget {
       debugShowCheckedModeBanner: false,
 
       // ===========================================
-      // 🎨 BLUE + GREEN QUIZ THEME
+      // 🎨 PURPLE THEME (Light & Dark)
       // ===========================================
       theme: AppTheme.light(),
       darkTheme: AppTheme.dark(),
-      themeMode: ThemeMode.system, // System controlled (Light / Dark)
+      themeMode: ThemeMode.light, // Use light theme by default
 
       routerConfig: router,
 
@@ -31,22 +31,18 @@ class QuirzyApp extends ConsumerWidget {
       // ===========================================
       builder: (context, child) {
         // Production-safe error widget
-        ErrorWidget.builder =
-            (details) => ProductionErrorWidget(details: details);
+        ErrorWidget.builder = (details) =>
+            ProductionErrorWidget(details: details);
 
         return MediaQuery(
           data: MediaQuery.of(context).copyWith(
-            // Prevent text from breaking layouts
             textScaler: TextScaler.linear(
               MediaQuery.of(context).textScaler.scale(1.0).clamp(0.85, 1.15),
             ),
           ),
           child: Stack(
             children: [
-              if (child != null)
-                ShowCaseWidget(
-                  builder: (context) => child,
-                ),
+              if (child != null) ShowCaseWidget(builder: (context) => child),
 
               const ConnectivityOverlay(),
             ],

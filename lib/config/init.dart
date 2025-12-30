@@ -9,9 +9,7 @@ import 'package:quirzy/core/services/ad_service.dart';
 import 'package:quirzy/core/services/notification_service.dart';
 import 'package:quirzy/core/services/storage/hive_cache_service.dart';
 
-Future<void> initializeApp(ProviderContainer container) async {
-  WidgetsFlutterBinding.ensureInitialized();
-
+Future<void> initializeApp(WidgetRef ref) async {
   // System UI & Error Handling
   SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
   SystemChrome.setSystemUIOverlayStyle(
@@ -28,13 +26,11 @@ Future<void> initializeApp(ProviderContainer container) async {
   // Critical Services
   await Future.wait([Hive.initFlutter(), Firebase.initializeApp()]);
   await Future.wait(
-    [container.read(authProvider.future), HiveCacheService.initialize()]
+    [ref.read(authProvider.future), HiveCacheService.initialize()]
         as Iterable<Future<dynamic>>,
   );
 
   // Background Tasks
   Future.microtask(() => AdService().initialize());
-  Future.microtask(
-    () => container.read(notificationProvider.notifier).initialize(),
-  );
+  Future.microtask(() => ref.read(notificationProvider.notifier).initialize());
 }

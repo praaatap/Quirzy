@@ -21,7 +21,7 @@ class SettingsState {
     this.darkMode = false,
     this.language = 'English',
     this.autoSaveProgress = true,
-    this.navbarStyle = 'custom',
+    this.navbarStyle = 'material',
   });
 
   SettingsState copyWith({
@@ -78,7 +78,7 @@ class SettingsNotifier extends Notifier<SettingsState> {
       darkMode: darkMode == 'true',
       language: language ?? 'English',
       autoSaveProgress: autoSave != 'false',
-      navbarStyle: navbarStyle ?? 'custom',
+      navbarStyle: navbarStyle ?? 'material',
     );
   }
 
