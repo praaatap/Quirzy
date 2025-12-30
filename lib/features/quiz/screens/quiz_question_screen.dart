@@ -147,22 +147,6 @@ class _QuizQuestionScreenState extends ConsumerState<QuizQuestionScreen>
     }
   }
 
-  void _goToNextQuestion() {
-    if (currentQuestionIndex < widget.questions.length - 1) {
-      _questionTimer?.cancel();
-      setState(() {
-        currentQuestionIndex++;
-        selectedOption = userSelectedAnswers[currentQuestionIndex] != -1
-            ? (widget.questions[currentQuestionIndex]['options']
-                  as List<dynamic>)[userSelectedAnswers[currentQuestionIndex]]
-            : null;
-        _isAnswerSubmitted = false;
-      });
-      _resetAnimation();
-      _startQuestionTimer();
-    }
-  }
-
   void _handleNextQuestion({bool autoAdvance = false}) {
     if (_isAnswerSubmitted) return;
 
@@ -301,7 +285,6 @@ class _QuizQuestionScreenState extends ConsumerState<QuizQuestionScreen>
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
 
     if (widget.questions.isEmpty) return const SizedBox.shrink();
 

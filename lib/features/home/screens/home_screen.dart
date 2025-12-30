@@ -2,6 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:speech_to_text/speech_to_text.dart' as stt;
+import 'package:avatar_glow/avatar_glow.dart';
+import 'package:quirzy/features/home/widgets/daily_reward_sheet.dart';
+import 'package:quirzy/features/quiz/screens/quiz_generation_loading_screen.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:quirzy/features/quiz/screens/start_quiz_screen.dart';
 import 'package:quirzy/features/quiz/services/quiz_service.dart';
@@ -29,6 +34,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
   late AnimationController _pulseController;
   late Animation<double> _fadeAnim;
 
+  // Speech to Text
+  late stt.SpeechToText _speech;
+  bool _isListening = false;
+  String _lastWords = '';
+
   @override
   bool get wantKeepAlive => true;
 
@@ -40,6 +50,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
   void initState() {
     super.initState();
     _initAnimations();
+    _speech = stt.SpeechToText();
   }
 
   void _initAnimations() {
@@ -57,6 +68,36 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _fadeController.forward();
     });
+    // Triggers daily reward check after a slight delay for better UX
+    Future.delayed(const Duration(seconds: 1), _checkDailyReward);
+  }
+
+  Future<void> _checkDailyReward() async {
+    if (!mounted) return;
+
+    final prefs = await SharedPreferences.getInstance();
+    final lastDateStr = prefs.getString('last_daily_reward_date');
+    final todayStr = DateTime.now().toIso8601String().split('T').first;
+
+    if (lastDateStr != todayStr) {
+      final currentStreak = (prefs.getInt('daily_streak') ?? 0) + 1;
+
+      if (!mounted) return;
+      showModalBottomSheet(
+        context: context,
+        isScrollControlled: true,
+        backgroundColor: Colors.transparent,
+        builder: (context) => DailyRewardSheet(
+          day: currentStreak,
+          xpReward: 50 + (currentStreak * 10), // Scaling reward
+          onClaim: () async {
+            await prefs.setString('last_daily_reward_date', todayStr);
+            await prefs.setInt('daily_streak', currentStreak);
+            // Here you would typically add XP to your user provider
+          },
+        ),
+      );
+    }
   }
 
   @override
@@ -68,7 +109,154 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
     super.dispose();
   }
 
-  Future<void> _handleGenerate() async {
+  // --- SPEECH RECOGNITION ---
+
+  Future<void> _listen() async {
+    if (!_isListening) {
+      bool available = await _speech.initialize(
+        onStatus: (val) {
+          if (val == 'done' || val == 'notListening') {
+            if (mounted && _isListening) {
+              setState(() => _isListening = false);
+              Navigator.pop(
+                context,
+              ); // Close dialog if listening stops naturally
+            }
+          }
+        },
+        onError: (val) => debugPrint('onError: $val'),
+      );
+
+      if (available) {
+        setState(() => _isListening = true);
+
+        // Show Google-style listening DIALOG (Centered)
+        showDialog(
+          context: context,
+          barrierDismissible: true,
+          builder: (context) {
+            final isDark = Theme.of(context).brightness == Brightness.dark;
+            return Dialog(
+              backgroundColor: isDark ? const Color(0xFF1E1730) : Colors.white,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(24),
+              ),
+              insetPadding: const EdgeInsets.all(20),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(
+                  vertical: 40,
+                  horizontal: 24,
+                ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      'Listening...',
+                      style: GoogleFonts.plusJakartaSans(
+                        fontSize: 24,
+                        fontWeight: FontWeight.bold,
+                        color: isDark ? Colors.white : const Color(0xFF1E293B),
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      _lastWords.isEmpty ? 'Say your topic' : _lastWords,
+                      textAlign: TextAlign.center,
+                      style: GoogleFonts.plusJakartaSans(
+                        fontSize: 16,
+                        color: isDark ? Colors.white70 : Colors.black54,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                    const SizedBox(height: 48),
+                    AvatarGlow(
+                      animate: true,
+                      glowColor: const Color(0xFF4285F4), // Google Blue
+                      duration: const Duration(milliseconds: 2000),
+                      repeat: true,
+                      startDelay: const Duration(milliseconds: 100),
+                      child: GestureDetector(
+                        onTap: () {
+                          _speech.stop();
+                          Navigator.pop(context);
+                        },
+                        child: Container(
+                          padding: const EdgeInsets.all(24),
+                          decoration: const BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: Colors.white,
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black12,
+                                blurRadius: 10,
+                                offset: Offset(0, 4),
+                              ),
+                            ],
+                          ),
+                          child: ShaderMask(
+                            shaderCallback: (Rect bounds) {
+                              return const LinearGradient(
+                                begin: Alignment.topLeft,
+                                end: Alignment.bottomRight,
+                                colors: [
+                                  Color(0xFF4285F4), // Blue
+                                  Color(0xFFEA4335), // Red
+                                  Color(0xFFFBBC05), // Yellow
+                                  Color(0xFF34A853), // Green
+                                ],
+                              ).createShader(bounds);
+                            },
+                            child: const Icon(
+                              Icons.mic_rounded,
+                              color: Colors.white,
+                              size: 48,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          },
+        ).then((_) {
+          if (_isListening) {
+            _speech.stop();
+            setState(() => _isListening = false);
+          }
+        });
+
+        _speech.listen(
+          onResult: (val) {
+            setState(() {
+              _topicController.text = val.recognizedWords;
+              _lastWords = val.recognizedWords;
+              // Keep cursor at end
+              _topicController.selection = TextSelection.fromPosition(
+                TextPosition(offset: _topicController.text.length),
+              );
+            });
+          },
+        );
+      } else {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Speech recognition not available')),
+          );
+        }
+      }
+    } else {
+      setState(() => _isListening = false);
+      _speech.stop();
+    }
+  }
+
+  // NOTE: Removed _showListeningSheet as it is replaced by dialog logic inside _listen
+
+  // --- QUIZ GENERATION FLOW ---
+
+  void _handleGenerate() {
     final topic = _topicController.text.trim();
     if (topic.isEmpty) {
       HapticFeedback.heavyImpact();
@@ -88,14 +276,52 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
       return;
     }
 
-    setState(() => _isGenerating = true);
-    HapticFeedback.mediumImpact();
+    HapticFeedback.lightImpact();
+    // Show configuration dialog instead of generating immediately
+    _showQuizConfigurationDialog(topic);
+  }
+
+  void _showQuizConfigurationDialog(String topic) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => _QuizConfigSheet(
+        topic: topic,
+        onGenerate: (count, difficulty) {
+          Navigator.pop(context);
+          _startGeneration(topic, count, difficulty);
+        },
+      ),
+    );
+  }
+
+  Future<void> _startGeneration(
+    String topic,
+    int count,
+    String difficulty,
+  ) async {
+    // Navigate to the beautiful Gemini-like loading screen
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => const QuizGenerationLoadingScreen(),
+      ),
+    );
 
     try {
       final quizService = ref.read(quizServiceProvider);
-      final result = await quizService.generateQuiz(topic);
+      // Pass the count and difficulty to the service
+      final result = await quizService.generateQuiz(
+        topic,
+        questionCount: count,
+        difficulty: difficulty.toLowerCase(),
+      );
 
       if (mounted) {
+        // Remove the loading screen
+        Navigator.pop(context);
+
         _topicController.clear();
         final quizId =
             result['quizId']?.toString() ?? result['id']?.toString() ?? '';
@@ -138,6 +364,13 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
       }
     } catch (e) {
       if (mounted) {
+        // Dismiss loading screen on error
+        Navigator.pop(context);
+
+        setState(
+          () => _isGenerating = false,
+        ); // Ensure state is reset just in case
+
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Failed to generate quiz: $e'),
@@ -149,6 +382,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
       if (mounted) setState(() => _isGenerating = false);
     }
   }
+
+  // --- UI BUILDING ---
 
   @override
   Widget build(BuildContext context) {
@@ -537,7 +772,48 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
               suffixIcon: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  _buildInputAction(Icons.mic_none_rounded, isDark),
+                  // Google Colored Mic
+                  GestureDetector(
+                    onTap: () {
+                      HapticFeedback.lightImpact();
+                      _listen();
+                    },
+                    child: Container(
+                      padding: const EdgeInsets.all(10),
+                      decoration: BoxDecoration(
+                        color: isDark
+                            ? const Color(0xFF1E1730).withOpacity(0.5)
+                            : Colors.white,
+                        borderRadius: BorderRadius.circular(12),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.05),
+                            blurRadius: 4,
+                            offset: const Offset(0, 2),
+                          ),
+                        ],
+                      ),
+                      child: ShaderMask(
+                        shaderCallback: (Rect bounds) {
+                          return const LinearGradient(
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                            colors: [
+                              Color(0xFF4285F4), // Blue
+                              Color(0xFFEA4335), // Red
+                              Color(0xFFFBBC05), // Yellow
+                              Color(0xFF34A853), // Green
+                            ],
+                          ).createShader(bounds);
+                        },
+                        child: const Icon(
+                          Icons.mic_rounded,
+                          color: Colors.white,
+                          size: 24,
+                        ),
+                      ),
+                    ),
+                  ),
                   const SizedBox(width: 8),
                   _buildInputAction(Icons.image_outlined, isDark),
                   const SizedBox(width: 8),
@@ -550,9 +826,12 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
     );
   }
 
-  Widget _buildInputAction(IconData icon, bool isDark) {
+  Widget _buildInputAction(IconData icon, bool isDark, {VoidCallback? onTap}) {
     return GestureDetector(
-      onTap: () => HapticFeedback.lightImpact(),
+      onTap: () {
+        HapticFeedback.lightImpact();
+        onTap?.call();
+      },
       child: Container(
         padding: const EdgeInsets.all(10),
         decoration: BoxDecoration(
@@ -807,6 +1086,193 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
             ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+// ==========================================
+// CONFIGURATION SHEET WIDGET
+// ==========================================
+
+class _QuizConfigSheet extends StatefulWidget {
+  final String topic;
+  final Function(int count, String difficulty) onGenerate;
+
+  const _QuizConfigSheet({required this.topic, required this.onGenerate});
+
+  @override
+  State<_QuizConfigSheet> createState() => _QuizConfigSheetState();
+}
+
+class _QuizConfigSheetState extends State<_QuizConfigSheet> {
+  int _questionCount = 10;
+  String _difficulty = 'Medium';
+  final List<String> _difficulties = ['Easy', 'Medium', 'Hard'];
+  final List<int> _counts = [5, 10, 15, 20];
+
+  static const primaryColor = Color(0xFF5B13EC);
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final bgColor = isDark ? const Color(0xFF1E1730) : Colors.white;
+    final textColor = isDark ? Colors.white : const Color(0xFF1E293B);
+
+    return Container(
+      decoration: BoxDecoration(
+        color: bgColor,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
+      ),
+      padding: const EdgeInsets.all(24),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Center(
+            child: Container(
+              width: 40,
+              height: 4,
+              decoration: BoxDecoration(
+                color: isDark ? Colors.white24 : Colors.grey.shade300,
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+          ),
+          const SizedBox(height: 24),
+          Text(
+            'Configure Quiz',
+            style: GoogleFonts.plusJakartaSans(
+              fontSize: 22,
+              fontWeight: FontWeight.bold,
+              color: textColor,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'Topic: ${widget.topic}',
+            style: GoogleFonts.plusJakartaSans(
+              fontSize: 14,
+              color: isDark ? Colors.white60 : Colors.black54,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+          const SizedBox(height: 32),
+
+          // Difficulty Selector
+          Text(
+            'Difficulty',
+            style: GoogleFonts.plusJakartaSans(
+              fontSize: 16,
+              fontWeight: FontWeight.bold,
+              color: textColor,
+            ),
+          ),
+          const SizedBox(height: 12),
+          Row(
+            children: _difficulties.map((diff) {
+              final isSelected = _difficulty == diff;
+              return Expanded(
+                child: GestureDetector(
+                  onTap: () => setState(() => _difficulty = diff),
+                  child: Container(
+                    margin: const EdgeInsets.only(right: 12),
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    decoration: BoxDecoration(
+                      color: isSelected
+                          ? primaryColor
+                          : (isDark ? Colors.white10 : Colors.grey.shade100),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(
+                        color: isSelected ? primaryColor : Colors.transparent,
+                      ),
+                    ),
+                    alignment: Alignment.center,
+                    child: Text(
+                      diff,
+                      style: GoogleFonts.plusJakartaSans(
+                        fontSize: 14,
+                        fontWeight: FontWeight.bold,
+                        color: isSelected ? Colors.white : textColor,
+                      ),
+                    ),
+                  ),
+                ),
+              );
+            }).toList(),
+          ),
+
+          const SizedBox(height: 24),
+
+          // Question Count Selector
+          Text(
+            'Number of Questions',
+            style: GoogleFonts.plusJakartaSans(
+              fontSize: 16,
+              fontWeight: FontWeight.bold,
+              color: textColor,
+            ),
+          ),
+          const SizedBox(height: 12),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: _counts.map((count) {
+              final isSelected = _questionCount == count;
+              return GestureDetector(
+                onTap: () => setState(() => _questionCount = count),
+                child: Container(
+                  width: 60,
+                  padding: const EdgeInsets.symmetric(vertical: 12),
+                  decoration: BoxDecoration(
+                    color: isSelected
+                        ? primaryColor
+                        : (isDark ? Colors.white10 : Colors.grey.shade100),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: isSelected ? primaryColor : Colors.transparent,
+                    ),
+                  ),
+                  alignment: Alignment.center,
+                  child: Text(
+                    count.toString(),
+                    style: GoogleFonts.plusJakartaSans(
+                      fontSize: 14,
+                      fontWeight: FontWeight.bold,
+                      color: isSelected ? Colors.white : textColor,
+                    ),
+                  ),
+                ),
+              );
+            }).toList(),
+          ),
+
+          const SizedBox(height: 40),
+
+          // Generate Button
+          SizedBox(
+            width: double.infinity,
+            height: 56,
+            child: ElevatedButton(
+              onPressed: () => widget.onGenerate(_questionCount, _difficulty),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: primaryColor,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                elevation: 4,
+              ),
+              child: Text(
+                'Start Generating',
+                style: GoogleFonts.plusJakartaSans(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.white,
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(height: 16),
+        ],
       ),
     );
   }

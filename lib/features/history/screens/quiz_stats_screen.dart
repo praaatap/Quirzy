@@ -26,6 +26,9 @@ class _QuizStatsScreenState extends State<QuizStatsScreen>
   late Animation<double> _btnOpacity;
   late Animation<Offset> _btnSlide;
 
+  // Use the same primary color as other screens
+  static const primaryColor = Color(0xFF5B13EC);
+
   @override
   void initState() {
     super.initState();
@@ -38,21 +41,21 @@ class _QuizStatsScreenState extends State<QuizStatsScreen>
     // 2. Setup Entrance Animations
     _entranceController = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 1200),
+      duration: const Duration(milliseconds: 1000),
     );
 
     // Chart enters first
     _chartOpacity = Tween<double>(begin: 0, end: 1).animate(
       CurvedAnimation(
         parent: _entranceController,
-        curve: const Interval(0.0, 0.5, curve: Curves.easeOut),
+        curve: const Interval(0.0, 0.6, curve: Curves.easeOut),
       ),
     );
     _chartSlide = Tween<Offset>(begin: const Offset(0, 0.1), end: Offset.zero)
         .animate(
           CurvedAnimation(
             parent: _entranceController,
-            curve: const Interval(0.0, 0.5, curve: Curves.easeOutCubic),
+            curve: const Interval(0.0, 0.6, curve: Curves.easeOutCubic),
           ),
         );
 
@@ -60,14 +63,14 @@ class _QuizStatsScreenState extends State<QuizStatsScreen>
     _gridOpacity = Tween<double>(begin: 0, end: 1).animate(
       CurvedAnimation(
         parent: _entranceController,
-        curve: const Interval(0.3, 0.8, curve: Curves.easeOut),
+        curve: const Interval(0.2, 0.8, curve: Curves.easeOut),
       ),
     );
     _gridSlide = Tween<Offset>(begin: const Offset(0, 0.1), end: Offset.zero)
         .animate(
           CurvedAnimation(
             parent: _entranceController,
-            curve: const Interval(0.3, 0.8, curve: Curves.easeOutCubic),
+            curve: const Interval(0.2, 0.8, curve: Curves.easeOutCubic),
           ),
         );
 
@@ -75,14 +78,14 @@ class _QuizStatsScreenState extends State<QuizStatsScreen>
     _btnOpacity = Tween<double>(begin: 0, end: 1).animate(
       CurvedAnimation(
         parent: _entranceController,
-        curve: const Interval(0.6, 1.0, curve: Curves.easeOut),
+        curve: const Interval(0.4, 1.0, curve: Curves.easeOut),
       ),
     );
     _btnSlide = Tween<Offset>(begin: const Offset(0, 0.1), end: Offset.zero)
         .animate(
           CurvedAnimation(
             parent: _entranceController,
-            curve: const Interval(0.6, 1.0, curve: Curves.easeOutCubic),
+            curve: const Interval(0.4, 1.0, curve: Curves.easeOutCubic),
           ),
         );
 
@@ -122,28 +125,32 @@ class _QuizStatsScreenState extends State<QuizStatsScreen>
     if (percentage >= 90) {
       return {
         'text': 'Excellent!',
-        'color': Colors.greenAccent[700],
+        'color': const Color(0xFF10B981), // Emerald
         'icon': Icons.emoji_events_rounded,
+        'bg': const Color(0xFF10B981).withOpacity(0.1),
       };
     }
     if (percentage >= 70) {
       return {
         'text': 'Great Job!',
-        'color': Colors.teal,
+        'color': const Color(0xFF3B82F6), // Blue
         'icon': Icons.thumb_up_rounded,
+        'bg': const Color(0xFF3B82F6).withOpacity(0.1),
       };
     }
     if (percentage >= 50) {
       return {
         'text': 'Good Effort',
-        'color': Colors.orange,
+        'color': const Color(0xFFF59E0B), // Amber
         'icon': Icons.sentiment_satisfied_rounded,
+        'bg': const Color(0xFFF59E0B).withOpacity(0.1),
       };
     }
     return {
       'text': 'Keep Trying',
-      'color': Colors.redAccent,
+      'color': const Color(0xFFEF4444), // Red
       'icon': Icons.refresh_rounded,
+      'bg': const Color(0xFFEF4444).withOpacity(0.1),
     };
   }
 
@@ -161,7 +168,7 @@ class _QuizStatsScreenState extends State<QuizStatsScreen>
         SnackBar(
           content: Text(
             'Detailed review is not available for this record.',
-            style: GoogleFonts.poppins(),
+            style: GoogleFonts.plusJakartaSans(),
           ),
           behavior: SnackBarBehavior.floating,
           backgroundColor: Colors.grey[800],
@@ -174,96 +181,105 @@ class _QuizStatsScreenState extends State<QuizStatsScreen>
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (context) => Container(
-        height: MediaQuery.of(context).size.height * 0.85,
-        decoration: BoxDecoration(
-          color: Theme.of(context).scaffoldBackgroundColor,
-          borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
-        ),
-        child: Column(
-          children: [
-            // Handle Bar
-            const SizedBox(height: 12),
-            Container(
-              width: 40,
-              height: 4,
-              decoration: BoxDecoration(
-                color: Colors.grey.withOpacity(0.3),
-                borderRadius: BorderRadius.circular(2),
-              ),
-            ),
+      builder: (context) {
+        final isDark = Theme.of(context).brightness == Brightness.dark;
+        final bg = isDark ? const Color(0xFF1E1730) : Colors.white;
+        final textMain = isDark ? Colors.white : const Color(0xFF120D1B);
 
-            // Header
-            Padding(
-              padding: const EdgeInsets.all(24.0),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(
-                    "Answer Key",
-                    style: GoogleFonts.poppins(
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  IconButton(
-                    onPressed: () => Navigator.pop(context),
-                    icon: const Icon(Icons.close_rounded),
-                  ),
-                ],
-              ),
-            ),
-
-            // List of Questions
-            Expanded(
-              child: ListView.builder(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 24,
-                  vertical: 0,
+        return Container(
+          height: MediaQuery.of(context).size.height * 0.85,
+          decoration: BoxDecoration(
+            color: bg,
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
+          ),
+          child: Column(
+            children: [
+              // Handle Bar
+              const SizedBox(height: 12),
+              Container(
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: Colors.grey.withOpacity(0.3),
+                  borderRadius: BorderRadius.circular(2),
                 ),
-                itemCount: questions.length,
-                itemBuilder: (context, index) {
-                  final q = questions[index];
-                  // Safe access to data
-                  final String qText = q['questionText'] ?? 'Unknown Question';
-                  final List<dynamic> options = q['options'] ?? [];
-                  final int correctIdx = q['correctAnswer'] ?? 0;
-
-                  // Handle if user answers are stored differently (e.g. map or list)
-                  int? userIdx;
-                  if (userAnswers != null && index < userAnswers.length) {
-                    userIdx = userAnswers[index]; // Assuming List<int>
-                  } else if (q['userSelectedAnswer'] != null) {
-                    userIdx =
-                        q['userSelectedAnswer']; // Assuming stored in question obj
-                  }
-
-                  final bool isCorrect = userIdx == correctIdx;
-                  final String correctTxt =
-                      (correctIdx >= 0 && correctIdx < options.length)
-                      ? options[correctIdx]
-                      : 'Unknown';
-                  final String userTxt =
-                      (userIdx != null &&
-                          userIdx >= 0 &&
-                          userIdx < options.length)
-                      ? options[userIdx]
-                      : 'Skipped';
-
-                  return _buildReviewCard(
-                    context,
-                    index + 1,
-                    qText,
-                    userTxt,
-                    correctTxt,
-                    isCorrect,
-                  );
-                },
               ),
-            ),
-          ],
-        ),
-      ),
+
+              // Header
+              Padding(
+                padding: const EdgeInsets.all(24.0),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      "Answer Key",
+                      style: GoogleFonts.plusJakartaSans(
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                        color: textMain,
+                      ),
+                    ),
+                    IconButton(
+                      onPressed: () => Navigator.pop(context),
+                      icon: Icon(Icons.close_rounded, color: textMain),
+                    ),
+                  ],
+                ),
+              ),
+
+              // List of Questions
+              Expanded(
+                child: ListView.builder(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 24,
+                    vertical: 0,
+                  ),
+                  itemCount: questions.length,
+                  itemBuilder: (context, index) {
+                    final q = questions[index];
+                    // Safe access to data
+                    final String qText =
+                        q['questionText'] ?? 'Unknown Question';
+                    final List<dynamic> options = q['options'] ?? [];
+                    final int correctIdx = q['correctAnswer'] ?? 0;
+
+                    // Handle if user answers are stored differently (e.g. map or list)
+                    int? userIdx;
+                    if (userAnswers != null && index < userAnswers.length) {
+                      userIdx = userAnswers[index]; // Assuming List<int>
+                    } else if (q['userSelectedAnswer'] != null) {
+                      userIdx =
+                          q['userSelectedAnswer']; // Assuming stored in question obj
+                    }
+
+                    final bool isCorrect = userIdx == correctIdx;
+                    final String correctTxt =
+                        (correctIdx >= 0 && correctIdx < options.length)
+                        ? options[correctIdx]
+                        : 'Unknown';
+                    final String userTxt =
+                        (userIdx != null &&
+                            userIdx >= 0 &&
+                            userIdx < options.length)
+                        ? options[userIdx]
+                        : 'Skipped';
+
+                    return _buildReviewCard(
+                      context,
+                      index + 1,
+                      qText,
+                      userTxt,
+                      correctTxt,
+                      isCorrect,
+                      isDark,
+                    );
+                  },
+                ),
+              ),
+            ],
+          ),
+        );
+      },
     );
   }
 
@@ -274,20 +290,25 @@ class _QuizStatsScreenState extends State<QuizStatsScreen>
     String userAnswer,
     String correctAnswer,
     bool isCorrect,
+    bool isDark,
   ) {
-    final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
+    final cardColor = isDark ? const Color(0xFF1E1730) : Colors.white;
+    final borderColor = isDark
+        ? Colors.white.withOpacity(0.1)
+        : const Color(0xFFE2E8F0);
+    final textMain = isDark ? Colors.white : const Color(0xFF120D1B);
+    final textSub = isDark ? const Color(0xFFA78BFA) : const Color(0xFF64748B);
 
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: theme.colorScheme.surface,
-        borderRadius: BorderRadius.circular(16),
+        color: cardColor,
+        borderRadius: BorderRadius.circular(20),
         border: Border.all(
           color: isCorrect
-              ? Colors.green.withOpacity(0.3)
-              : Colors.red.withOpacity(0.3),
+              ? const Color(0xFF10B981).withOpacity(0.3)
+              : const Color(0xFFEF4444).withOpacity(0.3),
         ),
         boxShadow: [
           BoxShadow(
@@ -305,18 +326,24 @@ class _QuizStatsScreenState extends State<QuizStatsScreen>
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Container(
-                padding: const EdgeInsets.all(8),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 6,
+                ),
                 decoration: BoxDecoration(
                   color: isCorrect
-                      ? Colors.green.withOpacity(0.1)
-                      : Colors.red.withOpacity(0.1),
-                  shape: BoxShape.circle,
+                      ? const Color(0xFF10B981).withOpacity(0.1)
+                      : const Color(0xFFEF4444).withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(8),
                 ),
                 child: Text(
-                  "$num",
-                  style: GoogleFonts.poppins(
+                  "Q$num",
+                  style: GoogleFonts.plusJakartaSans(
                     fontWeight: FontWeight.bold,
-                    color: isCorrect ? Colors.green : Colors.red,
+                    fontSize: 12,
+                    color: isCorrect
+                        ? const Color(0xFF10B981)
+                        : const Color(0xFFEF4444),
                   ),
                 ),
               ),
@@ -324,16 +351,17 @@ class _QuizStatsScreenState extends State<QuizStatsScreen>
               Expanded(
                 child: Text(
                   question,
-                  style: GoogleFonts.poppins(
+                  style: GoogleFonts.plusJakartaSans(
                     fontWeight: FontWeight.w600,
-                    fontSize: 14,
+                    fontSize: 15,
+                    color: textMain,
                   ),
                 ),
               ),
             ],
           ),
           const SizedBox(height: 12),
-          const Divider(height: 1),
+          Divider(height: 1, color: borderColor),
           const SizedBox(height: 12),
 
           // User Answer
@@ -342,23 +370,30 @@ class _QuizStatsScreenState extends State<QuizStatsScreen>
               padding: const EdgeInsets.only(bottom: 8.0),
               child: Row(
                 children: [
-                  Icon(Icons.close, size: 16, color: Colors.red[400]),
+                  const Icon(
+                    Icons.close_rounded,
+                    size: 18,
+                    color: Color(0xFFEF4444),
+                  ),
                   const SizedBox(width: 8),
                   Expanded(
                     child: RichText(
                       text: TextSpan(
-                        style: GoogleFonts.poppins(
-                          color: theme.colorScheme.onSurface,
-                          fontSize: 13,
+                        style: GoogleFonts.plusJakartaSans(
+                          color: textSub,
+                          fontSize: 14,
                         ),
                         children: [
-                          TextSpan(
-                            text: "Your Answer: ",
-                            style: const TextStyle(fontWeight: FontWeight.bold),
+                          const TextSpan(
+                            text: "You: ",
+                            style: TextStyle(fontWeight: FontWeight.bold),
                           ),
                           TextSpan(
                             text: userAnswer,
-                            style: TextStyle(color: Colors.red[400]),
+                            style: const TextStyle(
+                              color: Color(0xFFEF4444),
+                              fontWeight: FontWeight.w600,
+                            ),
                           ),
                         ],
                       ),
@@ -371,23 +406,30 @@ class _QuizStatsScreenState extends State<QuizStatsScreen>
           // Correct Answer
           Row(
             children: [
-              Icon(Icons.check, size: 16, color: Colors.green[600]),
+              const Icon(
+                Icons.check_circle_rounded,
+                size: 18,
+                color: Color(0xFF10B981),
+              ),
               const SizedBox(width: 8),
               Expanded(
                 child: RichText(
                   text: TextSpan(
-                    style: GoogleFonts.poppins(
-                      color: theme.colorScheme.onSurface,
-                      fontSize: 13,
+                    style: GoogleFonts.plusJakartaSans(
+                      color: textSub,
+                      fontSize: 14,
                     ),
                     children: [
-                      TextSpan(
-                        text: "Correct Answer: ",
-                        style: const TextStyle(fontWeight: FontWeight.bold),
+                      const TextSpan(
+                        text: "Correct: ",
+                        style: TextStyle(fontWeight: FontWeight.bold),
                       ),
                       TextSpan(
                         text: correctAnswer,
-                        style: TextStyle(color: Colors.green[600]),
+                        style: const TextStyle(
+                          color: Color(0xFF10B981),
+                          fontWeight: FontWeight.w600,
+                        ),
                       ),
                     ],
                   ),
@@ -402,7 +444,13 @@ class _QuizStatsScreenState extends State<QuizStatsScreen>
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    // Theme Colors matching HomeScreen
+    final bgColor = isDark ? const Color(0xFF161022) : const Color(0xFFF9F8FC);
+    final surfaceColor = isDark ? const Color(0xFF1E1730) : Colors.white;
+    final textMain = isDark ? Colors.white : const Color(0xFF120D1B);
+    final textSub = isDark ? const Color(0xFFA78BFA) : const Color(0xFF64748B);
 
     // Extract Data
     final title =
@@ -427,7 +475,7 @@ class _QuizStatsScreenState extends State<QuizStatsScreen>
 
     return SafeArea(
       child: Scaffold(
-        backgroundColor: theme.scaffoldBackgroundColor,
+        backgroundColor: bgColor,
         // Stack is used to overlay Confetti
         body: Stack(
           alignment: Alignment.topCenter,
@@ -436,24 +484,38 @@ class _QuizStatsScreenState extends State<QuizStatsScreen>
             CustomScrollView(
               slivers: [
                 SliverAppBar(
-                  backgroundColor: theme.scaffoldBackgroundColor,
+                  backgroundColor: bgColor,
                   expandedHeight: 0,
                   floating: true,
                   pinned: true,
                   elevation: 0,
-                  leading: IconButton(
-                    icon: Icon(
-                      Icons.close_rounded,
-                      color: theme.colorScheme.onBackground,
+                  leading: Padding(
+                    padding: const EdgeInsets.all(8.0),
+                    child: GestureDetector(
+                      onTap: () => Navigator.pop(context),
+                      child: Container(
+                        decoration: BoxDecoration(
+                          color: surfaceColor,
+                          shape: BoxShape.circle,
+                          border: isDark
+                              ? Border.all(color: Colors.white12)
+                              : Border.all(color: Colors.black12),
+                        ),
+                        child: Icon(
+                          Icons.arrow_back_rounded,
+                          color: textMain,
+                          size: 20,
+                        ),
+                      ),
                     ),
-                    onPressed: () => Navigator.pop(context),
                   ),
                   centerTitle: true,
                   title: Text(
                     'Result Overview',
-                    style: GoogleFonts.poppins(
-                      color: theme.colorScheme.onBackground,
-                      fontWeight: FontWeight.w600,
+                    style: GoogleFonts.plusJakartaSans(
+                      color: textMain,
+                      fontWeight: FontWeight.w700,
+                      fontSize: 18,
                     ),
                   ),
                 ),
@@ -467,7 +529,10 @@ class _QuizStatsScreenState extends State<QuizStatsScreen>
                         child: SlideTransition(
                           position: _chartSlide,
                           child: _buildMainResultCard(
-                            theme,
+                            isDark,
+                            surfaceColor,
+                            textMain,
+                            textSub,
                             title,
                             date,
                             correct,
@@ -478,7 +543,7 @@ class _QuizStatsScreenState extends State<QuizStatsScreen>
                         ),
                       ),
 
-                      const SizedBox(height: 32),
+                      const SizedBox(height: 24),
 
                       // Stats Grid with Staggered Animation
                       FadeTransition(
@@ -491,42 +556,50 @@ class _QuizStatsScreenState extends State<QuizStatsScreen>
                             crossAxisCount: 2,
                             crossAxisSpacing: 16,
                             mainAxisSpacing: 16,
-                            childAspectRatio: 1.4,
+                            childAspectRatio: 1.5,
                             children: [
                               _buildStatTile(
-                                theme,
+                                isDark,
+                                surfaceColor,
+                                textMain,
                                 'Correct',
                                 '$correct',
-                                Icons.check_circle_outline_rounded,
-                                Colors.green,
+                                Icons.check_circle_rounded,
+                                const Color(0xFF10B981),
                               ),
                               _buildStatTile(
-                                theme,
+                                isDark,
+                                surfaceColor,
+                                textMain,
                                 'Incorrect',
                                 '$incorrect',
-                                Icons.cancel_outlined,
-                                Colors.redAccent,
+                                Icons.cancel_rounded,
+                                const Color(0xFFEF4444),
                               ),
                               _buildStatTile(
-                                theme,
+                                isDark,
+                                surfaceColor,
+                                textMain,
                                 'Duration',
                                 _formatDuration(timeSeconds),
-                                Icons.timer_outlined,
-                                theme.colorScheme.primary,
+                                Icons.timer_rounded,
+                                const Color(0xFF3B82F6),
                               ),
                               _buildStatTile(
-                                theme,
+                                isDark,
+                                surfaceColor,
+                                textMain,
                                 'Accuracy',
                                 '$accuracy%',
-                                Icons.analytics_outlined,
-                                theme.colorScheme.tertiary,
+                                Icons.analytics_rounded,
+                                const Color(0xFF8B5CF6),
                               ),
                             ],
                           ),
                         ),
                       ),
 
-                      const SizedBox(height: 40),
+                      const SizedBox(height: 32),
 
                       // Action Button with Staggered Animation
                       FadeTransition(
@@ -537,24 +610,22 @@ class _QuizStatsScreenState extends State<QuizStatsScreen>
                             width: double.infinity,
                             height: 56,
                             child: FilledButton.icon(
-                              // UPDATED: Now calls the review sheet
+                              // Review Sheet
                               onPressed: () => _showReviewSheet(context),
                               icon: const Icon(
                                 Icons.playlist_add_check_rounded,
                               ),
                               label: Text(
                                 'Review Answers',
-                                style: GoogleFonts.poppins(
+                                style: GoogleFonts.plusJakartaSans(
                                   fontSize: 16,
-                                  fontWeight: FontWeight.w600,
+                                  fontWeight: FontWeight.bold,
                                 ),
                               ),
                               style: FilledButton.styleFrom(
-                                backgroundColor: theme.colorScheme.primary,
-                                foregroundColor: theme.colorScheme.onPrimary,
-                                elevation: 4,
-                                shadowColor: theme.colorScheme.primary
-                                    .withOpacity(0.4),
+                                backgroundColor: primaryColor,
+                                foregroundColor: Colors.white,
+                                elevation: 0,
                                 shape: RoundedRectangleBorder(
                                   borderRadius: BorderRadius.circular(16),
                                 ),
@@ -576,14 +647,14 @@ class _QuizStatsScreenState extends State<QuizStatsScreen>
               blastDirectionality: BlastDirectionality.explosive,
               shouldLoop: false,
               colors: const [
-                Colors.green,
-                Colors.blue,
-                Colors.pink,
-                Colors.orange,
-                Colors.purple,
+                Color(0xFF5B13EC),
+                Color(0xFF10B981),
+                Color(0xFFF59E0B),
+                Color(0xFFEF4444),
+                Color(0xFF3B82F6),
               ],
               gravity: 0.2,
-              numberOfParticles: 20,
+              numberOfParticles: 30,
             ),
           ],
         ),
@@ -592,7 +663,10 @@ class _QuizStatsScreenState extends State<QuizStatsScreen>
   }
 
   Widget _buildMainResultCard(
-    ThemeData theme,
+    bool isDark,
+    Color surfaceColor,
+    Color textMain,
+    Color textSub,
     String title,
     DateTime date,
     int correct,
@@ -607,33 +681,42 @@ class _QuizStatsScreenState extends State<QuizStatsScreen>
     return Container(
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
-        color: theme.colorScheme.surface,
-        borderRadius: BorderRadius.circular(32), // More rounded
-        boxShadow: [
-          BoxShadow(
-            color: theme.shadowColor.withOpacity(0.08),
-            blurRadius: 30,
-            offset: const Offset(0, 10),
-            spreadRadius: 0,
-          ),
-        ],
+        color: surfaceColor,
+        borderRadius: BorderRadius.circular(32),
+        border: isDark ? Border.all(color: Colors.white10) : null,
+        boxShadow: isDark
+            ? null
+            : [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.04),
+                  blurRadius: 20,
+                  offset: const Offset(0, 10),
+                ),
+              ],
       ),
       child: Column(
         children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(gradeInfo['icon'], color: gradeInfo['color'], size: 28),
-              const SizedBox(width: 8),
-              Text(
-                gradeInfo['text'],
-                style: GoogleFonts.poppins(
-                  fontSize: 22,
-                  fontWeight: FontWeight.bold,
-                  color: gradeInfo['color'],
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            decoration: BoxDecoration(
+              color: gradeInfo['bg'],
+              borderRadius: BorderRadius.circular(20),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(gradeInfo['icon'], color: gradeInfo['color'], size: 20),
+                const SizedBox(width: 8),
+                Text(
+                  gradeInfo['text'],
+                  style: GoogleFonts.plusJakartaSans(
+                    fontSize: 14,
+                    fontWeight: FontWeight.bold,
+                    color: gradeInfo['color'],
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
           const SizedBox(height: 24),
           SizedBox(
@@ -648,7 +731,9 @@ class _QuizStatsScreenState extends State<QuizStatsScreen>
                   height: 180,
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
-                    color: theme.colorScheme.surfaceVariant.withOpacity(0.3),
+                    color: isDark
+                        ? Colors.white.withOpacity(0.05)
+                        : const Color(0xFFF1F5F9),
                   ),
                 ),
                 PieChart(
@@ -659,19 +744,19 @@ class _QuizStatsScreenState extends State<QuizStatsScreen>
                     sections: [
                       PieChartSectionData(
                         value: percentCorrect,
-                        color: Colors.greenAccent[400],
+                        color: const Color(0xFF10B981),
                         radius: 25,
                         showTitle: false,
                         badgeWidget: _buildBadge(
                           Icons.check,
-                          Colors.greenAccent[400]!,
+                          const Color(0xFF10B981),
                         ),
                         badgePositionPercentageOffset: .98,
                       ),
                       PieChartSectionData(
                         value: percentIncorrect,
-                        color: Colors.redAccent[100],
-                        radius: 20, // Slightly smaller for effect
+                        color: const Color(0xFFEF4444).withOpacity(0.3),
+                        radius: 20,
                         showTitle: false,
                       ),
                     ],
@@ -682,18 +767,19 @@ class _QuizStatsScreenState extends State<QuizStatsScreen>
                   children: [
                     Text(
                       '${percent.toInt()}%',
-                      style: GoogleFonts.poppins(
+                      style: GoogleFonts.plusJakartaSans(
                         fontWeight: FontWeight.bold,
                         fontSize: 32,
-                        color: theme.colorScheme.onSurface,
+                        color: textMain,
                       ),
                     ),
                     Text(
                       'Score',
-                      style: GoogleFonts.poppins(
+                      style: GoogleFonts.plusJakartaSans(
                         fontSize: 12,
-                        color: theme.colorScheme.onSurfaceVariant,
-                        letterSpacing: 1,
+                        color: textSub,
+                        letterSpacing: 0.5,
+                        fontWeight: FontWeight.w600,
                       ),
                     ),
                   ],
@@ -705,18 +791,19 @@ class _QuizStatsScreenState extends State<QuizStatsScreen>
           Text(
             title,
             textAlign: TextAlign.center,
-            style: GoogleFonts.poppins(
+            style: GoogleFonts.plusJakartaSans(
               fontSize: 18,
-              fontWeight: FontWeight.w600,
-              color: theme.colorScheme.onSurface,
+              fontWeight: FontWeight.bold,
+              color: textMain,
             ),
           ),
           const SizedBox(height: 4),
           Text(
-            DateFormat('MMMM d, y • h:mm a').format(date),
-            style: GoogleFonts.poppins(
+            DateFormat('MMM d, y • h:mm a').format(date),
+            style: GoogleFonts.plusJakartaSans(
               fontSize: 13,
-              color: theme.colorScheme.onSurfaceVariant,
+              color: textSub,
+              fontWeight: FontWeight.w500,
             ),
           ),
         ],
@@ -744,7 +831,9 @@ class _QuizStatsScreenState extends State<QuizStatsScreen>
   }
 
   Widget _buildStatTile(
-    ThemeData theme,
+    bool isDark,
+    Color surfaceColor,
+    Color textMain,
     String label,
     String value,
     IconData icon,
@@ -753,16 +842,18 @@ class _QuizStatsScreenState extends State<QuizStatsScreen>
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: theme.colorScheme.surface,
+        color: surfaceColor,
         borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: theme.colorScheme.outline.withOpacity(0.05)),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.02),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
+        border: isDark ? Border.all(color: Colors.white10) : null,
+        boxShadow: isDark
+            ? null
+            : [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.02),
+                  blurRadius: 10,
+                  offset: const Offset(0, 4),
+                ),
+              ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -771,27 +862,28 @@ class _QuizStatsScreenState extends State<QuizStatsScreen>
           Container(
             padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
-              color: accentColor.withOpacity(0.1),
+              color: accentColor.withOpacity(0.15),
               shape: BoxShape.circle,
             ),
-            child: Icon(icon, size: 20, color: accentColor),
+            child: Icon(icon, size: 18, color: accentColor),
           ),
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
                 value,
-                style: GoogleFonts.poppins(
+                style: GoogleFonts.plusJakartaSans(
                   fontSize: 20,
                   fontWeight: FontWeight.bold,
-                  color: theme.colorScheme.onSurface,
+                  color: textMain,
                 ),
               ),
               Text(
                 label,
-                style: GoogleFonts.poppins(
+                style: GoogleFonts.plusJakartaSans(
                   fontSize: 12,
-                  color: theme.colorScheme.onSurfaceVariant,
+                  fontWeight: FontWeight.w600,
+                  color: isDark ? Colors.white54 : Colors.black45,
                 ),
               ),
             ],

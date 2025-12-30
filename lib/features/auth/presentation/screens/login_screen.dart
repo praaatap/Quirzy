@@ -359,13 +359,12 @@ class _SignInPageState extends ConsumerState<SignInPage>
     final isDark = theme.brightness == Brightness.dark;
     final size = MediaQuery.of(context).size;
 
-    // Theme Colors
-    final primaryBlue = const Color(0xFF3B82F6);
-    final secondaryPurple = const Color(0xFF8B5CF6);
-    final bgLight = const Color(0xFFF8FAFC);
-    final bgDark = const Color(0xFF0A0A0A);
+    final primaryGreen = const Color(0xFF5B13EC);
+    final secondaryBlue = const Color(0xFF8B5CF6);
+    final bgLight = const Color(0xFFF9F8FC);
+    final bgDark = const Color(0xFF161022);
 
-    final textMain = isDark ? Colors.white : const Color(0xFF0F172A);
+    final textMain = isDark ? Colors.white : const Color(0xFF120D1B);
     final textSub = isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B);
 
     return AnnotatedRegion<SystemUiOverlayStyle>(
@@ -389,11 +388,11 @@ class _SignInPageState extends ConsumerState<SignInPage>
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                _AnimatedLogo(primaryBlue: primaryBlue),
+                _AnimatedLogo(primaryBlue: primaryGreen),
                 const SizedBox(width: 10),
                 ShaderMask(
                   shaderCallback: (bounds) => LinearGradient(
-                    colors: [primaryBlue, secondaryPurple],
+                    colors: [primaryGreen, secondaryBlue],
                   ).createShader(bounds),
                   child: Text(
                     'Quirzy',
@@ -422,7 +421,7 @@ class _SignInPageState extends ConsumerState<SignInPage>
                       top: -80 + (sin(value * pi * 2) * 20),
                       right: -30 + (cos(value * pi * 2) * 15),
                       child: _AnimatedBlob(
-                        color: primaryBlue.withOpacity(isDark ? 0.15 : 0.12),
+                        color: primaryGreen.withOpacity(isDark ? 0.15 : 0.12),
                         size: 350 + (sin(value * pi) * 30),
                         blurSigma: 90,
                       ),
@@ -431,9 +430,7 @@ class _SignInPageState extends ConsumerState<SignInPage>
                       bottom: -100 + (cos(value * pi * 2) * 25),
                       left: -80 + (sin(value * pi * 2) * 20),
                       child: _AnimatedBlob(
-                        color: secondaryPurple.withOpacity(
-                          isDark ? 0.12 : 0.10,
-                        ),
+                        color: secondaryBlue.withOpacity(isDark ? 0.12 : 0.10),
                         size: 400 + (cos(value * pi) * 35),
                         blurSigma: 100,
                       ),
@@ -460,7 +457,7 @@ class _SignInPageState extends ConsumerState<SignInPage>
                 index: index,
                 controller: _blobController,
                 isDark: isDark,
-                primaryColor: primaryBlue,
+                primaryColor: primaryGreen,
               );
             }),
 
@@ -484,7 +481,7 @@ class _SignInPageState extends ConsumerState<SignInPage>
                           child: _AnimatedHeroText(
                             shimmerController: _shimmerController,
                             textMain: textMain,
-                            primaryBlue: primaryBlue,
+                            primaryBlue: primaryGreen,
                           ),
                         ),
 
@@ -517,7 +514,7 @@ class _SignInPageState extends ConsumerState<SignInPage>
                             isFocused: _isEmailFocused,
                             isDark: isDark,
                             textSub: textSub,
-                            primaryBlue: primaryBlue,
+                            primaryBlue: primaryGreen,
                           ),
                         ),
 
@@ -536,7 +533,7 @@ class _SignInPageState extends ConsumerState<SignInPage>
                             isFocused: _isPasswordFocused,
                             isDark: isDark,
                             textSub: textSub,
-                            primaryBlue: primaryBlue,
+                            primaryBlue: primaryGreen,
                             suffixIcon: IconButton(
                               onPressed: () => setState(
                                 () => _isPasswordVisible = !_isPasswordVisible,
@@ -571,7 +568,7 @@ class _SignInPageState extends ConsumerState<SignInPage>
                               padding: const EdgeInsets.only(top: 14),
                               child: _AnimatedTextButton(
                                 text: "Forgot Password?",
-                                color: primaryBlue,
+                                color: primaryGreen,
                                 onTap: () {
                                   HapticFeedback.selectionClick();
                                 },
@@ -591,8 +588,8 @@ class _SignInPageState extends ConsumerState<SignInPage>
                           child: _GlowingButton(
                             onPressed: _signIn,
                             glowAnimation: _glowAnimation,
-                            primaryBlue: primaryBlue,
-                            secondaryPurple: secondaryPurple,
+                            primaryBlue: primaryGreen,
+                            secondaryPurple: secondaryBlue,
                             child: Consumer(
                               builder: (context, ref, _) {
                                 final isLoading = ref
@@ -655,7 +652,7 @@ class _SignInPageState extends ConsumerState<SignInPage>
                           child: Center(
                             child: _AnimatedRegisterLink(
                               textSub: textSub,
-                              primaryBlue: primaryBlue,
+                              primaryBlue: primaryGreen,
                               onTap: () {
                                 HapticFeedback.selectionClick();
                                 Navigator.pushReplacement(
@@ -1278,7 +1275,6 @@ class _AnimatedErrorWidget extends ConsumerWidget {
                 curve: Curves.elasticOut,
                 builder: (context, value, child) {
                   return Transform.scale(
-                    scale: 0.8 + (value * 0.2),
                     child: Opacity(opacity: value, child: child),
                   );
                 },

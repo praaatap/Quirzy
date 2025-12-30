@@ -363,12 +363,12 @@ class _SignUpPageState extends ConsumerState<SignUpPage>
     final size = MediaQuery.of(context).size;
 
     // Theme Colors
-    final primaryGreen = const Color(0xFF10B981);
-    final secondaryBlue = const Color(0xFF3B82F6);
-    final bgLight = const Color(0xFFF8FAFC);
-    final bgDark = const Color(0xFF0A0A0A);
+    final primaryGreen = const Color(0xFF5B13EC);
+    final secondaryBlue = const Color(0xFF8B5CF6);
+    final bgLight = const Color(0xFFF9F8FC);
+    final bgDark = const Color(0xFF161022);
 
-    final textMain = isDark ? Colors.white : const Color(0xFF0F172A);
+    final textMain = isDark ? Colors.white : const Color(0xFF120D1B);
     final textSub = isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B);
 
     return AnnotatedRegion<SystemUiOverlayStyle>(

@@ -6,6 +6,7 @@ import 'package:quirzy/features/flashcards/services/flashcard_service.dart';
 import 'package:quirzy/features/flashcards/services/flashcard_cache_service.dart';
 import 'package:quirzy/features/flashcards/screens/flashcard_study_screen.dart';
 import 'package:quirzy/core/widgets/loading/shimmer_loading.dart';
+import 'package:quirzy/features/quiz/screens/quiz_generation_loading_screen.dart';
 
 // ==========================================
 // REDESIGNED FLASHCARDS SCREEN
@@ -93,15 +94,28 @@ class _FlashcardsScreenState extends ConsumerState<FlashcardsScreen>
 
     HapticFeedback.mediumImpact();
     _focusNode.unfocus();
-    setState(() => _isGenerating = true);
+
+    // Show AI Generation Loading Screen
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => const QuizGenerationLoadingScreen(
+          title: 'Creating Flashcards...',
+          subtitle: 'AI is distilling key concepts\ninto bite-sized cards.',
+        ),
+      ),
+    );
 
     try {
       final result = await FlashcardService.generateFlashcards(
         topic,
         cardCount: 10,
       );
+
       if (!mounted) return;
-      setState(() => _isGenerating = false);
+
+      // Pop loading screen
+      Navigator.pop(context);
 
       _topicController.clear();
       Navigator.push(
@@ -136,7 +150,8 @@ class _FlashcardsScreenState extends ConsumerState<FlashcardsScreen>
       ).then((_) => _loadFlashcardSets());
     } catch (e) {
       if (!mounted) return;
-      setState(() => _isGenerating = false);
+      // Pop loading screen on error
+      Navigator.pop(context);
       _showSnackBar(e.toString().replaceAll('Exception: ', ''), isError: true);
     }
   }
