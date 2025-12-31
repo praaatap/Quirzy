@@ -11,8 +11,6 @@ import 'package:go_router/go_router.dart';
 import 'package:quirzy/routes/app_routes.dart';
 import 'package:quirzy/features/auth/presentation/providers/auth_provider.dart';
 import 'package:quirzy/providers/tab_index_provider.dart';
-import 'package:quirzy/features/auth/presentation/screens/login_screen.dart';
-import 'package:quirzy/features/auth/presentation/screens/signup_screen.dart';
 import 'package:quirzy/features/auth/presentation/screens/success_screen.dart';
 import 'package:quirzy/features/settings/presentation/screens/privacy_policy_screen.dart';
 import 'package:quirzy/core/services/notification_service.dart';
@@ -46,7 +44,6 @@ class _QuiryHomeState extends ConsumerState<QuiryHome>
 
   // Keys
   final GlobalKey _checkboxKey = GlobalKey();
-  final GlobalKey _googleLoginKey = GlobalKey();
 
   // Colors
   static const primaryColor = Color(0xFF5B13EC);
@@ -209,24 +206,6 @@ class _QuiryHomeState extends ConsumerState<QuiryHome>
     }
   }
 
-  void _onEmailLoginPressed() {
-    if (!_isPrivacyPolicyAccepted) {
-      _showConsentRequiredMessage();
-      return;
-    }
-    HapticFeedback.lightImpact();
-    Navigator.of(context).push(_createRoute(const SignInPage()));
-  }
-
-  void _onRegisterPressed() {
-    if (!_isPrivacyPolicyAccepted) {
-      _showConsentRequiredMessage();
-      return;
-    }
-    HapticFeedback.lightImpact();
-    Navigator.of(context).push(_createRoute(const SignUpPage()));
-  }
-
   Route _createRoute(Widget page) {
     return PageRouteBuilder(
       transitionDuration: const Duration(milliseconds: 300),
@@ -334,110 +313,48 @@ class _QuiryHomeState extends ConsumerState<QuiryHome>
                           const SizedBox(height: 24),
 
                           // Google Button
-                          Showcase(
-                            key: _googleLoginKey,
-                            title: 'Login',
-                            description: 'Continue with Google',
-                            child: _AnimatedButton(
-                              onPressed: isProcessing
-                                  ? null
-                                  : _handleGoogleSignIn,
-                              backgroundColor: isDark
-                                  ? const Color(0xFF1E1730)
-                                  : Colors.white,
-                              borderColor: isDark
-                                  ? const Color(0xFF2D2540)
-                                  : const Color(0xFFE2E8F0),
-                              child: isProcessing
-                                  ? SizedBox(
-                                      height: 20,
-                                      width: 20,
-                                      child: CircularProgressIndicator(
-                                        strokeWidth: 2,
-                                        color: primaryColor,
-                                      ),
-                                    )
-                                  : Row(
-                                      mainAxisAlignment:
-                                          MainAxisAlignment.center,
-                                      children: [
-                                        Image.asset(
-                                          'assets/icon/google_icon.png',
-                                          height: 22,
-                                        ),
-                                        const SizedBox(width: 12),
-                                        Text(
-                                          "Continue with Google",
-                                          style: GoogleFonts.plusJakartaSans(
-                                            fontWeight: FontWeight.bold,
-                                            fontSize: 16,
-                                            color: isDark
-                                                ? Colors.white
-                                                : const Color(0xFF1E293B),
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                            ),
-                          ),
-
-                          const SizedBox(height: 12),
-
-                          // Email Button
                           _AnimatedButton(
-                            onPressed: _onEmailLoginPressed,
-                            backgroundColor: primaryColor,
-                            child: Row(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                const Icon(
-                                  Icons.mail_outline_rounded,
-                                  color: Colors.white,
-                                  size: 22,
-                                ),
-                                const SizedBox(width: 12),
-                                Text(
-                                  "Sign in with Email",
-                                  style: GoogleFonts.plusJakartaSans(
-                                    fontWeight: FontWeight.bold,
-                                    fontSize: 16,
-                                    color: Colors.white,
+                            onPressed: isProcessing
+                                ? null
+                                : _handleGoogleSignIn,
+                            backgroundColor: isDark
+                                ? const Color(0xFF1E1730)
+                                : Colors.white,
+                            borderColor: isDark
+                                ? const Color(0xFF2D2540)
+                                : const Color(0xFFE2E8F0),
+                            child: isProcessing
+                                ? SizedBox(
+                                    height: 20,
+                                    width: 20,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2,
+                                      color: primaryColor,
+                                    ),
+                                  )
+                                : Row(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      Image.asset(
+                                        'assets/icon/google_icon.png',
+                                        height: 22,
+                                      ),
+                                      const SizedBox(width: 12),
+                                      Text(
+                                        "Continue with Google",
+                                        style: GoogleFonts.plusJakartaSans(
+                                          fontWeight: FontWeight.bold,
+                                          fontSize: 16,
+                                          color: isDark
+                                              ? Colors.white
+                                              : const Color(0xFF1E293B),
+                                        ),
+                                      ),
+                                    ],
                                   ),
-                                ),
-                              ],
-                            ),
                           ),
 
                           const SizedBox(height: 24),
-
-                          // Register Link
-                          GestureDetector(
-                            onTap: _onRegisterPressed,
-                            child: RichText(
-                              text: TextSpan(
-                                style: GoogleFonts.plusJakartaSans(
-                                  color: isDark
-                                      ? const Color(0xFF94A3B8)
-                                      : const Color(0xFF64748B),
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.w600,
-                                ),
-                                children: [
-                                  const TextSpan(
-                                    text: "Don't have an account? ",
-                                  ),
-                                  TextSpan(
-                                    text: "Register",
-                                    style: TextStyle(
-                                      color: primaryColor,
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ),
-                          const SizedBox(height: 16),
                         ],
                       ),
                     ),

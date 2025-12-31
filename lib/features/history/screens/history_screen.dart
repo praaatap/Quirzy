@@ -6,6 +6,7 @@ import 'package:quirzy/providers/tab_index_provider.dart';
 import 'package:quirzy/providers/quiz_history_provider.dart';
 import 'package:quirzy/features/history/screens/quiz_stats_screen.dart';
 import 'package:quirzy/core/widgets/loading/shimmer_loading.dart';
+import 'package:flutter_animate/flutter_animate.dart';
 
 // ==========================================
 // REDESIGNED HISTORY SCREEN
@@ -26,28 +27,13 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen>
 
   int _selectedTab = 0; // 0: Quizzes, 1: Progress, 2: Stats
 
-  late AnimationController _animController;
-  late Animation<double> _fadeAnim;
-
   @override
   void initState() {
     super.initState();
-    _animController = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 600),
-    );
-    _fadeAnim = CurvedAnimation(parent: _animController, curve: Curves.easeOut);
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       ref.read(quizHistoryProvider.notifier).loadHistory();
-      _animController.forward();
     });
-  }
-
-  @override
-  void dispose() {
-    _animController.dispose();
-    super.dispose();
   }
 
   void _navigateToStats(Map<String, dynamic> quiz) {
@@ -105,63 +91,124 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen>
         child: Stack(
           children: [
             // Main Content
-            FadeTransition(
-              opacity: _fadeAnim,
-              child: RefreshIndicator(
-                onRefresh: _onRefresh,
-                color: primaryColor,
-                child: CustomScrollView(
-                  physics: const AlwaysScrollableScrollPhysics(
-                    parent: BouncingScrollPhysics(),
-                  ),
-                  slivers: [
-                    // App Bar - simplified, no back/settings since in tabs
-                    SliverToBoxAdapter(child: _buildAppBar(textMain)),
+            RefreshIndicator(
+              onRefresh: _onRefresh,
+              color: primaryColor,
+              child:
+                  CustomScrollView(
+                        physics: const AlwaysScrollableScrollPhysics(
+                          parent: BouncingScrollPhysics(),
+                        ),
+                        slivers: [
+                          // App Bar
+                          SliverToBoxAdapter(child: _buildAppBar(textMain)),
 
-                    // Hero Section
-                    SliverToBoxAdapter(
-                      child: _buildHeroSection(
-                        textMain,
-                        textSub,
-                        primaryColor,
-                        isDark,
+                          // Hero Section
+                          SliverToBoxAdapter(
+                            child: _buildHeroSection(
+                              textMain,
+                              textSub,
+                              primaryColor,
+                              isDark,
+                            ),
+                          ),
+
+                          // Tab Bar
+                          SliverToBoxAdapter(
+                            child: _buildTabBar(isDark, primaryColor, textSub),
+                          ),
+
+                          // Content based on selection
+                          if (_selectedTab == 0) ...[
+                            // Stats Cards
+                            SliverToBoxAdapter(
+                              child: _buildStatsCards(
+                                isDark,
+                                primaryColor,
+                                textMain,
+                                textSub,
+                              ),
+                            ),
+                            // Recent History Header
+                            SliverToBoxAdapter(
+                              child: _buildSectionHeader(
+                                textMain,
+                                primaryColor,
+                              ),
+                            ),
+                            // Quiz List
+                            _buildQuizList(
+                              isDark,
+                              textMain,
+                              textSub,
+                              primaryColor,
+                              primaryLight,
+                            ),
+                          ] else if (_selectedTab == 1) ...[
+                            // Progress Tab Placeholder
+                            SliverFillRemaining(
+                              hasScrollBody: false,
+                              child: Center(
+                                child: Column(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    Icon(
+                                          Icons.bar_chart_rounded,
+                                          size: 48,
+                                          color: textSub.withOpacity(0.5),
+                                          // ignore: dead_code
+                                        )
+                                        .animate(
+                                          onPlay: (controller) =>
+                                              controller.repeat(reverse: true),
+                                        )
+                                        .scale(
+                                          begin: const Offset(1, 1),
+                                          end: const Offset(1.1, 1.1),
+                                          duration: 1000.ms,
+                                        ),
+                                    const SizedBox(height: 16),
+                                    Text(
+                                      "Progress & Analytics\nComing Soon",
+                                      textAlign: TextAlign.center,
+                                      style: GoogleFonts.plusJakartaSans(
+                                        color: textSub,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ] else ...[
+                            // Stats Tab Placeholder or content
+                            SliverToBoxAdapter(
+                              child: Padding(
+                                padding: const EdgeInsets.only(top: 24),
+                                child: _buildStatsCards(
+                                  isDark,
+                                  primaryColor,
+                                  textMain,
+                                  textSub,
+                                ),
+                              ),
+                            ),
+                          ],
+
+                          // Bottom spacing for CTA
+                          const SliverToBoxAdapter(
+                            child: SizedBox(height: 120),
+                          ),
+                        ],
+                      )
+                      .animate()
+                      .fadeIn(duration: 600.ms)
+                      .slideY(
+                        begin: 0.05,
+                        end: 0,
+                        duration: 600.ms,
+                        curve: Curves.easeOut,
                       ),
-                    ),
-
-                    // Tab Bar
-                    SliverToBoxAdapter(
-                      child: _buildTabBar(isDark, primaryColor, textSub),
-                    ),
-
-                    // Stats Cards
-                    SliverToBoxAdapter(
-                      child: _buildStatsCards(
-                        isDark,
-                        primaryColor,
-                        textMain,
-                        textSub,
-                      ),
-                    ),
-
-                    // Recent History Header
-                    SliverToBoxAdapter(
-                      child: _buildSectionHeader(textMain, primaryColor),
-                    ),
-
-                    // Quiz List
-                    _buildQuizList(
-                      isDark,
-                      textMain,
-                      textSub,
-                      primaryColor,
-                      primaryLight,
-                    ),
-
-                    // Bottom spacing for CTA
-                    const SliverToBoxAdapter(child: SizedBox(height: 120)),
-                  ],
-                ),
-              ),
             ),
 
             // Floating CTA Button
@@ -209,32 +256,40 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen>
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           RichText(
-            text: TextSpan(
-              style: GoogleFonts.plusJakartaSans(
-                fontSize: 32,
-                fontWeight: FontWeight.bold,
-                color: textMain,
-                height: 1.1,
-                letterSpacing: -0.5,
-              ),
-              children: [
-                const TextSpan(text: 'Your Learning\n'),
-                TextSpan(
-                  text: 'Journey',
-                  style: TextStyle(color: isDark ? Colors.white : primaryColor),
+                text: TextSpan(
+                  style: GoogleFonts.plusJakartaSans(
+                    fontSize: 32,
+                    fontWeight: FontWeight.bold,
+                    color: textMain,
+                    height: 1.1,
+                    letterSpacing: -0.5,
+                  ),
+                  children: [
+                    const TextSpan(text: 'Your Learning\n'),
+                    TextSpan(
+                      text: 'Journey',
+                      style: TextStyle(
+                        color: isDark ? Colors.white : primaryColor,
+                      ),
+                    ),
+                  ],
                 ),
-              ],
-            ),
-          ),
+              )
+              .animate()
+              .fade(duration: 800.ms, delay: 100.ms)
+              .slideX(begin: -0.1, end: 0, curve: Curves.easeOut),
           const SizedBox(height: 8),
           Text(
-            'Review your past achievements and keep growing.',
-            style: GoogleFonts.plusJakartaSans(
-              fontSize: 14,
-              fontWeight: FontWeight.w500,
-              color: textSub,
-            ),
-          ),
+                'Review your past achievements and keep growing.',
+                style: GoogleFonts.plusJakartaSans(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w500,
+                  color: textSub,
+                ),
+              )
+              .animate()
+              .fade(duration: 800.ms, delay: 200.ms)
+              .slideX(begin: -0.1, end: 0, curve: Curves.easeOut),
         ],
       ),
     );
@@ -606,89 +661,98 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen>
 
     return GestureDetector(
       onTap: () => _navigateToStats(quiz),
-      child: Container(
-        margin: const EdgeInsets.only(bottom: 12),
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: isDark ? const Color(0xFF1A1A1E) : Colors.white,
-          borderRadius: BorderRadius.circular(24),
-          border: Border.all(
-            color: isDark ? const Color(0xFF27272A) : Colors.transparent,
-          ),
-          boxShadow: isDark
-              ? null
-              : [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.03),
-                    blurRadius: 10,
-                    offset: const Offset(0, 2),
+      child:
+          Container(
+                margin: const EdgeInsets.only(bottom: 12),
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: isDark ? const Color(0xFF1A1A1E) : Colors.white,
+                  borderRadius: BorderRadius.circular(24),
+                  border: Border.all(
+                    color: isDark
+                        ? const Color(0xFF27272A)
+                        : Colors.transparent,
                   ),
-                ],
-        ),
-        child: Row(
-          children: [
-            // Icon
-            Container(
-              width: 56,
-              height: 56,
-              decoration: BoxDecoration(
-                color: iconBg,
-                borderRadius: BorderRadius.circular(16),
-              ),
-              child: Icon(icon, color: iconColor, size: 28),
-            ),
-            const SizedBox(width: 16),
-
-            // Content
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    title,
-                    style: GoogleFonts.plusJakartaSans(
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                      color: textMain,
-                      height: 1.2,
-                    ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    isIncomplete
-                        ? '$dateText • Incomplete'
-                        : '$dateText • $totalQuestions questions',
-                    style: GoogleFonts.plusJakartaSans(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w500,
-                      color: textSub,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-
-            // Score Badge
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-              decoration: BoxDecoration(
-                color: scoreBg,
-                borderRadius: BorderRadius.circular(9999),
-              ),
-              child: Text(
-                isIncomplete ? '--' : '$percentage%',
-                style: GoogleFonts.plusJakartaSans(
-                  fontSize: 12,
-                  fontWeight: FontWeight.bold,
-                  color: scoreText,
+                  boxShadow: isDark
+                      ? null
+                      : [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.03),
+                            blurRadius: 10,
+                            offset: const Offset(0, 2),
+                          ),
+                        ],
                 ),
-              ),
-            ),
-          ],
-        ),
-      ),
+                child: Row(
+                  children: [
+                    // Icon
+                    Container(
+                      width: 56,
+                      height: 56,
+                      decoration: BoxDecoration(
+                        color: iconBg,
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                      child: Icon(icon, color: iconColor, size: 28),
+                    ),
+                    const SizedBox(width: 16),
+
+                    // Content
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            title,
+                            style: GoogleFonts.plusJakartaSans(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                              color: textMain,
+                              height: 1.2,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            isIncomplete
+                                ? '$dateText • Incomplete'
+                                : '$dateText • $totalQuestions questions',
+                            style: GoogleFonts.plusJakartaSans(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w500,
+                              color: textSub,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+
+                    // Score Badge
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 10,
+                        vertical: 6,
+                      ),
+                      decoration: BoxDecoration(
+                        color: scoreBg,
+                        borderRadius: BorderRadius.circular(9999),
+                      ),
+                      child: Text(
+                        isIncomplete ? '--' : '$percentage%',
+                        style: GoogleFonts.plusJakartaSans(
+                          fontSize: 12,
+                          fontWeight: FontWeight.bold,
+                          color: scoreText,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              )
+              .animate()
+              .fade(duration: 400.ms)
+              .slideX(begin: 0.1, end: 0, curve: Curves.easeOut),
     );
   }
 

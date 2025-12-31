@@ -4,10 +4,13 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:go_router/go_router.dart';
+import 'package:flutter_animate/flutter_animate.dart';
 import 'package:quirzy/routes/app_routes.dart';
 import 'package:quirzy/features/auth/presentation/providers/auth_provider.dart';
 import 'package:quirzy/features/settings/providers/settings_provider.dart';
-import 'package:quirzy/providers/quiz_history_provider.dart';
+import 'package:quirzy/features/settings/presentation/widgets/settings_dialogs.dart';
+import 'package:quirzy/providers/user_stats_provider.dart'; // Added
+import 'package:quirzy/features/profile/presentation/widgets/xp_calendar_widget.dart'; // Added
 
 // ==========================================
 // REDESIGNED PROFILE SCREEN
@@ -29,9 +32,6 @@ class _ProfileSettingsScreenState extends ConsumerState<ProfileSettingsScreen>
 
   final FlutterSecureStorage _storage = const FlutterSecureStorage();
 
-  late AnimationController _fadeController;
-  late Animation<double> _fadeAnim;
-
   String _userName = 'Quiz Master';
   String _userEmail = 'user@quirzy.com';
   bool _isLoading = true;
@@ -43,11 +43,6 @@ class _ProfileSettingsScreenState extends ConsumerState<ProfileSettingsScreen>
   @override
   void initState() {
     super.initState();
-    _fadeController = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 600),
-    );
-    _fadeAnim = CurvedAnimation(parent: _fadeController, curve: Curves.easeOut);
     _loadUserData();
   }
 
@@ -62,24 +57,16 @@ class _ProfileSettingsScreenState extends ConsumerState<ProfileSettingsScreen>
         _userEmail = email?.isNotEmpty == true ? email! : 'user@quirzy.com';
         _isLoading = false;
       });
-      _fadeController.forward();
     } catch (_) {
       if (mounted) setState(() => _isLoading = false);
-      _fadeController.forward();
     }
-  }
-
-  @override
-  void dispose() {
-    _fadeController.dispose();
-    super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
     super.build(context);
     final settingsState = ref.watch(settingsProvider);
-    final historyState = ref.watch(quizHistoryProvider);
+    final userStats = ref.watch(userStatsProvider);
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     // Theme-aware colors
@@ -96,67 +83,95 @@ class _ProfileSettingsScreenState extends ConsumerState<ProfileSettingsScreen>
             ? const Center(
                 child: CircularProgressIndicator(color: primaryColor),
               )
-            : FadeTransition(
-                opacity: _fadeAnim,
-                child: CustomScrollView(
-                  physics: const BouncingScrollPhysics(),
-                  slivers: [
-                    SliverToBoxAdapter(child: _buildHeader(textMain)),
-                    SliverToBoxAdapter(
-                      child: _buildProfileCard(
-                        isDark,
-                        surfaceColor,
-                        textMain,
-                        textSub,
-                      ),
+            : CustomScrollView(
+                physics: const BouncingScrollPhysics(),
+                slivers: [
+                  SliverToBoxAdapter(
+                    child: _buildHeader(textMain)
+                        .animate()
+                        .fade(duration: 600.ms)
+                        .slideY(begin: -0.2, end: 0, curve: Curves.easeOut),
+                  ),
+                  SliverToBoxAdapter(
+                    child: _buildProfileCard(
+                      isDark,
+                      surfaceColor,
+                      textMain,
+                      textSub,
                     ),
-                    SliverToBoxAdapter(
-                      child: _buildStatsCards(
-                        historyState,
-                        isDark,
-                        surfaceColor,
-                        textMain,
-                        textSub,
-                      ),
+                  ),
+                  SliverToBoxAdapter(
+                    child:
+                        _buildStatsCards(
+                              userStats,
+                              isDark,
+                              surfaceColor,
+                              textMain,
+                              textSub,
+                            )
+                            .animate(delay: 200.ms)
+                            .fade(duration: 600.ms)
+                            .slideX(begin: 0.1, end: 0, curve: Curves.easeOut),
+                  ),
+                  SliverToBoxAdapter(
+                    child:
+                        Padding(
+                              padding: const EdgeInsets.fromLTRB(24, 24, 24, 0),
+                              child: XPCalendarWidget(
+                                activityData: userStats.activityHeatmap,
+                                isDark: isDark,
+                                primaryColor: primaryColor,
+                              ),
+                            )
+                            .animate(delay: 300.ms)
+                            .fade(duration: 600.ms)
+                            .scale(
+                              begin: const Offset(0.95, 0.95),
+                              curve: Curves.easeOut,
+                            ),
+                  ),
+                  SliverToBoxAdapter(
+                    child: _buildPreferencesSection(
+                      settingsState,
+                      isDark,
+                      surfaceColor,
+                      textMain,
+                      textSub,
                     ),
-                    SliverToBoxAdapter(
-                      child: _buildPreferencesSection(
-                        settingsState,
-                        isDark,
-                        surfaceColor,
-                        textMain,
-                        textSub,
-                      ),
+                  ),
+                  SliverToBoxAdapter(
+                    child: _buildNotificationsSection(
+                      settingsState,
+                      isDark,
+                      surfaceColor,
+                      textMain,
+                      textSub,
                     ),
-                    SliverToBoxAdapter(
-                      child: _buildNotificationsSection(
-                        settingsState,
-                        isDark,
-                        surfaceColor,
-                        textMain,
-                        textSub,
-                      ),
+                  ),
+                  SliverToBoxAdapter(
+                    child: _buildDataSection(
+                      isDark,
+                      surfaceColor,
+                      textMain,
+                      textSub,
                     ),
-                    SliverToBoxAdapter(
-                      child: _buildDataSection(
-                        isDark,
-                        surfaceColor,
-                        textMain,
-                        textSub,
-                      ),
+                  ),
+                  SliverToBoxAdapter(
+                    child: _buildSupportSection(
+                      isDark,
+                      surfaceColor,
+                      textMain,
+                      textSub,
                     ),
-                    SliverToBoxAdapter(
-                      child: _buildSupportSection(
-                        isDark,
-                        surfaceColor,
-                        textMain,
-                        textSub,
-                      ),
-                    ),
-                    SliverToBoxAdapter(child: _buildLogoutButton(isDark)),
-                    const SliverToBoxAdapter(child: SizedBox(height: 100)),
-                  ],
-                ),
+                  ),
+                  SliverToBoxAdapter(
+                    child: _buildLogoutButton(isDark)
+                        .animate(delay: 600.ms)
+                        .fade(duration: 600.ms)
+                        .slideY(begin: 0.2, end: 0, curve: Curves.easeOut),
+                  ),
+                  const SliverToBoxAdapter(child: SizedBox(height: 100)),
+                ],
               ),
       ),
     );
@@ -193,42 +208,42 @@ class _ProfileSettingsScreenState extends ConsumerState<ProfileSettingsScreen>
       child: Column(
         children: [
           // Avatar
-          TweenAnimationBuilder<double>(
-            tween: Tween(begin: 0.0, end: 1.0),
-            duration: const Duration(milliseconds: 600),
-            curve: Curves.easeOutBack,
-            builder: (context, value, child) =>
-                Transform.scale(scale: value, child: child),
-            child: Container(
-              width: 100,
-              height: 100,
-              decoration: BoxDecoration(
-                gradient: const LinearGradient(
-                  colors: [primaryColor, Color(0xFF9333EA)],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                ),
-                shape: BoxShape.circle,
-                boxShadow: [
-                  BoxShadow(
-                    color: primaryColor.withOpacity(0.3),
-                    blurRadius: 20,
-                    offset: const Offset(0, 8),
+          Container(
+                width: 100,
+                height: 100,
+                decoration: BoxDecoration(
+                  gradient: const LinearGradient(
+                    colors: [primaryColor, Color(0xFF9333EA)],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
                   ),
-                ],
-              ),
-              child: Center(
-                child: Text(
-                  _userName.isNotEmpty ? _userName[0].toUpperCase() : 'Q',
-                  style: GoogleFonts.plusJakartaSans(
-                    fontSize: 40,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.white,
+                  shape: BoxShape.circle,
+                  boxShadow: [
+                    BoxShadow(
+                      color: primaryColor.withOpacity(0.3),
+                      blurRadius: 20,
+                      offset: const Offset(0, 8),
+                    ),
+                  ],
+                ),
+                child: Center(
+                  child: Text(
+                    _userName.isNotEmpty ? _userName[0].toUpperCase() : 'Q',
+                    style: GoogleFonts.plusJakartaSans(
+                      fontSize: 40,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                    ),
                   ),
                 ),
-              ),
-            ),
-          ),
+              )
+              .animate(delay: 100.ms)
+              .scale(
+                duration: 600.ms,
+                curve: Curves.easeOutBack,
+                begin: const Offset(0.5, 0.5),
+              )
+              .shimmer(delay: 800.ms, duration: 1200.ms, color: Colors.white24),
           const SizedBox(height: 16),
           Text(
             _userName,
@@ -279,33 +294,21 @@ class _ProfileSettingsScreenState extends ConsumerState<ProfileSettingsScreen>
   }
 
   Widget _buildStatsCards(
-    QuizHistoryState historyState,
+    UserStatsState stats,
     bool isDark,
     Color surfaceColor,
     Color textMain,
     Color textSub,
   ) {
-    final totalQuizzes = historyState.quizzes.length;
-    int totalScore = 0;
-    int totalQuestions = 0;
-    for (final quiz in historyState.quizzes) {
-      totalScore += (quiz['score'] ?? 0) as int;
-      totalQuestions +=
-          (quiz['totalQuestions'] ?? quiz['questionCount'] ?? 0) as int;
-    }
-    final avgScore = totalQuestions > 0
-        ? (totalScore / totalQuestions * 100).round()
-        : 0;
-
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 24),
       child: Row(
         children: [
           Expanded(
             child: _buildStatCard(
-              icon: Icons.quiz_rounded,
-              label: 'QUIZZES',
-              value: '$totalQuizzes',
+              icon: Icons.local_fire_department_rounded,
+              label: 'STREAK',
+              value: '${stats.currentStreak} Days',
               isPrimary: true,
               isDark: isDark,
               surfaceColor: surfaceColor,
@@ -316,9 +319,9 @@ class _ProfileSettingsScreenState extends ConsumerState<ProfileSettingsScreen>
           const SizedBox(width: 12),
           Expanded(
             child: _buildStatCard(
-              icon: Icons.trending_up_rounded,
-              label: 'AVG SCORE',
-              value: '$avgScore%',
+              icon: Icons.bolt_rounded,
+              label: 'TOTAL XP',
+              value: '${stats.totalXP}',
               isPrimary: false,
               isDark: isDark,
               surfaceColor: surfaceColor,
@@ -341,66 +344,57 @@ class _ProfileSettingsScreenState extends ConsumerState<ProfileSettingsScreen>
     required Color textMain,
     required Color textSub,
   }) {
-    return TweenAnimationBuilder<double>(
-      tween: Tween(begin: 0.0, end: 1.0),
-      duration: const Duration(milliseconds: 500),
-      curve: Curves.easeOut,
-      builder: (context, animValue, child) => Transform.scale(
-        scale: 0.8 + (0.2 * animValue),
-        child: Opacity(opacity: animValue, child: child),
-      ),
-      child: Container(
-        height: 90,
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: isPrimary
-              ? (isDark
-                    ? primaryColor.withOpacity(0.15)
-                    : primaryLight.withOpacity(0.5))
-              : surfaceColor,
-          borderRadius: BorderRadius.circular(20),
-          border: isPrimary
-              ? Border.all(color: primaryColor.withOpacity(isDark ? 0.3 : 0.1))
-              : (isDark ? Border.all(color: const Color(0xFF2D2540)) : null),
-          boxShadow: isPrimary || isDark
-              ? null
-              : [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.03),
-                    blurRadius: 10,
-                    offset: const Offset(0, 2),
-                  ),
-                ],
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Row(
-              children: [
-                Icon(icon, size: 16, color: isPrimary ? primaryColor : textSub),
-                const SizedBox(width: 6),
-                Text(
-                  label,
-                  style: GoogleFonts.plusJakartaSans(
-                    fontSize: 10,
-                    fontWeight: FontWeight.bold,
-                    color: textSub,
-                    letterSpacing: 1,
-                  ),
+    return Container(
+      height: 90,
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: isPrimary
+            ? (isDark
+                  ? primaryColor.withOpacity(0.15)
+                  : primaryLight.withOpacity(0.5))
+            : surfaceColor,
+        borderRadius: BorderRadius.circular(20),
+        border: isPrimary
+            ? Border.all(color: primaryColor.withOpacity(isDark ? 0.3 : 0.1))
+            : (isDark ? Border.all(color: const Color(0xFF2D2540)) : null),
+        boxShadow: isPrimary || isDark
+            ? null
+            : [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.03),
+                  blurRadius: 10,
+                  offset: const Offset(0, 2),
                 ),
               ],
-            ),
-            Text(
-              value,
-              style: GoogleFonts.plusJakartaSans(
-                fontSize: 28,
-                fontWeight: FontWeight.bold,
-                color: isPrimary ? primaryColor : textMain,
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Row(
+            children: [
+              Icon(icon, size: 16, color: isPrimary ? primaryColor : textSub),
+              const SizedBox(width: 6),
+              Text(
+                label,
+                style: GoogleFonts.plusJakartaSans(
+                  fontSize: 10,
+                  fontWeight: FontWeight.bold,
+                  color: textSub,
+                  letterSpacing: 1,
+                ),
               ),
+            ],
+          ),
+          Text(
+            value,
+            style: GoogleFonts.plusJakartaSans(
+              fontSize: 28,
+              fontWeight: FontWeight.bold,
+              color: isPrimary ? primaryColor : textMain,
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
@@ -428,6 +422,24 @@ class _ProfileSettingsScreenState extends ConsumerState<ProfileSettingsScreen>
           textSub: textSub,
           onChanged: (val) =>
               ref.read(settingsProvider.notifier).toggleDarkMode(val),
+        ),
+        _buildSettingTile(
+          icon: Icons.details_rounded,
+          title: 'Navigation Style',
+          subtitle: settingsState.navbarStyle == 'material3'
+              ? 'Material 3'
+              : 'Custom Modern',
+          iconColor: Colors.deepPurple,
+          isDark: isDark,
+          surfaceColor: surfaceColor,
+          textMain: textMain,
+          textSub: textSub,
+          onTap: () => showNavbarStyleDialog(
+            context,
+            Theme.of(context),
+            settingsState.navbarStyle,
+            ref,
+          ),
         ),
         _buildSettingTile(
           icon: Icons.language_rounded,
@@ -576,7 +588,12 @@ class _ProfileSettingsScreenState extends ConsumerState<ProfileSettingsScreen>
             ),
           ),
           const SizedBox(height: 12),
-          ...children,
+          Column(
+            children: children
+                .animate(interval: 50.ms)
+                .fade(duration: 400.ms)
+                .slideX(begin: 0.05, end: 0, curve: Curves.easeOut),
+          ),
         ],
       ),
     );

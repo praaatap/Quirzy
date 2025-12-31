@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:speech_to_text/speech_to_text.dart' as stt;
+import 'package:flutter_animate/flutter_animate.dart';
 import 'package:avatar_glow/avatar_glow.dart';
 import 'package:quirzy/features/home/widgets/daily_reward_sheet.dart';
 import 'package:quirzy/features/quiz/screens/quiz_generation_loading_screen.dart';
@@ -30,10 +31,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
   bool _isGenerating = false;
   int _remainingFree = 5;
 
-  late AnimationController _fadeController;
-  late AnimationController _pulseController;
-  late Animation<double> _fadeAnim;
-
   // Speech to Text
   late stt.SpeechToText _speech;
   bool _isListening = false;
@@ -54,20 +51,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
   }
 
   void _initAnimations() {
-    _fadeController = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 600),
-    );
-    _fadeAnim = CurvedAnimation(parent: _fadeController, curve: Curves.easeOut);
-
-    _pulseController = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 2000),
-    )..repeat(reverse: true);
-
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      _fadeController.forward();
-    });
     // Triggers daily reward check after a slight delay for better UX
     Future.delayed(const Duration(seconds: 1), _checkDailyReward);
   }
@@ -102,10 +85,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
 
   @override
   void dispose() {
-    _topicController.dispose();
-    _inputFocusNode.dispose();
-    _fadeController.dispose();
-    _pulseController.dispose();
     super.dispose();
   }
 
@@ -398,48 +377,121 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
 
     return Scaffold(
       backgroundColor: bgColor,
-      body: SafeArea(
-        bottom: false,
-        child: FadeTransition(
-          opacity: _fadeAnim,
-          child: CustomScrollView(
-            physics: const BouncingScrollPhysics(),
-            slivers: [
-              SliverToBoxAdapter(
-                child: _buildAppBar(isDark, textMain, textSub),
-              ),
-              SliverToBoxAdapter(
-                child: _buildHeroSection(
-                  isDark,
-                  surfaceColor,
-                  textMain,
-                  textSub,
-                ),
-              ),
-              SliverToBoxAdapter(
-                child: _buildQuickActions(isDark, surfaceColor, textSub),
-              ),
-              SliverToBoxAdapter(
-                child: _buildCreateSection(
-                  isDark,
-                  surfaceColor,
-                  textMain,
-                  textSub,
-                ),
-              ),
-              SliverToBoxAdapter(child: _buildGenerateButton()),
-              SliverToBoxAdapter(
-                child: _buildRecentSection(
-                  isDark,
-                  surfaceColor,
-                  textMain,
-                  textSub,
-                ),
-              ),
-              const SliverToBoxAdapter(child: SizedBox(height: 100)),
-            ],
+      body: Stack(
+        children: [
+          // Background Gradient Mesh
+          Positioned(
+            top: -100,
+            right: -100,
+            child:
+                Container(
+                      width: 300,
+                      height: 300,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        gradient: RadialGradient(
+                          colors: [
+                            primaryColor.withOpacity(0.2),
+                            Colors.transparent,
+                          ],
+                          stops: const [0.3, 1.0],
+                        ),
+                      ),
+                    )
+                    .animate(
+                      onPlay: (controller) => controller.repeat(reverse: true),
+                    )
+                    .scale(
+                      begin: const Offset(1, 1),
+                      end: const Offset(1.2, 1.2),
+                      duration: 4000.ms,
+                      curve: Curves.easeInOut,
+                    ),
           ),
-        ),
+          Positioned(
+            bottom: 100,
+            left: -50,
+            child:
+                Container(
+                      width: 250,
+                      height: 250,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        gradient: RadialGradient(
+                          colors: [
+                            const Color(0xFF9C27B0).withOpacity(0.15),
+                            Colors.transparent,
+                          ],
+                          stops: const [0.3, 1.0],
+                        ),
+                      ),
+                    )
+                    .animate(
+                      onPlay: (controller) => controller.repeat(reverse: true),
+                    )
+                    .scale(
+                      begin: const Offset(1, 1),
+                      end: const Offset(1.3, 1.3),
+                      duration: 5000.ms,
+                      curve: Curves.easeInOut,
+                    ),
+          ),
+
+          // Main Content
+          SafeArea(
+            bottom: false,
+            child:
+                CustomScrollView(
+                      physics: const BouncingScrollPhysics(),
+                      slivers: [
+                        SliverToBoxAdapter(
+                          child: _buildAppBar(isDark, textMain, textSub),
+                        ),
+                        SliverToBoxAdapter(
+                          child: _buildHeroSection(
+                            isDark,
+                            surfaceColor,
+                            textMain,
+                            textSub,
+                          ),
+                        ),
+                        SliverToBoxAdapter(
+                          child: _buildQuickActions(
+                            isDark,
+                            surfaceColor,
+                            textSub,
+                          ),
+                        ),
+                        SliverToBoxAdapter(
+                          child: _buildCreateSection(
+                            isDark,
+                            surfaceColor,
+                            textMain,
+                            textSub,
+                          ),
+                        ),
+                        SliverToBoxAdapter(child: _buildGenerateButton()),
+                        SliverToBoxAdapter(
+                          child: _buildRecentSection(
+                            isDark,
+                            surfaceColor,
+                            textMain,
+                            textSub,
+                          ),
+                        ),
+                        const SliverToBoxAdapter(child: SizedBox(height: 100)),
+                      ],
+                    )
+                    .animate()
+                    .fadeIn(duration: 600.ms, curve: Curves.easeOut)
+                    .slideY(
+                      begin: 0.1,
+                      end: 0,
+                      duration: 600.ms,
+                      curve: Curves.easeOut,
+                    ),
+          ),
+        ],
       ),
     );
   }
@@ -526,93 +578,74 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          TweenAnimationBuilder<double>(
-            tween: Tween(begin: 0.0, end: 1.0),
-            duration: const Duration(milliseconds: 600),
-            curve: Curves.easeOut,
-            builder: (context, value, child) {
-              return Opacity(
-                opacity: value,
-                child: Transform.translate(
-                  offset: Offset(0, 10 * (1 - value)),
-                  child: child,
+          Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 14,
+                  vertical: 8,
                 ),
-              );
-            },
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-              decoration: BoxDecoration(
-                color: surfaceColor,
-                borderRadius: BorderRadius.circular(9999),
-                boxShadow: isDark
-                    ? null
-                    : [
-                        BoxShadow(
-                          color: Colors.black.withOpacity(0.03),
-                          blurRadius: 10,
-                          offset: const Offset(0, 2),
-                        ),
-                      ],
-                border: isDark
-                    ? Border.all(color: const Color(0xFF2D2540))
-                    : null,
-              ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  const Icon(
-                    Icons.wb_sunny_rounded,
-                    color: Colors.amber,
-                    size: 18,
-                  ),
-                  const SizedBox(width: 8),
-                  Text(
-                    _getGreeting(),
-                    style: GoogleFonts.plusJakartaSans(
-                      fontSize: 13,
-                      fontWeight: FontWeight.w600,
-                      color: textMain,
+                decoration: BoxDecoration(
+                  color: surfaceColor,
+                  borderRadius: BorderRadius.circular(9999),
+                  boxShadow: isDark
+                      ? null
+                      : [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.03),
+                            blurRadius: 10,
+                            offset: const Offset(0, 2),
+                          ),
+                        ],
+                  border: isDark
+                      ? Border.all(color: const Color(0xFF2D2540))
+                      : null,
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Icon(
+                      Icons.wb_sunny_rounded,
+                      color: Colors.amber,
+                      size: 18,
                     ),
-                  ),
-                ],
-              ),
-            ),
-          ),
+                    const SizedBox(width: 8),
+                    Text(
+                      _getGreeting(),
+                      style: GoogleFonts.plusJakartaSans(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                        color: textMain,
+                      ),
+                    ),
+                  ],
+                ),
+              )
+              .animate()
+              .fade(duration: 600.ms, delay: 100.ms)
+              .slideX(begin: -0.2, end: 0, curve: Curves.easeOut),
           const SizedBox(height: 20),
-          TweenAnimationBuilder<double>(
-            tween: Tween(begin: 0.0, end: 1.0),
-            duration: const Duration(milliseconds: 700),
-            curve: Curves.easeOut,
-            builder: (context, value, child) {
-              return Opacity(
-                opacity: value,
-                child: Transform.translate(
-                  offset: Offset(0, 20 * (1 - value)),
-                  child: child,
-                ),
-              );
-            },
-            child: RichText(
-              text: TextSpan(
-                style: GoogleFonts.plusJakartaSans(
-                  fontSize: 32,
-                  fontWeight: FontWeight.bold,
-                  color: textMain,
-                  height: 1.1,
-                  letterSpacing: -0.5,
-                ),
-                children: [
-                  const TextSpan(text: 'What do you want to\n'),
-                  TextSpan(
-                    text: 'learn today?',
-                    style: TextStyle(
-                      color: isDark ? Colors.white : primaryColor,
-                    ),
+          RichText(
+                text: TextSpan(
+                  style: GoogleFonts.plusJakartaSans(
+                    fontSize: 32,
+                    fontWeight: FontWeight.bold,
+                    color: textMain,
+                    height: 1.1,
+                    letterSpacing: -0.5,
                   ),
-                ],
-              ),
-            ),
-          ),
+                  children: [
+                    const TextSpan(text: 'What do you want to\n'),
+                    TextSpan(
+                      text: 'learn today?',
+                      style: TextStyle(
+                        color: isDark ? Colors.white : primaryColor,
+                      ),
+                    ),
+                  ],
+                ),
+              )
+              .animate()
+              .fade(duration: 800.ms, delay: 200.ms)
+              .slideY(begin: 0.2, end: 0, curve: Curves.easeOut),
         ],
       ),
     );
@@ -655,54 +688,50 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: quickActions.asMap().entries.map((entry) {
           final delay = entry.key * 100;
-          return TweenAnimationBuilder<double>(
-            tween: Tween(begin: 0.0, end: 1.0),
-            duration: Duration(milliseconds: 400 + delay),
-            curve: Curves.easeOutBack,
-            builder: (context, value, child) =>
-                Transform.scale(scale: value, child: child),
-            child: GestureDetector(
-              onTap: () => HapticFeedback.lightImpact(),
-              child: Column(
-                children: [
-                  Container(
-                    width: 64,
-                    height: 64,
-                    decoration: BoxDecoration(
-                      color: surfaceColor,
-                      borderRadius: BorderRadius.circular(20),
-                      border: isDark
-                          ? Border.all(color: const Color(0xFF2D2540))
-                          : null,
-                      boxShadow: isDark
-                          ? null
-                          : [
-                              BoxShadow(
-                                color: Colors.black.withOpacity(0.04),
-                                blurRadius: 15,
-                                offset: const Offset(0, 5),
-                              ),
-                            ],
+          return GestureDetector(
+                onTap: () => HapticFeedback.lightImpact(),
+                child: Column(
+                  children: [
+                    Container(
+                      width: 64,
+                      height: 64,
+                      decoration: BoxDecoration(
+                        color: surfaceColor,
+                        borderRadius: BorderRadius.circular(20),
+                        border: isDark
+                            ? Border.all(color: const Color(0xFF2D2540))
+                            : null,
+                        boxShadow: isDark
+                            ? null
+                            : [
+                                BoxShadow(
+                                  color: Colors.black.withOpacity(0.04),
+                                  blurRadius: 15,
+                                  offset: const Offset(0, 5),
+                                ),
+                              ],
+                      ),
+                      child: Icon(
+                        entry.value['icon'] as IconData,
+                        color: entry.value['color'] as Color,
+                        size: 28,
+                      ),
                     ),
-                    child: Icon(
-                      entry.value['icon'] as IconData,
-                      color: entry.value['color'] as Color,
-                      size: 28,
+                    const SizedBox(height: 10),
+                    Text(
+                      entry.value['label'] as String,
+                      style: GoogleFonts.plusJakartaSans(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                        color: textSub,
+                      ),
                     ),
-                  ),
-                  const SizedBox(height: 10),
-                  Text(
-                    entry.value['label'] as String,
-                    style: GoogleFonts.plusJakartaSans(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w600,
-                      color: textSub,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          );
+                  ],
+                ),
+              )
+              .animate(delay: (300 + delay).ms)
+              .fade(duration: 500.ms)
+              .scale(begin: const Offset(0.8, 0.8), curve: Curves.easeOutBack);
         }).toList(),
       ),
     );
@@ -850,65 +879,63 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
   Widget _buildGenerateButton() {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 24),
-      child: AnimatedBuilder(
-        animation: _pulseController,
-        builder: (context, child) {
-          final scale = _isGenerating
-              ? 1.0
-              : 1.0 + (_pulseController.value * 0.015);
-          return Transform.scale(
-            scale: scale,
-            child: GestureDetector(
-              onTap: _isGenerating ? null : _handleGenerate,
-              child: Container(
-                height: 56,
-                decoration: BoxDecoration(
-                  color: primaryColor,
-                  borderRadius: BorderRadius.circular(9999),
-                  boxShadow: [
-                    BoxShadow(
-                      color: primaryColor.withOpacity(0.35),
-                      blurRadius: 25,
-                      offset: const Offset(0, 10),
-                    ),
-                  ],
-                ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    if (_isGenerating)
-                      const SizedBox(
-                        width: 22,
-                        height: 22,
-                        child: CircularProgressIndicator(
-                          color: Colors.white,
-                          strokeWidth: 2.5,
-                        ),
-                      )
-                    else ...[
-                      const Icon(
-                        Icons.auto_awesome_rounded,
-                        color: Colors.white,
-                        size: 22,
-                      ),
-                      const SizedBox(width: 10),
-                      Text(
-                        'Generate Quiz',
-                        style: GoogleFonts.plusJakartaSans(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.white,
-                          letterSpacing: 0.3,
-                        ),
+      child:
+          GestureDetector(
+                onTap: _isGenerating ? null : _handleGenerate,
+                child: Container(
+                  height: 56,
+                  decoration: BoxDecoration(
+                    color: primaryColor,
+                    borderRadius: BorderRadius.circular(9999),
+                    boxShadow: [
+                      BoxShadow(
+                        color: primaryColor.withOpacity(0.35),
+                        blurRadius: 25,
+                        offset: const Offset(0, 10),
                       ),
                     ],
-                  ],
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      if (_isGenerating)
+                        const SizedBox(
+                          width: 22,
+                          height: 22,
+                          child: CircularProgressIndicator(
+                            color: Colors.white,
+                            strokeWidth: 2.5,
+                          ),
+                        )
+                      else ...[
+                        const Icon(
+                          Icons.auto_awesome_rounded,
+                          color: Colors.white,
+                          size: 22,
+                        ),
+                        const SizedBox(width: 10),
+                        Text(
+                          'Generate Quiz',
+                          style: GoogleFonts.plusJakartaSans(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white,
+                            letterSpacing: 0.3,
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
                 ),
-              ),
-            ),
-          );
-        },
-      ),
+              )
+              .animate(onPlay: (controller) => controller.repeat(reverse: true))
+              .scaleXY(
+                begin: 1.0,
+                end: 1.02,
+                duration: 1000.ms,
+                curve: Curves.easeInOut,
+              )
+              .shimmer(delay: 500.ms, duration: 2000.ms, color: Colors.white12),
     );
   }
 
@@ -974,30 +1001,22 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
             ],
           ),
           const SizedBox(height: 16),
-          ...recentItems.asMap().entries.map((entry) {
-            final delay = entry.key * 80;
-            return TweenAnimationBuilder<double>(
-              tween: Tween(begin: 0.0, end: 1.0),
-              duration: Duration(milliseconds: 500 + delay),
-              curve: Curves.easeOut,
-              builder: (context, value, child) {
-                return Opacity(
-                  opacity: value,
-                  child: Transform.translate(
-                    offset: Offset(0, 20 * (1 - value)),
-                    child: child,
-                  ),
-                );
-              },
-              child: _buildRecentItem(
-                entry.value,
-                isDark,
-                surfaceColor,
-                textMain,
-                textSub,
-              ),
-            );
-          }),
+          Column(
+            children: recentItems.asMap().entries.map((entry) {
+              final index = entry.key;
+              final item = entry.value;
+              return _buildRecentItem(
+                    item,
+                    isDark,
+                    surfaceColor,
+                    textMain,
+                    textSub,
+                  )
+                  .animate(delay: (400 + (index * 100)).ms)
+                  .fade(duration: 500.ms)
+                  .slideX(begin: 0.1, end: 0, curve: Curves.easeOut);
+            }).toList(),
+          ),
         ],
       ),
     );

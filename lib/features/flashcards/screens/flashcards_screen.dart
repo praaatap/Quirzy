@@ -7,6 +7,7 @@ import 'package:quirzy/features/flashcards/services/flashcard_cache_service.dart
 import 'package:quirzy/features/flashcards/screens/flashcard_study_screen.dart';
 import 'package:quirzy/core/widgets/loading/shimmer_loading.dart';
 import 'package:quirzy/features/quiz/screens/quiz_generation_loading_screen.dart';
+import 'package:flutter_animate/flutter_animate.dart';
 
 // ==========================================
 // REDESIGNED FLASHCARDS SCREEN
@@ -33,10 +34,6 @@ class _FlashcardsScreenState extends ConsumerState<FlashcardsScreen>
   bool _isGenerating = false;
   int _selectedTab = 0;
 
-  late AnimationController _fadeController;
-  late AnimationController _pulseController;
-  late Animation<double> _fadeAnim;
-
   // Static colors
   static const primaryColor = Color(0xFF5B13EC);
   static const primaryLight = Color(0xFFEFE9FD);
@@ -44,23 +41,7 @@ class _FlashcardsScreenState extends ConsumerState<FlashcardsScreen>
   @override
   void initState() {
     super.initState();
-    _initAnimations();
     _initAndLoad();
-  }
-
-  void _initAnimations() {
-    _fadeController = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 600),
-    );
-    _fadeAnim = CurvedAnimation(parent: _fadeController, curve: Curves.easeOut);
-
-    _pulseController = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 2000),
-    )..repeat(reverse: true);
-
-    _fadeController.forward();
   }
 
   Future<void> _initAndLoad() async {
@@ -232,17 +213,15 @@ class _FlashcardsScreenState extends ConsumerState<FlashcardsScreen>
   void dispose() {
     _topicController.dispose();
     _focusNode.dispose();
-    _fadeController.dispose();
-    _pulseController.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
     super.build(context);
-    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
 
-    // Theme-aware colors
     final bgColor = isDark ? const Color(0xFF161022) : const Color(0xFFF9F8FC);
     final surfaceColor = isDark ? const Color(0xFF1E1730) : Colors.white;
     final textMain = isDark ? Colors.white : const Color(0xFF120D1B);
@@ -251,48 +230,393 @@ class _FlashcardsScreenState extends ConsumerState<FlashcardsScreen>
     return Scaffold(
       backgroundColor: bgColor,
       body: SafeArea(
-        bottom: false,
-        child: FadeTransition(
-          opacity: _fadeAnim,
-          child: RefreshIndicator(
-            onRefresh: () => _loadFlashcardSets(forceRefresh: true),
-            color: primaryColor,
-            child: CustomScrollView(
-              physics: const BouncingScrollPhysics(),
-              slivers: [
-                SliverToBoxAdapter(
-                  child: _buildAppBar(isDark, surfaceColor, textMain, textSub),
-                ),
-                SliverToBoxAdapter(
-                  child: _buildHeroSection(textMain, textSub, isDark),
-                ),
-                SliverToBoxAdapter(
-                  child: _buildCreateSection(
-                    isDark,
-                    surfaceColor,
-                    textMain,
-                    textSub,
+        child: RefreshIndicator(
+          onRefresh: () => _loadFlashcardSets(forceRefresh: true),
+          child:
+              CustomScrollView(
+                    slivers: [
+                      // App Bar
+                      SliverToBoxAdapter(
+                        child: _buildAppBar(
+                          isDark,
+                          surfaceColor,
+                          textMain,
+                          textSub,
+                        ),
+                      ),
+
+                      // Hero Section
+                      SliverToBoxAdapter(
+                        child: _buildHeroSection(textMain, textSub, isDark),
+                      ),
+
+                      // Create Section (Input)
+                      SliverToBoxAdapter(
+                        child: _buildCreateSection(
+                          isDark,
+                          surfaceColor,
+                          textMain,
+                          textSub,
+                        ),
+                      ),
+                      SliverToBoxAdapter(child: _buildGenerateButton()),
+
+                      // Stats Cards
+                      SliverToBoxAdapter(
+                        child: Padding(
+                          padding: const EdgeInsets.only(bottom: 24),
+                          child: _buildStatsCards(
+                            isDark,
+                            surfaceColor,
+                            textMain,
+                            textSub,
+                          ),
+                        ),
+                      ),
+
+                      // Collection Header with Custom Tabs
+                      SliverToBoxAdapter(
+                        child: _buildTabBar(isDark, surfaceColor, textSub),
+                      ),
+
+                      // The List (conditionally filtered)
+                      _buildFlashcardsList(
+                        isDark,
+                        surfaceColor,
+                        textMain,
+                        textSub,
+                      ),
+
+                      // Bottom Padding
+                      const SliverPadding(
+                        padding: EdgeInsets.only(bottom: 100),
+                      ),
+                    ],
+                  )
+                  .animate()
+                  .fadeIn(duration: 600.ms)
+                  .slideY(
+                    begin: 0.05,
+                    end: 0,
+                    duration: 600.ms,
+                    curve: Curves.easeOut,
                   ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildTabBar(bool isDark, Color surfaceColor, Color textSub) {
+    final tabs = ['All', 'Favorites', 'Recent'];
+
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
+      padding: const EdgeInsets.all(4),
+      decoration: BoxDecoration(
+        color: isDark ? const Color(0xFF1A1A1E) : Colors.white,
+        borderRadius: BorderRadius.circular(9999), // Full rounded
+        border: Border.all(
+          color: isDark ? Colors.transparent : const Color(0xFFF3F4F6),
+        ),
+        boxShadow: isDark
+            ? null
+            : [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.03),
+                  blurRadius: 10,
+                  offset: const Offset(0, 2),
                 ),
-                SliverToBoxAdapter(child: _buildGenerateButton()),
-                SliverToBoxAdapter(
-                  child: _buildTabBar(isDark, surfaceColor, textSub),
-                ),
-                SliverToBoxAdapter(
-                  child: _buildStatsCards(
-                    isDark,
-                    surfaceColor,
-                    textMain,
-                    textSub,
-                  ),
-                ),
-                SliverToBoxAdapter(child: _buildCollectionHeader(textMain)),
-                _buildFlashcardsList(isDark, surfaceColor, textMain, textSub),
-                const SliverToBoxAdapter(child: SizedBox(height: 100)),
               ],
+      ),
+      child: Row(
+        children: tabs.asMap().entries.map((entry) {
+          final isSelected = _selectedTab == entry.key;
+          return Expanded(
+            child: GestureDetector(
+              onTap: () {
+                HapticFeedback.lightImpact();
+                setState(() => _selectedTab = entry.key);
+              },
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 200),
+                height: 44,
+                decoration: BoxDecoration(
+                  color: isSelected ? primaryColor : Colors.transparent,
+                  borderRadius: BorderRadius.circular(9999),
+                  boxShadow: isSelected
+                      ? [
+                          BoxShadow(
+                            color: primaryColor.withOpacity(0.3),
+                            blurRadius: 8,
+                            offset: const Offset(0, 2),
+                          ),
+                        ]
+                      : null,
+                ),
+                child: Center(
+                  child: Text(
+                    entry.value,
+                    style: GoogleFonts.plusJakartaSans(
+                      fontSize: 14,
+                      fontWeight: isSelected
+                          ? FontWeight.bold
+                          : FontWeight.w500,
+                      color: isSelected ? Colors.white : textSub,
+                      letterSpacing: 0.3,
+                    ),
+                  ),
+                ),
+              ),
             ),
+          );
+        }).toList(),
+      ),
+    );
+  }
+
+  Widget _buildFlashcardsList(
+    bool isDark,
+    Color surfaceColor,
+    Color textMain,
+    Color textSub,
+  ) {
+    if (_isLoading) {
+      return SliverPadding(
+        padding: const EdgeInsets.symmetric(horizontal: 24),
+        sliver: SliverToBoxAdapter(
+          child: ShimmerPlaceholders.historyList(itemCount: 3),
+        ),
+      );
+    }
+
+    // Filter Logic
+    List<Map<String, dynamic>> filteredSets = List.from(_flashcardSets);
+    if (_selectedTab == 2) {
+      // Recent
+      filteredSets = filteredSets.take(5).toList();
+    } else if (_selectedTab == 1) {
+      // Favorites
+      filteredSets = filteredSets
+          .where((s) => s.containsKey('isFavorite') && s['isFavorite'] == true)
+          .toList();
+    }
+
+    if (filteredSets.isEmpty) {
+      return SliverFillRemaining(
+        hasScrollBody: false,
+        child: _buildEmptyState(textMain, textSub),
+      );
+    }
+
+    return SliverPadding(
+      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+      sliver: SliverList(
+        delegate: SliverChildBuilderDelegate((context, index) {
+          return _buildFlashcardSetCard(
+                filteredSets[index],
+                isDark,
+                surfaceColor,
+                textMain,
+                textSub,
+              )
+              .animate(delay: (400 + (index * 80)).ms)
+              .fade(duration: 400.ms)
+              .slideX(begin: 0.1, end: 0, curve: Curves.easeOut);
+        }, childCount: filteredSets.length),
+      ),
+    );
+  }
+
+  Widget _buildFlashcardSetCard(
+    Map<String, dynamic> set,
+    bool isDark,
+    Color surfaceColor,
+    Color textMain,
+    Color textSub,
+  ) {
+    final title = set['title'] ?? 'Untitled Set';
+    final cardCount = set['cardCount'] ?? set['cards']?.length ?? 0;
+    final isFavorite = set['isFavorite'] == true;
+
+    return GestureDetector(
+      onTap: () => _openFlashcardSet(set),
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 16),
+        decoration: BoxDecoration(
+          color: surfaceColor,
+          borderRadius: BorderRadius.circular(24),
+          border: isDark ? Border.all(color: Colors.white10) : null,
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(isDark ? 0.2 : 0.05),
+              blurRadius: 20,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(24),
+          child: Stack(
+            children: [
+              // Wave background pattern (subtle)
+              Positioned(
+                right: -20,
+                bottom: -20,
+                child: Icon(
+                  Icons.style,
+                  size: 100,
+                  color: primaryColor.withOpacity(0.05),
+                ),
+              ),
+
+              Padding(
+                padding: const EdgeInsets.all(20),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 6,
+                          ),
+                          decoration: BoxDecoration(
+                            color: primaryColor.withOpacity(0.1),
+                            borderRadius: BorderRadius.circular(999),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(
+                                Icons.layers_rounded,
+                                size: 14,
+                                color: primaryColor,
+                              ),
+                              const SizedBox(width: 4),
+                              Text(
+                                '$cardCount Cards',
+                                style: GoogleFonts.plusJakartaSans(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.bold,
+                                  color: primaryColor,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        // Favorite Button
+                        GestureDetector(
+                          onTap: () {
+                            HapticFeedback.selectionClick();
+                            // Logic to toggle favorite would go here
+                            _showSnackBar('Added to favorites', isError: false);
+                          },
+                          child: Icon(
+                            isFavorite
+                                ? Icons.star_rounded
+                                : Icons.star_outline_rounded,
+                            color: isFavorite
+                                ? Colors.orange
+                                : textSub.withOpacity(0.4),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 16),
+                    Text(
+                      title,
+                      style: GoogleFonts.plusJakartaSans(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                        color: textMain,
+                        height: 1.3,
+                      ),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    const SizedBox(height: 8),
+                    LinearProgressIndicator(
+                      value: 0.0, // Placeholder for progress (0%)
+                      backgroundColor: isDark
+                          ? Colors.white10
+                          : Colors.grey.withOpacity(0.1),
+                      valueColor: const AlwaysStoppedAnimation<Color>(
+                        primaryColor,
+                      ),
+                      borderRadius: BorderRadius.circular(4),
+                      minHeight: 6,
+                    ),
+                    const SizedBox(height: 8),
+                    Row(
+                      children: [
+                        Text(
+                          'Tap to study',
+                          style: GoogleFonts.plusJakartaSans(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                            color: textSub,
+                          ),
+                        ),
+                        const Spacer(),
+                        Icon(
+                          Icons.arrow_forward_rounded,
+                          size: 16,
+                          color: textSub,
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ],
           ),
         ),
+      ),
+    );
+  }
+
+  Widget _buildEmptyState(Color textMain, Color textSub) {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Container(
+            padding: const EdgeInsets.all(32),
+            decoration: BoxDecoration(
+              color: primaryLight,
+              shape: BoxShape.circle,
+            ),
+            child: const Icon(
+              Icons.style_rounded,
+              size: 64,
+              color: primaryColor,
+            ),
+          ),
+          const SizedBox(height: 24),
+          Text(
+            'No Flashcards',
+            style: GoogleFonts.plusJakartaSans(
+              fontSize: 20,
+              fontWeight: FontWeight.bold,
+              color: textMain,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 48),
+            child: Text(
+              'Create your first set above to get started!',
+              textAlign: TextAlign.center,
+              style: GoogleFonts.plusJakartaSans(
+                fontSize: 14,
+                color: textSub,
+                height: 1.5,
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -368,40 +692,29 @@ class _FlashcardsScreenState extends ConsumerState<FlashcardsScreen>
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          TweenAnimationBuilder<double>(
-            tween: Tween(begin: 0.0, end: 1.0),
-            duration: const Duration(milliseconds: 700),
-            curve: Curves.easeOut,
-            builder: (context, value, child) {
-              return Opacity(
-                opacity: value,
-                child: Transform.translate(
-                  offset: Offset(0, 20 * (1 - value)),
-                  child: child,
-                ),
-              );
-            },
-            child: RichText(
-              text: TextSpan(
-                style: GoogleFonts.plusJakartaSans(
-                  fontSize: 32,
-                  fontWeight: FontWeight.bold,
-                  color: textMain,
-                  height: 1.1,
-                  letterSpacing: -0.5,
-                ),
-                children: [
-                  const TextSpan(text: 'Study Smarter\n'),
-                  TextSpan(
-                    text: 'With AI',
-                    style: TextStyle(
-                      color: isDark ? Colors.white : primaryColor,
-                    ),
+          RichText(
+                text: TextSpan(
+                  style: GoogleFonts.plusJakartaSans(
+                    fontSize: 32,
+                    fontWeight: FontWeight.bold,
+                    color: textMain,
+                    height: 1.1,
+                    letterSpacing: -0.5,
                   ),
-                ],
-              ),
-            ),
-          ),
+                  children: [
+                    const TextSpan(text: 'Study Smarter\n'),
+                    TextSpan(
+                      text: 'With AI',
+                      style: TextStyle(
+                        color: isDark ? Colors.white : primaryColor,
+                      ),
+                    ),
+                  ],
+                ),
+              )
+              .animate()
+              .fade(duration: 700.ms)
+              .slideY(begin: 0.2, end: 0, curve: Curves.easeOut),
           const SizedBox(height: 8),
           Text(
             'Create and study flashcards powered by AI.',
@@ -489,130 +802,63 @@ class _FlashcardsScreenState extends ConsumerState<FlashcardsScreen>
   Widget _buildGenerateButton() {
     return Padding(
       padding: const EdgeInsets.fromLTRB(24, 16, 24, 24),
-      child: AnimatedBuilder(
-        animation: _pulseController,
-        builder: (context, child) {
-          final scale = _isGenerating
-              ? 1.0
-              : 1.0 + (_pulseController.value * 0.015);
-          return Transform.scale(
-            scale: scale,
-            child: GestureDetector(
-              onTap: _isGenerating ? null : _generateFlashcards,
-              child: Container(
-                height: 56,
-                decoration: BoxDecoration(
-                  color: primaryColor,
-                  borderRadius: BorderRadius.circular(9999),
-                  boxShadow: [
-                    BoxShadow(
-                      color: primaryColor.withOpacity(0.35),
-                      blurRadius: 25,
-                      offset: const Offset(0, 10),
-                    ),
-                  ],
-                ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    if (_isGenerating)
-                      const SizedBox(
-                        width: 22,
-                        height: 22,
-                        child: CircularProgressIndicator(
-                          color: Colors.white,
-                          strokeWidth: 2.5,
-                        ),
-                      )
-                    else ...[
-                      const Icon(
-                        Icons.auto_awesome_rounded,
-                        color: Colors.white,
-                        size: 22,
-                      ),
-                      const SizedBox(width: 10),
-                      Text(
-                        'Generate Cards',
-                        style: GoogleFonts.plusJakartaSans(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.white,
-                          letterSpacing: 0.3,
-                        ),
+      child:
+          GestureDetector(
+                onTap: _isGenerating ? null : _generateFlashcards,
+                child: Container(
+                  height: 56,
+                  decoration: BoxDecoration(
+                    color: primaryColor,
+                    borderRadius: BorderRadius.circular(9999),
+                    boxShadow: [
+                      BoxShadow(
+                        color: primaryColor.withOpacity(0.35),
+                        blurRadius: 25,
+                        offset: const Offset(0, 10),
                       ),
                     ],
-                  ],
-                ),
-              ),
-            ),
-          );
-        },
-      ),
-    );
-  }
-
-  Widget _buildTabBar(bool isDark, Color surfaceColor, Color textSub) {
-    final tabs = ['All', 'Favorites', 'Recent'];
-
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 24),
-      padding: const EdgeInsets.all(4),
-      decoration: BoxDecoration(
-        color: surfaceColor,
-        borderRadius: BorderRadius.circular(9999),
-        border: isDark ? Border.all(color: const Color(0xFF2D2540)) : null,
-        boxShadow: isDark
-            ? null
-            : [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.03),
-                  blurRadius: 10,
-                  offset: const Offset(0, 2),
-                ),
-              ],
-      ),
-      child: Row(
-        children: tabs.asMap().entries.map((entry) {
-          final isSelected = _selectedTab == entry.key;
-          return Expanded(
-            child: GestureDetector(
-              onTap: () {
-                HapticFeedback.lightImpact();
-                setState(() => _selectedTab = entry.key);
-              },
-              child: AnimatedContainer(
-                duration: const Duration(milliseconds: 200),
-                height: 40,
-                decoration: BoxDecoration(
-                  color: isSelected ? primaryColor : Colors.transparent,
-                  borderRadius: BorderRadius.circular(9999),
-                  boxShadow: isSelected
-                      ? [
-                          BoxShadow(
-                            color: primaryColor.withOpacity(0.3),
-                            blurRadius: 8,
-                            offset: const Offset(0, 2),
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      if (_isGenerating)
+                        const SizedBox(
+                          width: 22,
+                          height: 22,
+                          child: CircularProgressIndicator(
+                            color: Colors.white,
+                            strokeWidth: 2.5,
                           ),
-                        ]
-                      : null,
-                ),
-                child: Center(
-                  child: Text(
-                    entry.value,
-                    style: GoogleFonts.plusJakartaSans(
-                      fontSize: 13,
-                      fontWeight: isSelected
-                          ? FontWeight.bold
-                          : FontWeight.w500,
-                      color: isSelected ? Colors.white : textSub,
-                    ),
+                        )
+                      else ...[
+                        const Icon(
+                          Icons.auto_awesome_rounded,
+                          color: Colors.white,
+                          size: 22,
+                        ),
+                        const SizedBox(width: 10),
+                        Text(
+                          'Generate Flashcards',
+                          style: GoogleFonts.plusJakartaSans(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white,
+                            letterSpacing: 0.3,
+                          ),
+                        ),
+                      ],
+                    ],
                   ),
                 ),
-              ),
-            ),
-          );
-        }).toList(),
-      ),
+              )
+              .animate(onPlay: (controller) => controller.repeat(reverse: true))
+              .scaleXY(
+                begin: 1.0,
+                end: 1.02,
+                duration: 1000.ms,
+                curve: Curves.easeInOut,
+              )
+              .shimmer(delay: 500.ms, duration: 2000.ms, color: Colors.white12),
     );
   }
 
@@ -732,283 +978,6 @@ class _FlashcardsScreenState extends ConsumerState<FlashcardsScreen>
                     ),
                   ],
                 ),
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildCollectionHeader(Color textMain) {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(24, 24, 24, 12),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Text(
-            'My Collection',
-            style: GoogleFonts.plusJakartaSans(
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-              color: textMain,
-            ),
-          ),
-          GestureDetector(
-            onTap: () => HapticFeedback.lightImpact(),
-            child: Text(
-              'View All',
-              style: GoogleFonts.plusJakartaSans(
-                fontSize: 14,
-                fontWeight: FontWeight.bold,
-                color: primaryColor,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildFlashcardsList(
-    bool isDark,
-    Color surfaceColor,
-    Color textMain,
-    Color textSub,
-  ) {
-    if (_isLoading) {
-      return SliverPadding(
-        padding: const EdgeInsets.symmetric(horizontal: 24),
-        sliver: SliverToBoxAdapter(
-          child: ShimmerPlaceholders.historyList(itemCount: 3),
-        ),
-      );
-    }
-
-    if (_flashcardSets.isEmpty) {
-      return SliverFillRemaining(child: _buildEmptyState(textMain, textSub));
-    }
-
-    return SliverPadding(
-      padding: const EdgeInsets.symmetric(horizontal: 24),
-      sliver: SliverList(
-        delegate: SliverChildBuilderDelegate((context, index) {
-          return TweenAnimationBuilder<double>(
-            tween: Tween(begin: 0.0, end: 1.0),
-            duration: Duration(milliseconds: 400 + (index * 80)),
-            curve: Curves.easeOut,
-            builder: (context, value, child) {
-              return Opacity(
-                opacity: value,
-                child: Transform.translate(
-                  offset: Offset(0, 20 * (1 - value)),
-                  child: child,
-                ),
-              );
-            },
-            child: _buildFlashcardSetCard(
-              _flashcardSets[index],
-              isDark,
-              surfaceColor,
-              textMain,
-              textSub,
-            ),
-          );
-        }, childCount: _flashcardSets.length),
-      ),
-    );
-  }
-
-  Widget _buildFlashcardSetCard(
-    Map<String, dynamic> set,
-    bool isDark,
-    Color surfaceColor,
-    Color textMain,
-    Color textSub,
-  ) {
-    final title = set['title'] ?? 'Untitled Set';
-    final cardCount = set['cardCount'] ?? set['cards']?.length ?? 0;
-    final (IconData icon, Color iconBg, Color iconColor) = _getSubjectStyle(
-      title,
-      isDark,
-    );
-
-    return GestureDetector(
-      onTap: () => _openFlashcardSet(set),
-      child: Container(
-        margin: const EdgeInsets.only(bottom: 12),
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: surfaceColor,
-          borderRadius: BorderRadius.circular(20),
-          border: isDark ? Border.all(color: const Color(0xFF2D2540)) : null,
-          boxShadow: isDark
-              ? null
-              : [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.03),
-                    blurRadius: 10,
-                    offset: const Offset(0, 4),
-                  ),
-                ],
-        ),
-        child: Row(
-          children: [
-            Container(
-              width: 52,
-              height: 52,
-              decoration: BoxDecoration(
-                color: iconBg,
-                borderRadius: BorderRadius.circular(14),
-              ),
-              child: Icon(icon, color: iconColor, size: 26),
-            ),
-            const SizedBox(width: 14),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    title,
-                    style: GoogleFonts.plusJakartaSans(
-                      fontSize: 15,
-                      fontWeight: FontWeight.bold,
-                      color: textMain,
-                    ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    '$cardCount cards',
-                    style: GoogleFonts.plusJakartaSans(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w500,
-                      color: textSub,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            Container(
-              padding: const EdgeInsets.all(10),
-              decoration: BoxDecoration(
-                color: isDark ? primaryColor.withOpacity(0.2) : primaryLight,
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Icon(
-                Icons.play_arrow_rounded,
-                color: primaryColor,
-                size: 22,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  (IconData, Color, Color) _getSubjectStyle(String title, bool isDark) {
-    final lowerTitle = title.toLowerCase();
-
-    if (lowerTitle.contains('biology') || lowerTitle.contains('science')) {
-      return (
-        Icons.science_rounded,
-        isDark
-            ? const Color(0xFF1565C0).withOpacity(0.2)
-            : const Color(0xFFE3F2FD),
-        const Color(0xFF1565C0),
-      );
-    } else if (lowerTitle.contains('history')) {
-      return (
-        Icons.history_edu_rounded,
-        isDark
-            ? const Color(0xFFEF6C00).withOpacity(0.2)
-            : const Color(0xFFFFF3E0),
-        const Color(0xFFEF6C00),
-      );
-    } else if (lowerTitle.contains('math') || lowerTitle.contains('calculus')) {
-      return (
-        Icons.calculate_rounded,
-        isDark
-            ? const Color(0xFF2E7D32).withOpacity(0.2)
-            : const Color(0xFFE8F5E9),
-        const Color(0xFF2E7D32),
-      );
-    } else if (lowerTitle.contains('chemistry')) {
-      return (
-        Icons.science_rounded,
-        isDark
-            ? const Color(0xFFC2185B).withOpacity(0.2)
-            : const Color(0xFFFCE4EC),
-        const Color(0xFFC2185B),
-      );
-    } else if (lowerTitle.contains('language') ||
-        lowerTitle.contains('vocab')) {
-      return (
-        Icons.translate_rounded,
-        isDark
-            ? const Color(0xFFEF6C00).withOpacity(0.2)
-            : const Color(0xFFFFF3E0),
-        const Color(0xFFEF6C00),
-      );
-    } else if (lowerTitle.contains('code') ||
-        lowerTitle.contains('programming')) {
-      return (
-        Icons.code_rounded,
-        isDark
-            ? const Color(0xFF1565C0).withOpacity(0.2)
-            : const Color(0xFFE3F2FD),
-        const Color(0xFF1565C0),
-      );
-    } else {
-      return (
-        Icons.style_rounded,
-        isDark ? primaryColor.withOpacity(0.2) : primaryLight,
-        primaryColor,
-      );
-    }
-  }
-
-  Widget _buildEmptyState(Color textMain, Color textSub) {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          TweenAnimationBuilder<double>(
-            tween: Tween(begin: 0.0, end: 1.0),
-            duration: const Duration(milliseconds: 600),
-            curve: Curves.easeOutBack,
-            builder: (context, value, child) =>
-                Transform.scale(scale: value, child: child),
-            child: Container(
-              padding: const EdgeInsets.all(32),
-              decoration: BoxDecoration(
-                color: primaryLight,
-                shape: BoxShape.circle,
-              ),
-              child: Icon(Icons.style_rounded, size: 64, color: primaryColor),
-            ),
-          ),
-          const SizedBox(height: 24),
-          Text(
-            'No Flashcard Sets Yet',
-            style: GoogleFonts.plusJakartaSans(
-              fontSize: 20,
-              fontWeight: FontWeight.bold,
-              color: textMain,
-            ),
-          ),
-          const SizedBox(height: 8),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 48),
-            child: Text(
-              'Create your first set by entering a topic above and let AI do the magic!',
-              textAlign: TextAlign.center,
-              style: GoogleFonts.plusJakartaSans(
-                fontSize: 14,
-                color: textSub,
-                height: 1.5,
               ),
             ),
           ),

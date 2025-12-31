@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:flutter_tts/flutter_tts.dart';
 
 class FlashcardStudyScreen extends ConsumerStatefulWidget {
   final dynamic setId;
@@ -27,51 +28,62 @@ class _FlashcardStudyScreenState extends ConsumerState<FlashcardStudyScreen>
   bool _isFlipped = false;
   late AnimationController _flipController;
   late AnimationController _entranceController;
-  late AnimationController _pulseController;
   late Animation<double> _flipAnimation;
   late Animation<double> _entranceAnimation;
+
+  final FlutterTts flutterTts = FlutterTts();
 
   // Track card states
   final Set<int> _masteredCards = {};
   final Set<int> _reviewCards = {};
 
+  static const primaryColor = Color(0xFF5B13EC);
+
   @override
   void initState() {
     super.initState();
+    _initTTS();
     _flipController = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 500),
+      duration: const Duration(milliseconds: 600),
     );
     _flipAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
-      CurvedAnimation(parent: _flipController, curve: Curves.easeInOutCubic),
+      CurvedAnimation(parent: _flipController, curve: Curves.easeInOutBack),
     );
 
     _entranceController = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 600),
+      duration: const Duration(milliseconds: 800),
     );
     _entranceAnimation = CurvedAnimation(
       parent: _entranceController,
       curve: Curves.easeOutCubic,
     );
     _entranceController.forward();
+  }
 
-    _pulseController = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 2000),
-    )..repeat(reverse: true);
+  Future<void> _initTTS() async {
+    await flutterTts.setLanguage("en-US");
+    await flutterTts.setPitch(1.0);
+    await flutterTts.setSpeechRate(0.5);
+  }
+
+  Future<void> _speak(String text) async {
+    if (text.isNotEmpty) {
+      await flutterTts.speak(text);
+    }
   }
 
   @override
   void dispose() {
     _flipController.dispose();
     _entranceController.dispose();
-    _pulseController.dispose();
+    flutterTts.stop();
     super.dispose();
   }
 
   void _flipCard() {
-    HapticFeedback.lightImpact();
+    HapticFeedback.selectionClick();
     if (_isFlipped) {
       _flipController.reverse();
     } else {
@@ -82,23 +94,10 @@ class _FlashcardStudyScreenState extends ConsumerState<FlashcardStudyScreen>
 
   void _nextCard() {
     if (_currentIndex < widget.cards.length - 1) {
-      HapticFeedback.selectionClick();
+      HapticFeedback.lightImpact();
       _entranceController.reset();
       setState(() {
         _currentIndex++;
-        _isFlipped = false;
-      });
-      _flipController.reset();
-      _entranceController.forward();
-    }
-  }
-
-  void _previousCard() {
-    if (_currentIndex > 0) {
-      HapticFeedback.selectionClick();
-      _entranceController.reset();
-      setState(() {
-        _currentIndex--;
         _isFlipped = false;
       });
       _flipController.reset();
@@ -112,16 +111,59 @@ class _FlashcardStudyScreenState extends ConsumerState<FlashcardStudyScreen>
       _masteredCards.add(_currentIndex);
       _reviewCards.remove(_currentIndex);
     });
-    _nextCard();
+    if (_currentIndex < widget.cards.length - 1) {
+      _nextCard();
+    } else {
+      _showCompletionDialog();
+    }
   }
 
   void _markForReview() {
-    HapticFeedback.lightImpact();
+    HapticFeedback.mediumImpact();
     setState(() {
       _reviewCards.add(_currentIndex);
       _masteredCards.remove(_currentIndex);
     });
-    _nextCard();
+    if (_currentIndex < widget.cards.length - 1) {
+      _nextCard();
+    } else {
+      _showCompletionDialog();
+    }
+  }
+
+  void _showCompletionDialog() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: Theme.of(context).brightness == Brightness.dark
+            ? const Color(0xFF1E1730)
+            : Colors.white,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+        title: Text(
+          "Set Completed!",
+          style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.bold),
+        ),
+        content: Text(
+          "You've reviewed all cards.",
+          style: GoogleFonts.plusJakartaSans(),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () {
+              Navigator.pop(context); // Close dialog
+              Navigator.pop(context); // Close screen
+            },
+            child: Text(
+              "Finish",
+              style: GoogleFonts.plusJakartaSans(
+                fontWeight: FontWeight.bold,
+                color: primaryColor,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
   }
 
   @override
@@ -129,58 +171,27 @@ class _FlashcardStudyScreenState extends ConsumerState<FlashcardStudyScreen>
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
 
-    // Premium dark theme colors
-    final bgColor = isDark ? const Color(0xFF0D0D0F) : const Color(0xFFF8FAFC);
-    final cardBg = isDark ? const Color(0xFF1A1A1E) : Colors.white;
-    final accentPurple = const Color(0xFF8B5CF6);
-    final accentPurpleLight = const Color(0xFFa78bfa);
-    final textPrimary = isDark ? Colors.white : const Color(0xFF0F172A);
-    final textSecondary = isDark
-        ? const Color(0xFF71717A)
-        : const Color(0xFF64748B);
-    final surfaceColor = isDark
-        ? const Color(0xFF18181B)
-        : const Color(0xFFF1F5F9);
+    // Premium Theme Colors
+    final bgColor = isDark ? const Color(0xFF161022) : const Color(0xFFF9F8FC);
+    final surfaceColor = isDark ? const Color(0xFF1E1730) : Colors.white;
+    final textMain = isDark ? Colors.white : const Color(0xFF120D1B);
+    final textSub = isDark ? const Color(0xFFA1A1AA) : const Color(0xFF664C9A);
 
     if (widget.cards.isEmpty) {
       return Scaffold(
         backgroundColor: bgColor,
         appBar: AppBar(
-          title: Text(widget.title),
           backgroundColor: Colors.transparent,
           elevation: 0,
+          leading: IconButton(
+            icon: Icon(Icons.arrow_back_ios_rounded, color: textMain),
+            onPressed: () => Navigator.pop(context),
+          ),
         ),
         body: Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Container(
-                padding: const EdgeInsets.all(24),
-                decoration: BoxDecoration(
-                  color: accentPurple.withOpacity(0.1),
-                  shape: BoxShape.circle,
-                ),
-                child: Icon(
-                  Icons.style_outlined,
-                  size: 64,
-                  color: accentPurple,
-                ),
-              ),
-              const SizedBox(height: 24),
-              Text(
-                'No flashcards yet',
-                style: GoogleFonts.poppins(
-                  fontSize: 20,
-                  fontWeight: FontWeight.w600,
-                  color: textPrimary,
-                ),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                'Generate some flashcards to start studying',
-                style: GoogleFonts.poppins(fontSize: 14, color: textSecondary),
-              ),
-            ],
+          child: Text(
+            'No cards available.',
+            style: GoogleFonts.plusJakartaSans(color: textSub),
           ),
         ),
       );
@@ -191,180 +202,158 @@ class _FlashcardStudyScreenState extends ConsumerState<FlashcardStudyScreen>
         currentCard['front'] ?? currentCard['question'] ?? 'No question';
     final back = currentCard['back'] ?? currentCard['answer'] ?? 'No answer';
 
-    return AnnotatedRegion<SystemUiOverlayStyle>(
-      value: isDark ? SystemUiOverlayStyle.light : SystemUiOverlayStyle.dark,
-      child: Scaffold(
-        backgroundColor: bgColor,
-        body: SafeArea(
-          child: FadeTransition(
-            opacity: _entranceAnimation,
-            child: Column(
-              children: [
-                // Header
-                _buildHeader(
-                  theme,
-                  isDark,
-                  textPrimary,
-                  textSecondary,
-                  accentPurple,
-                ),
+    return Scaffold(
+      backgroundColor: bgColor,
+      body: SafeArea(
+        child: Column(
+          children: [
+            // Header
+            _buildHeader(isDark, textMain, textSub, surfaceColor),
 
-                // Progress bar
-                _buildProgressBar(isDark, accentPurple, surfaceColor),
+            // Progress Bar
+            _buildProgressBar(isDark, surfaceColor),
 
-                const SizedBox(height: 16),
+            const SizedBox(height: 24),
 
-                // Flashcard
-                Expanded(
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 20),
+            // Main Card Area
+            Expanded(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 24),
+                child: Center(
+                  child: AspectRatio(
+                    aspectRatio: 0.8, // Portrait card feel
                     child: GestureDetector(
                       onTap: _flipCard,
-                      onHorizontalDragEnd: (details) {
-                        if (details.primaryVelocity! < -200) {
-                          _nextCard();
-                        } else if (details.primaryVelocity! > 200) {
-                          _previousCard();
-                        }
-                      },
-                      child: AnimatedBuilder(
-                        animation: _flipAnimation,
-                        builder: (context, child) {
-                          final angle = _flipAnimation.value * pi;
-                          final isFront = angle < pi / 2;
+                      child: FadeTransition(
+                        opacity: _entranceAnimation,
+                        child: AnimatedBuilder(
+                          animation: _flipAnimation,
+                          builder: (context, child) {
+                            // 3D Flip Logic
+                            final angle = _flipAnimation.value * pi;
+                            final isFront = angle < pi / 2;
 
-                          return Transform(
-                            alignment: Alignment.center,
-                            transform: Matrix4.identity()
-                              ..setEntry(3, 2, 0.001)
-                              ..rotateY(angle),
-                            child: isFront
-                                ? _buildFrontCard(
-                                    front,
-                                    isDark,
-                                    textPrimary,
-                                    textSecondary,
-                                    accentPurple,
-                                    accentPurpleLight,
-                                    cardBg,
-                                  )
-                                : Transform(
-                                    alignment: Alignment.center,
-                                    transform: Matrix4.identity()..rotateY(pi),
-                                    child: _buildBackCard(
-                                      back,
-                                      isDark,
-                                      textPrimary,
-                                      textSecondary,
-                                      accentPurple,
-                                      cardBg,
+                            return Transform(
+                              alignment: Alignment.center,
+                              transform: Matrix4.identity()
+                                ..setEntry(3, 2, 0.001) // Perspective
+                                ..rotateY(angle),
+                              child: isFront
+                                  ? _buildCardSide(
+                                      text: front,
+                                      isFront: true,
+                                      isDark: isDark,
+                                      surfaceColor: surfaceColor,
+                                      textColor: textMain,
+                                    )
+                                  : Transform(
+                                      alignment: Alignment.center,
+                                      transform: Matrix4.identity()
+                                        ..rotateY(
+                                          pi,
+                                        ), // Correct back text reflection
+                                      child: _buildCardSide(
+                                        text: back,
+                                        isFront: false,
+                                        isDark: isDark,
+                                        surfaceColor: surfaceColor,
+                                        textColor: textMain,
+                                      ),
                                     ),
-                                  ),
-                          );
-                        },
+                            );
+                          },
+                        ),
                       ),
                     ),
                   ),
                 ),
-
-                // Action buttons (Save, Report)
-                _buildActionButtons(isDark, textSecondary, surfaceColor),
-
-                const SizedBox(height: 16),
-
-                // Bottom buttons (Needs Review, Got it!)
-                _buildBottomButtons(
-                  isDark,
-                  accentPurple,
-                  textPrimary,
-                  surfaceColor,
-                ),
-
-                const SizedBox(height: 20),
-              ],
+              ),
             ),
-          ),
+
+            const SizedBox(height: 32),
+
+            // Controls
+            _buildControls(isDark, surfaceColor, textMain),
+
+            const SizedBox(height: 24),
+          ],
         ),
       ),
     );
   }
 
   Widget _buildHeader(
-    ThemeData theme,
     bool isDark,
-    Color textPrimary,
-    Color textSecondary,
-    Color accentPurple,
+    Color textMain,
+    Color textSub,
+    Color surfaceColor,
   ) {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(8, 8, 8, 0),
+      padding: const EdgeInsets.fromLTRB(24, 16, 24, 0),
       child: Row(
         children: [
-          // Close button
-          IconButton(
-            onPressed: () => Navigator.pop(context),
-            icon: Container(
-              padding: const EdgeInsets.all(8),
+          GestureDetector(
+            onTap: () => Navigator.pop(context),
+            child: Container(
+              padding: const EdgeInsets.all(10),
               decoration: BoxDecoration(
-                color: isDark
-                    ? const Color(0xFF27272A)
-                    : const Color(0xFFF1F5F9),
+                color: surfaceColor,
                 borderRadius: BorderRadius.circular(12),
+                border: isDark
+                    ? Border.all(color: Colors.white.withOpacity(0.05))
+                    : null,
+                boxShadow: isDark
+                    ? null
+                    : [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.05),
+                          blurRadius: 10,
+                          offset: const Offset(0, 4),
+                        ),
+                      ],
               ),
-              child: Icon(
-                Icons.close_rounded,
-                color: isDark ? Colors.white : const Color(0xFF0F172A),
-                size: 20,
-              ),
+              child: Icon(Icons.close_rounded, color: textMain, size: 20),
             ),
           ),
-
-          // Title section
+          const SizedBox(width: 16),
           Expanded(
             child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
                   'STUDYING',
-                  style: GoogleFonts.poppins(
+                  style: GoogleFonts.plusJakartaSans(
                     fontSize: 10,
-                    fontWeight: FontWeight.w700,
+                    fontWeight: FontWeight.bold,
                     letterSpacing: 1.5,
-                    color: accentPurple,
+                    color: primaryColor,
                   ),
                 ),
-                const SizedBox(height: 2),
                 Text(
                   widget.title,
-                  style: GoogleFonts.poppins(
+                  style: GoogleFonts.plusJakartaSans(
                     fontSize: 16,
-                    fontWeight: FontWeight.w600,
-                    color: textPrimary,
+                    fontWeight: FontWeight.bold,
+                    color: textMain,
                   ),
-                  textAlign: TextAlign.center,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                 ),
               ],
             ),
           ),
-
-          // More options
           IconButton(
             onPressed: () {},
-            icon: Icon(Icons.more_horiz_rounded, color: textPrimary),
+            icon: Icon(Icons.more_horiz_rounded, color: textMain),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildProgressBar(
-    bool isDark,
-    Color accentPurple,
-    Color surfaceColor,
-  ) {
+  Widget _buildProgressBar(bool isDark, Color surfaceColor) {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 20),
+      padding: const EdgeInsets.fromLTRB(24, 24, 24, 0),
       child: Column(
         children: [
           Row(
@@ -372,52 +361,55 @@ class _FlashcardStudyScreenState extends ConsumerState<FlashcardStudyScreen>
             children: [
               Text(
                 'Progress',
-                style: GoogleFonts.poppins(
+                style: GoogleFonts.plusJakartaSans(
                   fontSize: 12,
-                  fontWeight: FontWeight.w500,
-                  color: isDark
-                      ? const Color(0xFF71717A)
-                      : const Color(0xFF64748B),
+                  fontWeight: FontWeight.w600,
+                  color: isDark ? Colors.white60 : Colors.black54,
                 ),
               ),
               Text(
                 '${_currentIndex + 1} / ${widget.cards.length}',
-                style: GoogleFonts.poppins(
+                style: GoogleFonts.plusJakartaSans(
                   fontSize: 12,
-                  fontWeight: FontWeight.w600,
-                  color: isDark ? Colors.white : const Color(0xFF0F172A),
+                  fontWeight: FontWeight.bold,
+                  color: primaryColor,
                 ),
               ),
             ],
           ),
           const SizedBox(height: 8),
-          // Segmented progress bar
           Row(
             children: List.generate(widget.cards.length, (index) {
               final isCompleted = index <= _currentIndex;
+              final isCurrent = index == _currentIndex;
               final isMastered = _masteredCards.contains(index);
               final isReview = _reviewCards.contains(index);
 
-              Color segmentColor;
-              if (isMastered) {
-                segmentColor = const Color(0xFF22C55E);
+              Color color;
+              if (isCurrent) {
+                color = primaryColor;
+              } else if (isMastered) {
+                color = const Color(0xFF2EC4B6);
               } else if (isReview) {
-                segmentColor = const Color(0xFFF59E0B);
+                color = const Color(0xFFFF9F1C);
               } else if (isCompleted) {
-                segmentColor = accentPurple;
+                color = primaryColor.withOpacity(0.5);
               } else {
-                segmentColor = surfaceColor;
+                color = primaryColor.withOpacity(
+                  0.2,
+                ); // Light purple placeholders
               }
 
               return Expanded(
-                child: Container(
-                  height: 4,
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 300),
+                  height: 6, // Thicker pill
                   margin: EdgeInsets.only(
                     right: index < widget.cards.length - 1 ? 4 : 0,
                   ),
                   decoration: BoxDecoration(
-                    color: segmentColor,
-                    borderRadius: BorderRadius.circular(2),
+                    color: color,
+                    borderRadius: BorderRadius.circular(3),
                   ),
                 ),
               );
@@ -428,147 +420,142 @@ class _FlashcardStudyScreenState extends ConsumerState<FlashcardStudyScreen>
     );
   }
 
-  Widget _buildFrontCard(
-    String front,
-    bool isDark,
-    Color textPrimary,
-    Color textSecondary,
-    Color accentPurple,
-    Color accentPurpleLight,
-    Color cardBg,
-  ) {
+  Widget _buildCardSide({
+    required String text,
+    required bool isFront,
+    required bool isDark,
+    required Color surfaceColor,
+    required Color textColor,
+  }) {
+    // Gradient Logic
+    final gradient = isFront
+        ? LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: isDark
+                ? [const Color(0xFF2D1F4E), const Color(0xFF1E1730)]
+                : [const Color(0xFFEFE9FD), Colors.white],
+          )
+        : null;
+
+    final bgColor = isFront ? null : surfaceColor;
+
     return Container(
       width: double.infinity,
+      height: double.infinity,
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(24),
+        color: bgColor,
+        gradient: gradient,
+        borderRadius: BorderRadius.circular(32),
+        border: Border.all(
+          color: isFront
+              ? (isDark ? Colors.white.withOpacity(0.05) : Colors.transparent)
+              : primaryColor.withOpacity(0.2),
+          width: 1,
+        ),
         boxShadow: [
           BoxShadow(
-            color: accentPurple.withOpacity(isDark ? 0.2 : 0.1),
+            color: Colors.black.withOpacity(isDark ? 0.3 : 0.08),
             blurRadius: 30,
             offset: const Offset(0, 15),
           ),
         ],
       ),
       child: ClipRRect(
-        borderRadius: BorderRadius.circular(24),
+        borderRadius: BorderRadius.circular(32),
         child: Stack(
           children: [
-            // Gradient background with wave pattern
-            Container(
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                  colors: isDark
-                      ? [
-                          const Color(0xFF1E1E2E),
-                          const Color(0xFF2D1F4E),
-                          const Color(0xFF1A1A2E),
-                        ]
-                      : [
-                          const Color(0xFFE0E7FF),
-                          const Color(0xFFC7D2FE),
-                          const Color(0xFFE0E7FF),
+            // Wave Pattern (Only on front or desired style)
+            if (isFront)
+              Positioned.fill(
+                child: CustomPaint(
+                  painter: _WavePatternPainter(
+                    color: primaryColor.withOpacity(0.08),
+                    secondaryColor: Colors.deepPurpleAccent.withOpacity(0.05),
+                  ),
+                ),
+              ),
+
+            // Content
+            Center(
+              child: Padding(
+                padding: const EdgeInsets.all(32),
+                child: SingleChildScrollView(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        isFront ? 'QUESTION' : 'ANSWER',
+                        style: GoogleFonts.plusJakartaSans(
+                          fontSize: 12,
+                          fontWeight: FontWeight.bold,
+                          letterSpacing: 2.0,
+                          color: primaryColor,
+                        ),
+                      ),
+                      const SizedBox(height: 32),
+                      Text(
+                        text,
+                        textAlign: TextAlign.center,
+                        style: GoogleFonts.plusJakartaSans(
+                          fontSize: 26, // Larger text
+                          fontWeight: FontWeight.bold,
+                          height: 1.3,
+                          color: textColor,
+                          letterSpacing: -0.5,
+                        ),
+                      ),
+                      const SizedBox(height: 48),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(
+                            isFront
+                                ? Icons.touch_app_rounded
+                                : Icons.replay_rounded,
+                            size: 16,
+                            color: isDark ? Colors.white38 : Colors.black38,
+                          ),
+                          const SizedBox(width: 8),
+                          Text(
+                            isFront ? 'Tap to flip' : 'Tap to flip back',
+                            style: GoogleFonts.plusJakartaSans(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w600,
+                              color: isDark ? Colors.white38 : Colors.black38,
+                            ),
+                          ),
                         ],
+                      ),
+                    ],
+                  ),
                 ),
               ),
             ),
 
-            // Wave pattern overlay
-            CustomPaint(
-              size: Size.infinite,
-              painter: _WavePatternPainter(
-                color: accentPurple.withOpacity(isDark ? 0.3 : 0.2),
-              ),
-            ),
-
-            // Sound button
+            // Speaker Icon (Top Right)
             Positioned(
-              top: 16,
-              right: 16,
-              child: Container(
-                padding: const EdgeInsets.all(10),
-                decoration: BoxDecoration(
-                  color: isDark
-                      ? Colors.white.withOpacity(0.1)
-                      : Colors.black.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(12),
+              top: 24,
+              right: 24,
+              child: GestureDetector(
+                onTap: () {
+                  HapticFeedback.selectionClick();
+                  _speak(text);
+                },
+                child: Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Colors.black.withOpacity(
+                      0.4,
+                    ), // Dark translucent pill
+                    borderRadius: BorderRadius.circular(50),
+                  ),
+                  child: const Icon(
+                    Icons.volume_up_rounded,
+                    color: Colors.white,
+                    size: 20,
+                  ),
                 ),
-                child: Icon(
-                  Icons.volume_up_rounded,
-                  color: isDark ? Colors.white : const Color(0xFF0F172A),
-                  size: 20,
-                ),
-              ),
-            ),
-
-            // Content
-            Padding(
-              padding: const EdgeInsets.all(32),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  // Question badge
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 16,
-                      vertical: 8,
-                    ),
-                    decoration: BoxDecoration(
-                      color: accentPurple.withOpacity(0.2),
-                      borderRadius: BorderRadius.circular(20),
-                      border: Border.all(color: accentPurple.withOpacity(0.3)),
-                    ),
-                    child: Text(
-                      'QUESTION',
-                      style: GoogleFonts.poppins(
-                        fontSize: 11,
-                        fontWeight: FontWeight.w700,
-                        letterSpacing: 1.5,
-                        color: accentPurpleLight,
-                      ),
-                    ),
-                  ),
-
-                  const SizedBox(height: 32),
-
-                  // Question text
-                  Text(
-                    front,
-                    style: GoogleFonts.poppins(
-                      fontSize: 24,
-                      fontWeight: FontWeight.w700,
-                      color: textPrimary,
-                      height: 1.3,
-                    ),
-                    textAlign: TextAlign.center,
-                  ),
-
-                  const SizedBox(height: 32),
-
-                  // Tap to flip hint
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Container(
-                        width: 6,
-                        height: 6,
-                        decoration: BoxDecoration(
-                          color: accentPurple,
-                          shape: BoxShape.circle,
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      Text(
-                        'Tap to flip',
-                        style: GoogleFonts.poppins(
-                          fontSize: 14,
-                          color: textSecondary,
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
               ),
             ),
           ],
@@ -577,251 +564,41 @@ class _FlashcardStudyScreenState extends ConsumerState<FlashcardStudyScreen>
     );
   }
 
-  Widget _buildBackCard(
-    String back,
-    bool isDark,
-    Color textPrimary,
-    Color textSecondary,
-    Color accentPurple,
-    Color cardBg,
-  ) {
-    return Container(
-      width: double.infinity,
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(24),
-        boxShadow: [
-          BoxShadow(
-            color: const Color(0xFF22C55E).withOpacity(isDark ? 0.2 : 0.1),
-            blurRadius: 30,
-            offset: const Offset(0, 15),
-          ),
-        ],
-      ),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(24),
-        child: Stack(
-          children: [
-            // Gradient background
-            Container(
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                  colors: isDark
-                      ? [
-                          const Color(0xFF1A2E1E),
-                          const Color(0xFF1F3D2A),
-                          const Color(0xFF1A2E1A),
-                        ]
-                      : [
-                          const Color(0xFFDCFCE7),
-                          const Color(0xFFBBF7D0),
-                          const Color(0xFFDCFCE7),
-                        ],
-                ),
-              ),
-            ),
-
-            // Wave pattern overlay
-            CustomPaint(
-              size: Size.infinite,
-              painter: _WavePatternPainter(
-                color: const Color(0xFF22C55E).withOpacity(isDark ? 0.3 : 0.2),
-              ),
-            ),
-
-            // Content
-            Padding(
-              padding: const EdgeInsets.all(32),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  // Answer badge
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 16,
-                      vertical: 8,
-                    ),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFF22C55E).withOpacity(0.2),
-                      borderRadius: BorderRadius.circular(20),
-                      border: Border.all(
-                        color: const Color(0xFF22C55E).withOpacity(0.3),
-                      ),
-                    ),
-                    child: Text(
-                      'ANSWER',
-                      style: GoogleFonts.poppins(
-                        fontSize: 11,
-                        fontWeight: FontWeight.w700,
-                        letterSpacing: 1.5,
-                        color: const Color(0xFF4ADE80),
-                      ),
-                    ),
-                  ),
-
-                  const SizedBox(height: 32),
-
-                  // Answer text
-                  Text(
-                    back,
-                    style: GoogleFonts.poppins(
-                      fontSize: 20,
-                      fontWeight: FontWeight.w600,
-                      color: textPrimary,
-                      height: 1.4,
-                    ),
-                    textAlign: TextAlign.center,
-                  ),
-
-                  const SizedBox(height: 32),
-
-                  // Tap to flip hint
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Container(
-                        width: 6,
-                        height: 6,
-                        decoration: const BoxDecoration(
-                          color: Color(0xFF22C55E),
-                          shape: BoxShape.circle,
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      Text(
-                        'Tap to flip back',
-                        style: GoogleFonts.poppins(
-                          fontSize: 14,
-                          color: textSecondary,
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildActionButtons(
-    bool isDark,
-    Color textSecondary,
-    Color surfaceColor,
-  ) {
+  Widget _buildControls(bool isDark, Color surfaceColor, Color textMain) {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 20),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          _ActionButton(
-            icon: Icons.bookmark_outline_rounded,
-            label: 'SAVE',
-            isDark: isDark,
-            surfaceColor: surfaceColor,
-            textColor: textSecondary,
-            onTap: () {
-              HapticFeedback.lightImpact();
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: const Text('Card saved!'),
-                  behavior: SnackBarBehavior.floating,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                ),
-              );
-            },
-          ),
-          const SizedBox(width: 32),
-          _ActionButton(
-            icon: Icons.flag_outlined,
-            label: 'REPORT',
-            isDark: isDark,
-            surfaceColor: surfaceColor,
-            textColor: textSecondary,
-            onTap: () {
-              HapticFeedback.lightImpact();
-            },
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildBottomButtons(
-    bool isDark,
-    Color accentPurple,
-    Color textPrimary,
-    Color surfaceColor,
-  ) {
-    final isLastCard = _currentIndex >= widget.cards.length - 1;
-
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 20),
+      padding: const EdgeInsets.symmetric(horizontal: 24),
       child: Row(
         children: [
-          // Needs Review button
           Expanded(
-            child: GestureDetector(
+            child: _ControlButton(
+              icon: Icons.close_rounded,
+              label: 'Needs Review',
+              iconColor: const Color(0xFFEF4444), // Red
               onTap: _markForReview,
-              child: Container(
-                height: 56,
-                decoration: BoxDecoration(
-                  color: surfaceColor,
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(
-                    color: isDark
-                        ? const Color(0xFF27272A)
-                        : const Color(0xFFE2E8F0),
-                  ),
-                ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(
-                      Icons.close_rounded,
-                      color: const Color(0xFFEF4444),
-                      size: 20,
-                    ),
-                    const SizedBox(width: 8),
-                    Text(
-                      'Needs Review',
-                      style: GoogleFonts.poppins(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w600,
-                        color: textPrimary,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
+              isDark: isDark,
+              surfaceColor: surfaceColor,
+              textMain: textMain,
             ),
           ),
-
-          const SizedBox(width: 12),
-
-          // Got it! button
+          const SizedBox(width: 16),
           Expanded(
             child: GestureDetector(
-              onTap: isLastCard
-                  ? () => Navigator.pop(context)
-                  : _markAsMastered,
+              onTap: () {
+                HapticFeedback.heavyImpact(); // Satisfying click
+                _markAsMastered();
+              },
               child: Container(
-                height: 56,
+                height: 64,
                 decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: [accentPurple, accentPurple.withOpacity(0.8)],
-                  ),
-                  borderRadius: BorderRadius.circular(16),
+                  color: const Color(
+                    0xFF8B5CF6,
+                  ), // Bright Purple like screenshot
+                  borderRadius: BorderRadius.circular(20),
                   boxShadow: [
                     BoxShadow(
-                      color: accentPurple.withOpacity(0.4),
-                      blurRadius: 12,
-                      offset: const Offset(0, 4),
+                      color: const Color(0xFF8B5CF6).withOpacity(0.4),
+                      blurRadius: 16,
+                      offset: const Offset(0, 8),
                     ),
                   ],
                 ),
@@ -831,14 +608,14 @@ class _FlashcardStudyScreenState extends ConsumerState<FlashcardStudyScreen>
                     const Icon(
                       Icons.check_rounded,
                       color: Colors.white,
-                      size: 20,
+                      size: 28,
                     ),
                     const SizedBox(width: 8),
                     Text(
-                      isLastCard ? 'Done' : 'Got it!',
-                      style: GoogleFonts.poppins(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w600,
+                      'Got it!',
+                      style: GoogleFonts.plusJakartaSans(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
                         color: Colors.white,
                       ),
                     ),
@@ -853,53 +630,54 @@ class _FlashcardStudyScreenState extends ConsumerState<FlashcardStudyScreen>
   }
 }
 
-class _ActionButton extends StatelessWidget {
+class _ControlButton extends StatelessWidget {
   final IconData icon;
   final String label;
+  final Color iconColor;
+  final VoidCallback onTap;
   final bool isDark;
   final Color surfaceColor;
-  final Color textColor;
-  final VoidCallback onTap;
+  final Color textMain;
 
-  const _ActionButton({
+  const _ControlButton({
     required this.icon,
     required this.label,
+    required this.iconColor,
+    required this.onTap,
     required this.isDark,
     required this.surfaceColor,
-    required this.textColor,
-    required this.onTap,
+    required this.textMain,
   });
 
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
       onTap: onTap,
-      child: Column(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(14),
-            decoration: BoxDecoration(
-              color: surfaceColor,
-              borderRadius: BorderRadius.circular(14),
-              border: Border.all(
-                color: isDark
-                    ? const Color(0xFF27272A)
-                    : const Color(0xFFE2E8F0),
+      child: Container(
+        height: 64,
+        decoration: BoxDecoration(
+          color: surfaceColor,
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(
+            color: isDark ? Colors.white10 : Colors.black12,
+            width: 1,
+          ),
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(icon, color: iconColor, size: 24),
+            const SizedBox(width: 8),
+            Text(
+              label,
+              style: GoogleFonts.plusJakartaSans(
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+                color: textMain,
               ),
             ),
-            child: Icon(icon, color: textColor, size: 22),
-          ),
-          const SizedBox(height: 6),
-          Text(
-            label,
-            style: GoogleFonts.poppins(
-              fontSize: 10,
-              fontWeight: FontWeight.w600,
-              letterSpacing: 0.5,
-              color: textColor,
-            ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -907,8 +685,9 @@ class _ActionButton extends StatelessWidget {
 
 class _WavePatternPainter extends CustomPainter {
   final Color color;
+  final Color secondaryColor;
 
-  _WavePatternPainter({required this.color});
+  _WavePatternPainter({required this.color, required this.secondaryColor});
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -916,32 +695,50 @@ class _WavePatternPainter extends CustomPainter {
       ..color = color
       ..style = PaintingStyle.fill;
 
+    final paint2 = Paint()
+      ..color = secondaryColor
+      ..style = PaintingStyle.fill;
+
+    // Pattern 1 (Top Wave)
     final path = Path();
+    path.moveTo(0, 0);
+    path.lineTo(0, size.height * 0.4);
+    path.quadraticBezierTo(
+      size.width * 0.25,
+      size.height * 0.5,
+      size.width * 0.5,
+      size.height * 0.4,
+    );
+    path.quadraticBezierTo(
+      size.width * 0.75,
+      size.height * 0.3,
+      size.width,
+      size.height * 0.45,
+    );
+    path.lineTo(size.width, 0);
+    path.close();
+    canvas.drawPath(path, paint);
 
-    // Create multiple wave layers
-    for (int layer = 0; layer < 3; layer++) {
-      final yOffset = size.height * 0.3 + (layer * 30);
-      final amplitude = 20.0 + (layer * 10);
+    // Pattern 2 (Overlapping Wave)
+    final path2 = Path();
+    path2.moveTo(0, 0);
+    path2.lineTo(0, size.height * 0.25);
+    path2.quadraticBezierTo(
+      size.width * 0.3,
+      size.height * 0.35,
+      size.width * 0.6,
+      size.height * 0.25,
+    );
+    path2.quadraticBezierTo(
+      size.width * 0.8,
+      size.height * 0.15,
+      size.width,
+      size.height * 0.3,
+    );
+    path2.lineTo(size.width, 0);
+    path2.close();
 
-      path.moveTo(0, yOffset);
-
-      for (double x = 0; x <= size.width; x += 1) {
-        final y =
-            yOffset +
-            sin((x / size.width) * 2 * pi + (layer * 0.5)) * amplitude;
-        path.lineTo(x, y);
-      }
-
-      path.lineTo(size.width, size.height);
-      path.lineTo(0, size.height);
-      path.close();
-
-      canvas.drawPath(
-        path,
-        paint..color = color.withOpacity(0.1 + (layer * 0.05)),
-      );
-      path.reset();
-    }
+    canvas.drawPath(path2, paint2);
   }
 
   @override

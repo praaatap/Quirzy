@@ -1,14 +1,16 @@
-import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter/scheduler.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'dart:async';
-
+import 'dart:math';
+import 'dart:ui';
+import 'package:flutter/material.dart';
+import 'package:flutter/scheduler.dart';
+import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:quirzy/features/quiz/screens/quiz_complete_screen.dart';
 
 class QuizQuestionScreen extends ConsumerStatefulWidget {
   final String quizTitle;
-  final String quizId; // <--- 1. ADDED quizId variable
+  final String quizId;
   final List<Map<String, dynamic>> questions;
   final String? difficulty;
   final int timePerQuestion;
@@ -16,7 +18,7 @@ class QuizQuestionScreen extends ConsumerStatefulWidget {
   const QuizQuestionScreen({
     super.key,
     required this.quizTitle,
-    required this.quizId, // <--- 2. ADDED to constructor
+    required this.quizId,
     required this.questions,
     this.difficulty,
     this.timePerQuestion = 30,
@@ -27,12 +29,27 @@ class QuizQuestionScreen extends ConsumerStatefulWidget {
 }
 
 class _QuizQuestionScreenState extends ConsumerState<QuizQuestionScreen>
-    with SingleTickerProviderStateMixin {
+    with TickerProviderStateMixin {
   int currentQuestionIndex = 0;
   int correctAnswers = 0;
   String? selectedOption;
-  late AnimationController _animationController;
+
+  // Power-up States
+  bool _hasUsed5050 = false;
+  bool _hasUsedFreeze = false;
+  bool _hasUsedSecondChance = false;
+
+  bool _isSecondChanceActive = false;
+  bool _isFrozen = false;
+  final Set<String> _hiddenOptions = {};
+
+  // Animation Controllers
+  late AnimationController _progressController;
+
+  late AnimationController _questionTransitionController;
   late Animation<double> _fadeAnimation;
+  late Animation<Offset> _slideAnimation;
+
   late List<bool> userAnswers;
   late List<int> userSelectedAnswers;
 
@@ -41,20 +58,13 @@ class _QuizQuestionScreenState extends ConsumerState<QuizQuestionScreen>
   bool _isTimerActive = true;
   bool _isAnswerSubmitted = false;
 
-  final ScrollController _scrollController = ScrollController();
-
   @override
   void initState() {
     super.initState();
 
     if (widget.questions.isEmpty) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('No questions available')),
-          );
-          Navigator.pop(context);
-        }
+        if (mounted) Navigator.pop(context);
       });
       return;
     }
@@ -62,19 +72,34 @@ class _QuizQuestionScreenState extends ConsumerState<QuizQuestionScreen>
     userAnswers = List.filled(widget.questions.length, false);
     userSelectedAnswers = List.filled(widget.questions.length, -1);
 
-    _animationController = AnimationController(
+    // Progress Animation
+    _progressController = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 400),
+      duration: const Duration(seconds: 1),
+    );
+
+    // Question Transition Animation
+    _questionTransitionController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 600),
     );
 
     _fadeAnimation = CurvedAnimation(
-      parent: _animationController,
-      curve: Curves.easeOut,
+      parent: _questionTransitionController,
+      curve: const Interval(0.4, 1.0, curve: Curves.easeOut),
     );
+
+    _slideAnimation =
+        Tween<Offset>(begin: const Offset(0, 0.1), end: Offset.zero).animate(
+          CurvedAnimation(
+            parent: _questionTransitionController,
+            curve: Curves.easeOutCubic,
+          ),
+        );
 
     SchedulerBinding.instance.addPostFrameCallback((_) {
       if (mounted) {
-        _animationController.forward();
+        _questionTransitionController.forward();
         _startQuestionTimer();
       }
     });
@@ -82,25 +107,43 @@ class _QuizQuestionScreenState extends ConsumerState<QuizQuestionScreen>
 
   @override
   void dispose() {
-    _animationController.dispose();
+    _progressController.dispose();
+    _questionTransitionController.dispose();
     _questionTimer?.cancel();
-    _scrollController.dispose();
     super.dispose();
   }
 
   void _startQuestionTimer() {
     _questionTimer?.cancel();
+    _isFrozen = false; // Reset freeze on new question?
+    // Usually freeze lasts for a specific time or one turn.
+    // Let's reset freeze when changing question to avoid bugs.
+
     setState(() {
       _secondsRemaining = widget.timePerQuestion;
       _isTimerActive = true;
       _isAnswerSubmitted = false;
+      _hiddenOptions.clear(); // Clear 50/50 hidden options
+      _isSecondChanceActive =
+          false; // Reset second chance active state (it's consumed or reset)
+      // Wait, second chance should carry over if not consumed?
+      // Simpler logic: It applies to the current question once activated.
+      // Or usually it is a global "lifeline" you activate.
+      // Let's say if you activate it, it stays active until you make a mistake.
+      // But typically lifelines are "use now". We'll keep it simple:
+      // It protects you for THIS question.
     });
+
+    _progressController.duration = Duration(seconds: widget.timePerQuestion);
+    _progressController.reverse(from: 1.0);
 
     _questionTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
       if (!mounted) {
         timer.cancel();
         return;
       }
+
+      if (_isFrozen) return; // Logic for Freeze
 
       if (_secondsRemaining > 0) {
         setState(() {
@@ -111,48 +154,135 @@ class _QuizQuestionScreenState extends ConsumerState<QuizQuestionScreen>
         setState(() {
           _isTimerActive = false;
         });
-        Future.delayed(const Duration(milliseconds: 500), () {
-          if (mounted) _handleNextQuestion(autoAdvance: true);
-        });
+        _handleNextQuestion(autoAdvance: true);
       }
     });
   }
 
-  void _resetAnimation() {
-    _animationController.reset();
-    _animationController.forward();
-    // Scroll back to top when new question loads
-    if (_scrollController.hasClients) {
-      _scrollController.animateTo(
-        0,
-        duration: const Duration(milliseconds: 300),
-        curve: Curves.easeOut,
-      );
-    }
+  // ==========================================
+  // POWER-UP LOGIC
+  // ==========================================
+
+  void _use5050() {
+    if (_hasUsed5050) return;
+
+    HapticFeedback.mediumImpact();
+    setState(() {
+      _hasUsed5050 = true;
+    });
+
+    final currentQuestion = widget.questions[currentQuestionIndex];
+    final options = (currentQuestion['options'] as List<dynamic>)
+        .cast<String>();
+    final correctAnswerIndex = currentQuestion['correctAnswer'] as int;
+    final correctAnswer = options[correctAnswerIndex];
+
+    final incorrectOptions = options.where((o) => o != correctAnswer).toList();
+    incorrectOptions.shuffle();
+
+    // Hide 2 incorrect options (or 1 if there are only 2 options total)
+    int toHideCount = min(2, incorrectOptions.length);
+
+    setState(() {
+      _hiddenOptions.addAll(incorrectOptions.take(toHideCount));
+    });
+
+    _showPowerUpSnackBar(
+      'AI Cut applied! 2 wrong answers removed.',
+      Colors.purpleAccent,
+    );
   }
 
-  void _goToPreviousQuestion() {
-    if (currentQuestionIndex > 0) {
-      _questionTimer?.cancel();
-      setState(() {
-        currentQuestionIndex--;
-        selectedOption = userSelectedAnswers[currentQuestionIndex] != -1
-            ? (widget.questions[currentQuestionIndex]['options']
-                  as List<dynamic>)[userSelectedAnswers[currentQuestionIndex]]
-            : null;
-        _isAnswerSubmitted = false;
-      });
-      _resetAnimation();
-      _startQuestionTimer();
-    }
+  void _useFreeze() {
+    if (_hasUsedFreeze) return;
+
+    HapticFeedback.mediumImpact();
+    setState(() {
+      _hasUsedFreeze = true;
+      _isFrozen = true;
+    });
+
+    _progressController.stop(); // Stop visual progress
+
+    _showPowerUpSnackBar('Time Frozen! Take your time.', Colors.cyanAccent);
+  }
+
+  void _useSecondChance() {
+    if (_hasUsedSecondChance) return;
+
+    HapticFeedback.mediumImpact();
+    setState(() {
+      _hasUsedSecondChance = true;
+      _isSecondChanceActive = true;
+    });
+
+    _showPowerUpSnackBar(
+      'Shield Active! Protected from one mistake.',
+      Colors.greenAccent,
+    );
+  }
+
+  void _showPowerUpSnackBar(String message, Color color) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Row(
+          children: [
+            Icon(Icons.auto_awesome, color: Colors.white, size: 20),
+            const SizedBox(width: 12),
+            Text(
+              message,
+              style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w600),
+            ),
+          ],
+        ),
+        backgroundColor: color.withOpacity(0.9),
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        elevation: 0,
+      ),
+    );
   }
 
   void _handleNextQuestion({bool autoAdvance = false}) {
     if (_isAnswerSubmitted) return;
 
+    // Second Chance Logic
+    if (selectedOption != null && !autoAdvance) {
+      final currentQuestion = widget.questions[currentQuestionIndex];
+      final options = (currentQuestion['options'] as List<dynamic>)
+          .cast<String>();
+      final selectedIndex = options.indexOf(selectedOption!);
+      final isCorrect = selectedIndex == currentQuestion['correctAnswer'];
+
+      if (!isCorrect && _isSecondChanceActive) {
+        HapticFeedback.heavyImpact();
+        setState(() {
+          _isSecondChanceActive = false; // Consumed
+          selectedOption = null; // Reset selection
+        });
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              'Shield Saved You! Try again.',
+              style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.bold),
+            ),
+            backgroundColor: Colors.green,
+            behavior: SnackBarBehavior.floating,
+            duration: const Duration(seconds: 2),
+          ),
+        );
+        return; // EXIT FUNCTION - Give second chance
+      }
+    }
+
     setState(() {
       _isAnswerSubmitted = true;
+      _isFrozen = false; // Unfreeze if frozen
     });
+
+    // Haptic Feedback on submit
+    HapticFeedback.mediumImpact();
 
     final currentQuestion = widget.questions[currentQuestionIndex];
     final options = (currentQuestion['options'] as List<dynamic>)
@@ -175,19 +305,20 @@ class _QuizQuestionScreenState extends ConsumerState<QuizQuestionScreen>
     _questionTimer?.cancel();
 
     if (currentQuestionIndex < widget.questions.length - 1) {
-      Future.delayed(const Duration(milliseconds: 250), () {
+      Future.delayed(const Duration(milliseconds: 400), () {
         if (mounted) {
           setState(() {
             selectedOption = null;
             currentQuestionIndex++;
             _isAnswerSubmitted = false;
           });
-          _resetAnimation();
+          _questionTransitionController.reset();
+          _questionTransitionController.forward();
           _startQuestionTimer();
         }
       });
     } else {
-      Future.delayed(const Duration(milliseconds: 250), () {
+      Future.delayed(const Duration(milliseconds: 300), () {
         if (mounted) {
           Navigator.pushReplacement(
             context,
@@ -221,8 +352,7 @@ class _QuizQuestionScreenState extends ConsumerState<QuizQuestionScreen>
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(10),
           ),
-          margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-          duration: const Duration(seconds: 1),
+          backgroundColor: Colors.redAccent,
         ),
       );
     }
@@ -234,17 +364,16 @@ class _QuizQuestionScreenState extends ConsumerState<QuizQuestionScreen>
       barrierDismissible: false,
       builder: (context) => AlertDialog(
         backgroundColor: theme.colorScheme.surface,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
         title: Text(
           'Quit Quiz?',
-          style: GoogleFonts.poppins(
-            fontWeight: FontWeight.bold,
-            color: theme.colorScheme.onSurface,
-          ),
+          style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.bold),
         ),
         content: Text(
-          'Your progress will be lost. Are you sure?',
-          style: GoogleFonts.poppins(color: theme.colorScheme.onSurfaceVariant),
+          'Your progress needs to be saved. Are you sure you want to exit?',
+          style: GoogleFonts.plusJakartaSans(
+            color: theme.colorScheme.onSurfaceVariant,
+          ),
         ),
         actions: [
           TextButton(
@@ -254,18 +383,16 @@ class _QuizQuestionScreenState extends ConsumerState<QuizQuestionScreen>
             },
             child: Text(
               'Cancel',
-              style: GoogleFonts.poppins(
-                color: theme.colorScheme.primary,
-                fontWeight: FontWeight.w600,
-              ),
+              style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w600),
             ),
           ),
-          FilledButton(
-            style: FilledButton.styleFrom(
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
               backgroundColor: theme.colorScheme.error,
-              foregroundColor: theme.colorScheme.onError,
+              foregroundColor: Colors.white,
+              elevation: 0,
               shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(10),
+                borderRadius: BorderRadius.circular(12),
               ),
             ),
             onPressed: () {
@@ -274,7 +401,7 @@ class _QuizQuestionScreenState extends ConsumerState<QuizQuestionScreen>
             },
             child: Text(
               'Quit',
-              style: GoogleFonts.poppins(fontWeight: FontWeight.w600),
+              style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w600),
             ),
           ),
         ],
@@ -285,6 +412,7 @@ class _QuizQuestionScreenState extends ConsumerState<QuizQuestionScreen>
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
 
     if (widget.questions.isEmpty) return const SizedBox.shrink();
 
@@ -292,7 +420,7 @@ class _QuizQuestionScreenState extends ConsumerState<QuizQuestionScreen>
     final questionText = currentQuestion['questionText'] ?? 'No question text';
     final options =
         (currentQuestion['options'] as List<dynamic>?)?.cast<String>() ?? [];
-    final progressValue = (currentQuestionIndex + 1) / widget.questions.length;
+    final primaryColor = theme.colorScheme.primary;
 
     return PopScope(
       canPop: false,
@@ -304,287 +432,456 @@ class _QuizQuestionScreenState extends ConsumerState<QuizQuestionScreen>
       },
       child: Scaffold(
         backgroundColor: theme.scaffoldBackgroundColor,
-        body: SafeArea(
-          child: Column(
-            children: [
-              // 1. Custom Header (Non-scrollable)
-              _buildHeader(theme, progressValue),
+        extendBodyBehindAppBar: true,
+        appBar: AppBar(
+          backgroundColor: Colors.transparent,
+          elevation: 0,
+          leading: IconButton(
+            icon: Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: isDark
+                    ? Colors.white.withOpacity(0.1)
+                    : Colors.black.withOpacity(0.05),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(
+                Icons.close_rounded,
+                size: 20,
+                color: theme.colorScheme.onSurface,
+              ),
+            ),
+            onPressed: () {
+              _questionTimer?.cancel();
+              _showQuitDialog(theme);
+            },
+          ),
+          centerTitle: true,
+          title: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+            decoration: BoxDecoration(
+              color: isDark ? const Color(0xFF1E1E24) : Colors.white,
+              borderRadius: BorderRadius.circular(20),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.05),
+                  blurRadius: 10,
+                  offset: const Offset(0, 4),
+                ),
+              ],
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(
+                  _isFrozen ? Icons.ac_unit : Icons.timer_rounded,
+                  size: 16,
+                  color: _isFrozen
+                      ? Colors.cyanAccent
+                      : (_secondsRemaining < 10 ? Colors.red : primaryColor),
+                ),
+                const SizedBox(width: 6),
+                Text(
+                  _isFrozen ? 'FROZEN' : '${_secondsRemaining}s',
+                  style: GoogleFonts.plusJakartaSans(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 14,
+                    color: _isFrozen
+                        ? Colors.cyanAccent
+                        : (_secondsRemaining < 10 ? Colors.red : primaryColor),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            Padding(
+              padding: const EdgeInsets.only(right: 16),
+              child: Center(
+                child: Text(
+                  '${currentQuestionIndex + 1} / ${widget.questions.length}',
+                  style: GoogleFonts.plusJakartaSans(
+                    fontSize: 14,
+                    fontWeight: FontWeight.bold,
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+        body: Stack(
+          children: [
+            // 1. Premium Background
+            _buildBackground(theme, isDark),
 
-              // 2. Scrollable Content (Question + Options)
-              Expanded(
-                child: FadeTransition(
-                  opacity: _fadeAnimation,
-                  child: SingleChildScrollView(
-                    controller: _scrollController,
-                    padding: const EdgeInsets.symmetric(horizontal: 24.0),
-                    physics: const BouncingScrollPhysics(),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
+            // 2. Main Content
+            SafeArea(
+              child: Column(
+                children: [
+                  // Progress Bar
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 0),
+                    child: AnimatedBuilder(
+                      animation: _progressController,
+                      builder: (context, child) {
+                        return LinearProgressIndicator(
+                          value: _progressController.value,
+                          backgroundColor: Colors.transparent,
+                          color: primaryColor.withOpacity(0.3),
+                          minHeight: 2,
+                        );
+                      },
+                    ),
+                  ),
+
+                  // POWER-UPS BAR
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(24, 16, 24, 0),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        const SizedBox(height: 20),
-
-                        // Question Text
-                        Text(
-                          questionText,
-                          style: GoogleFonts.poppins(
-                            fontSize: 20,
-                            fontWeight: FontWeight.bold,
-                            color: theme.colorScheme.onBackground,
-                            height: 1.4,
-                          ),
+                        _buildPowerUpButton(
+                          icon: Icons.content_cut_rounded,
+                          label: '50/50',
+                          color: Colors.purpleAccent,
+                          isUsed: _hasUsed5050,
+                          onTap: _use5050,
+                          theme: theme,
+                          isDark: isDark,
                         ),
-
-                        const SizedBox(height: 30),
-
-                        // Options
-                        ...List.generate(options.length, (index) {
-                          final option = options[index];
-                          final isSelected = selectedOption == option;
-                          return Padding(
-                            padding: const EdgeInsets.only(bottom: 16),
-                            child: OptionCard(
-                              key: ValueKey('${currentQuestionIndex}_$option'),
-                              option: option,
-                              optionLabel: String.fromCharCode(65 + index),
-                              isSelected: isSelected,
-                              isEnabled: _isTimerActive && !_isAnswerSubmitted,
-                              theme: theme,
-                              onTap: (_isTimerActive && !_isAnswerSubmitted)
-                                  ? () =>
-                                        setState(() => selectedOption = option)
-                                  : null,
-                            ),
-                          );
-                        }),
-
-                        // Extra bottom padding
-                        const SizedBox(height: 20),
+                        const SizedBox(width: 16),
+                        _buildPowerUpButton(
+                          icon: Icons.ac_unit_rounded,
+                          label: 'Freeze',
+                          color: Colors.cyanAccent,
+                          isUsed: _hasUsedFreeze,
+                          onTap: _useFreeze,
+                          theme: theme,
+                          isDark: isDark,
+                        ),
+                        const SizedBox(width: 16),
+                        _buildPowerUpButton(
+                          icon: Icons.shield_rounded,
+                          label: 'Shield',
+                          color: Colors.greenAccent,
+                          isUsed: _hasUsedSecondChance,
+                          onTap: _useSecondChance,
+                          theme: theme,
+                          isDark: isDark,
+                          isActive: _isSecondChanceActive,
+                        ),
                       ],
                     ),
                   ),
-                ),
-              ),
 
-              // 3. Pinned Bottom Navigation
-              _buildBottomBar(theme),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
+                  Expanded(
+                    child: SingleChildScrollView(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 24,
+                        vertical: 12,
+                      ),
+                      physics: const BouncingScrollPhysics(),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          const SizedBox(height: 20),
 
-  Widget _buildHeader(ThemeData theme, double progressValue) {
-    final isDark = theme.brightness == Brightness.dark;
+                          // Question Card
+                          SlideTransition(
+                            position: _slideAnimation,
+                            child: FadeTransition(
+                              opacity: _fadeAnimation,
+                              child: Container(
+                                padding: const EdgeInsets.all(24),
+                                decoration: BoxDecoration(
+                                  color: isDark
+                                      ? const Color(0xFF1E1E24).withOpacity(0.8)
+                                      : Colors.white.withOpacity(0.9),
+                                  borderRadius: BorderRadius.circular(24),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: primaryColor.withOpacity(
+                                        isDark ? 0.15 : 0.08,
+                                      ),
+                                      blurRadius: 30,
+                                      offset: const Offset(0, 10),
+                                    ),
+                                  ],
+                                  border: Border.all(
+                                    color: isDark
+                                        ? Colors.white.withOpacity(0.1)
+                                        : Colors.white,
+                                    width: 1,
+                                  ),
+                                ),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    if (widget.difficulty != null)
+                                      Container(
+                                        padding: const EdgeInsets.symmetric(
+                                          horizontal: 10,
+                                          vertical: 4,
+                                        ),
+                                        decoration: BoxDecoration(
+                                          color: _getDifficultyColor(
+                                            widget.difficulty!,
+                                            isDark,
+                                          ).withOpacity(0.1),
+                                          borderRadius: BorderRadius.circular(
+                                            8,
+                                          ),
+                                        ),
+                                        child: Text(
+                                          widget.difficulty!.toUpperCase(),
+                                          style: GoogleFonts.plusJakartaSans(
+                                            fontSize: 10,
+                                            fontWeight: FontWeight.bold,
+                                            color: _getDifficultyColor(
+                                              widget.difficulty!,
+                                              isDark,
+                                            ),
+                                            letterSpacing: 0.5,
+                                          ),
+                                        ),
+                                      ),
+                                    const SizedBox(height: 16),
+                                    Text(
+                                      questionText,
+                                      style: GoogleFonts.plusJakartaSans(
+                                        fontSize: 20,
+                                        fontWeight: FontWeight.bold,
+                                        height: 1.4,
+                                        color: theme.colorScheme.onSurface,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ),
 
-    return Container(
-      padding: const EdgeInsets.fromLTRB(16, 16, 16, 16),
-      decoration: BoxDecoration(
-        color: theme.scaffoldBackgroundColor,
-        border: Border(
-          bottom: BorderSide(
-            color: theme.colorScheme.outline.withOpacity(0.1),
-            width: 1,
-          ),
-        ),
-      ),
-      child: Column(
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              IconButton(
-                onPressed: () {
-                  _questionTimer?.cancel();
-                  _showQuitDialog(theme);
-                },
-                icon: Icon(
-                  Icons.close_rounded,
-                  color: theme.colorScheme.onSurface,
-                ),
-                style: IconButton.styleFrom(
-                  backgroundColor: theme.colorScheme.surface,
-                  padding: const EdgeInsets.all(8),
-                ),
-              ),
+                          const SizedBox(height: 32),
 
-              // Timer Pill
-              Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 8,
-                ),
-                decoration: BoxDecoration(
-                  color: _secondsRemaining <= 10
-                      ? theme.colorScheme.errorContainer
-                      : theme.colorScheme.primaryContainer,
-                  borderRadius: BorderRadius.circular(30),
-                ),
-                child: Row(
-                  children: [
-                    Icon(
-                      Icons.timer_outlined,
-                      size: 18,
-                      color: _secondsRemaining <= 10
-                          ? theme.colorScheme.error
-                          : theme.colorScheme.primary,
-                    ),
-                    const SizedBox(width: 6),
-                    Text(
-                      '$_secondsRemaining s',
-                      style: GoogleFonts.poppins(
-                        fontWeight: FontWeight.bold,
-                        color: _secondsRemaining <= 10
-                            ? theme.colorScheme.error
-                            : theme.colorScheme.primary,
+                          // Options
+                          ...List.generate(options.length, (index) {
+                            final option = options[index];
+                            final isSelected = selectedOption == option;
+                            final isHidden = _hiddenOptions.contains(option);
+
+                            if (isHidden)
+                              return const SizedBox.shrink(); // Hide option
+
+                            // Staggered Animation for options
+                            final animation = CurvedAnimation(
+                              parent: _questionTransitionController,
+                              curve: Interval(
+                                0.5 + (index * 0.1),
+                                1.0,
+                                curve: Curves.easeOutBack,
+                              ),
+                            );
+
+                            return SlideTransition(
+                              position: Tween<Offset>(
+                                begin: const Offset(0, 0.5),
+                                end: Offset.zero,
+                              ).animate(animation),
+                              child: FadeTransition(
+                                opacity: animation,
+                                child: Padding(
+                                  padding: const EdgeInsets.only(bottom: 12),
+                                  child: OptionCard(
+                                    option: option,
+                                    label: String.fromCharCode(65 + index),
+                                    isSelected: isSelected,
+                                    onTap: !_isTimerActive || _isAnswerSubmitted
+                                        ? null
+                                        : () {
+                                            HapticFeedback.selectionClick();
+                                            setState(
+                                              () => selectedOption = option,
+                                            );
+                                          },
+                                    theme: theme,
+                                    isDark: isDark,
+                                    primaryColor: primaryColor,
+                                  ),
+                                ),
+                              ),
+                            );
+                          }),
+                        ],
                       ),
                     ),
-                  ],
-                ),
-              ),
-
-              // Difficulty Badge or Spacer
-              if (widget.difficulty != null)
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 12,
-                    vertical: 6,
                   ),
-                  decoration: BoxDecoration(
-                    color: _getDifficultyColor(
-                      widget.difficulty!,
-                      isDark,
-                    ).withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(
-                      color: _getDifficultyColor(
-                        widget.difficulty!,
-                        isDark,
-                      ).withOpacity(0.3),
+                ],
+              ),
+            ),
+
+            // Floating Next Button
+            Positioned(
+              left: 24,
+              right: 24,
+              bottom: 24,
+              child: SafeArea(
+                child: AnimatedOpacity(
+                  opacity: selectedOption != null ? 1.0 : 0.0,
+                  duration: const Duration(milliseconds: 200),
+                  child: Container(
+                    height: 56,
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(20),
+                      boxShadow: [
+                        BoxShadow(
+                          color: primaryColor.withOpacity(0.4),
+                          blurRadius: 16,
+                          offset: const Offset(0, 8),
+                        ),
+                      ],
+                    ),
+                    child: ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: primaryColor,
+                        foregroundColor: Colors.white,
+                        elevation: 0,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                      ),
+                      onPressed: selectedOption != null && !_isAnswerSubmitted
+                          ? () => _handleNextQuestion()
+                          : null,
+                      child: Text(
+                        currentQuestionIndex < widget.questions.length - 1
+                            ? 'Next Question'
+                            : 'Finish Quiz',
+                        style: GoogleFonts.plusJakartaSans(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
                     ),
                   ),
-                  child: Text(
-                    widget.difficulty!.toUpperCase(),
-                    style: GoogleFonts.poppins(
-                      fontSize: 10,
-                      fontWeight: FontWeight.bold,
-                      color: _getDifficultyColor(widget.difficulty!, isDark),
-                    ),
-                  ),
-                )
-              else
-                const SizedBox(width: 48), // Balance spacing
-            ],
-          ),
-          const SizedBox(height: 20),
-
-          // Modern Progress Bar
-          Row(
-            children: [
-              Expanded(
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(8),
-                  child: LinearProgressIndicator(
-                    value: progressValue,
-                    backgroundColor: theme.colorScheme.surfaceContainerHighest,
-                    color: theme.colorScheme.primary,
-                    minHeight: 8,
-                  ),
                 ),
               ),
-              const SizedBox(width: 12),
-              Text(
-                '${currentQuestionIndex + 1}/${widget.questions.length}',
-                style: GoogleFonts.poppins(
-                  fontWeight: FontWeight.w600,
-                  color: theme.colorScheme.onSurfaceVariant,
-                  fontSize: 12,
-                ),
-              ),
-            ],
-          ),
-        ],
+            ),
+          ],
+        ),
       ),
     );
   }
 
-  Widget _buildBottomBar(ThemeData theme) {
-    return Container(
-      padding: const EdgeInsets.all(24),
-      decoration: BoxDecoration(
-        color: theme.scaffoldBackgroundColor,
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 10,
-            offset: const Offset(0, -5),
+  Widget _buildPowerUpButton({
+    required IconData icon,
+    required String label,
+    required Color color,
+    required bool isUsed,
+    required VoidCallback onTap,
+    required ThemeData theme,
+    required bool isDark,
+    bool isActive = false,
+  }) {
+    return GestureDetector(
+      onTap: isUsed ? null : onTap,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 300),
+        curve: Curves.easeOutBack,
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: isUsed
+              ? (isActive
+                    ? color
+                    : (isDark
+                          ? Colors.white10
+                          : Colors.black12)) // Active shield stays colored
+              : (isDark ? const Color(0xFF27272A) : Colors.white),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+            color: isUsed
+                ? (isActive ? color : Colors.transparent)
+                : (isActive ? color : color.withOpacity(0.5)),
+            width: isActive ? 2 : 1,
           ),
-        ],
+          boxShadow: isActive || (!isUsed)
+              ? [
+                  BoxShadow(
+                    color: color.withOpacity(isActive ? 0.4 : 0.2),
+                    blurRadius: isActive ? 12 : 8,
+                    offset: const Offset(0, 4),
+                  ),
+                ]
+              : [],
+        ),
+        child: Icon(
+          icon,
+          color: isUsed ? (isActive ? Colors.white : Colors.grey) : color,
+          size: 20,
+        ),
       ),
-      child: Row(
-        children: [
-          // Previous Button
-          Container(
-            decoration: BoxDecoration(
-              color: theme.colorScheme.surfaceContainer,
-              borderRadius: BorderRadius.circular(14),
-            ),
-            child: IconButton(
-              icon: Icon(
-                Icons.arrow_back_ios_new_rounded,
-                color: currentQuestionIndex > 0
-                    ? theme.colorScheme.onSurface
-                    : theme.colorScheme.onSurface.withOpacity(0.3),
-              ),
-              onPressed: currentQuestionIndex > 0
-                  ? _goToPreviousQuestion
-                  : null,
-            ),
-          ),
-          const SizedBox(width: 16),
+    );
+  }
 
-          // Next/Finish Button
-          Expanded(
-            child: SizedBox(
-              height: 56,
-              child: ElevatedButton(
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: theme.colorScheme.primary,
-                  foregroundColor: theme.colorScheme.onPrimary,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(16),
-                  ),
-                  elevation: 0,
-                ),
-                onPressed:
-                    (selectedOption != null &&
-                        _isTimerActive &&
-                        !_isAnswerSubmitted)
-                    ? () => _handleNextQuestion()
-                    : null,
-                child: Text(
-                  currentQuestionIndex < widget.questions.length - 1
-                      ? "Next Question"
-                      : "Finish Quiz",
-                  style: GoogleFonts.poppins(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                  ),
+  Widget _buildBackground(ThemeData theme, bool isDark) {
+    return Stack(
+      children: [
+        Container(color: theme.scaffoldBackgroundColor),
+        Positioned(
+          top: -100,
+          right: -50,
+          child: Container(
+            width: 300,
+            height: 300,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: theme.colorScheme.primary.withOpacity(isDark ? 0.05 : 0.1),
+              image: null,
+            ),
+            child: BackdropFilter(
+              filter: ImageFilter.blur(sigmaX: 80, sigmaY: 80),
+              child: Container(
+                decoration: const BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: Colors.transparent,
                 ),
               ),
             ),
           ),
-        ],
-      ),
+        ),
+        Positioned(
+          bottom: 100,
+          left: -50,
+          child: Container(
+            width: 250,
+            height: 250,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: theme.colorScheme.tertiary.withOpacity(
+                isDark ? 0.05 : 0.1,
+              ),
+            ),
+            child: BackdropFilter(
+              filter: ImageFilter.blur(sigmaX: 80, sigmaY: 80),
+              child: Container(
+                decoration: const BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: Colors.transparent,
+                ),
+              ),
+            ),
+          ),
+        ),
+      ],
     );
   }
 
   Color _getDifficultyColor(String difficulty, bool isDark) {
     switch (difficulty.toLowerCase()) {
       case 'easy':
-        return Colors.green;
+        return isDark ? Colors.greenAccent : Colors.green;
       case 'hard':
-        return Colors.red;
+        return isDark ? Colors.redAccent : Colors.red;
       case 'medium':
       default:
         return Colors.orange;
@@ -594,50 +891,55 @@ class _QuizQuestionScreenState extends ConsumerState<QuizQuestionScreen>
 
 class OptionCard extends StatelessWidget {
   final String option;
-  final String optionLabel;
+  final String label;
   final bool isSelected;
-  final bool isEnabled;
-  final ThemeData theme;
   final VoidCallback? onTap;
+  final ThemeData theme;
+  final bool isDark;
+  final Color primaryColor;
 
   const OptionCard({
     super.key,
     required this.option,
-    required this.optionLabel,
+    required this.label,
     required this.isSelected,
-    required this.isEnabled,
-    required this.theme,
     required this.onTap,
+    required this.theme,
+    required this.isDark,
+    required this.primaryColor,
   });
 
   @override
   Widget build(BuildContext context) {
+    final borderColor = isSelected
+        ? primaryColor
+        : (isDark
+              ? Colors.white.withOpacity(0.1)
+              : Colors.black.withOpacity(0.05));
+
+    final bgColor = isSelected
+        ? primaryColor.withOpacity(isDark ? 0.2 : 0.1)
+        : (isDark ? const Color(0xFF1E1E24) : Colors.white);
+
     return GestureDetector(
-      onTap: isEnabled ? onTap : null,
+      onTap: onTap,
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),
-        curve: Curves.easeOutCubic,
-        padding: const EdgeInsets.symmetric(vertical: 18, horizontal: 20),
+        curve: Curves.easeOut,
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
         decoration: BoxDecoration(
-          color: isSelected
-              ? theme.colorScheme.primaryContainer
-              : theme.colorScheme.surface,
+          color: bgColor,
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(
-            color: isSelected
-                ? theme.colorScheme.primary
-                : theme.colorScheme.outline.withOpacity(0.2),
-            width: isSelected ? 2 : 1.5,
-          ),
-          boxShadow: [
-            BoxShadow(
-              color: isSelected
-                  ? theme.colorScheme.primary.withOpacity(0.2)
-                  : Colors.black.withOpacity(0.02),
-              blurRadius: isSelected ? 12 : 4,
-              offset: const Offset(0, 4),
-            ),
-          ],
+          border: Border.all(color: borderColor, width: isSelected ? 2 : 1),
+          boxShadow: isSelected
+              ? [
+                  BoxShadow(
+                    color: primaryColor.withOpacity(0.2),
+                    blurRadius: 10,
+                    offset: const Offset(0, 4),
+                  ),
+                ]
+              : null,
         ),
         child: Row(
           children: [
@@ -646,18 +948,19 @@ class OptionCard extends StatelessWidget {
               height: 32,
               decoration: BoxDecoration(
                 color: isSelected
-                    ? theme.colorScheme.primary
-                    : theme.colorScheme.surfaceContainerHighest,
+                    ? primaryColor
+                    : (isDark
+                          ? Colors.white.withOpacity(0.05)
+                          : Colors.grey.withOpacity(0.1)),
                 shape: BoxShape.circle,
               ),
               child: Center(
                 child: Text(
-                  optionLabel,
-                  style: GoogleFonts.poppins(
-                    fontSize: 14,
+                  label,
+                  style: GoogleFonts.plusJakartaSans(
                     fontWeight: FontWeight.bold,
                     color: isSelected
-                        ? theme.colorScheme.onPrimary
+                        ? Colors.white
                         : theme.colorScheme.onSurfaceVariant,
                   ),
                 ),
@@ -667,24 +970,15 @@ class OptionCard extends StatelessWidget {
             Expanded(
               child: Text(
                 option,
-                style: GoogleFonts.poppins(
+                style: GoogleFonts.plusJakartaSans(
                   fontSize: 16,
                   fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
-                  color: isSelected
-                      ? theme.colorScheme.onPrimaryContainer
-                      : theme.colorScheme.onSurface,
+                  color: theme.colorScheme.onSurface,
                 ),
               ),
             ),
             if (isSelected)
-              Padding(
-                padding: const EdgeInsets.only(left: 8),
-                child: Icon(
-                  Icons.check_circle_rounded,
-                  color: theme.colorScheme.primary,
-                  size: 24,
-                ),
-              ),
+              Icon(Icons.check_circle_rounded, color: primaryColor, size: 24),
           ],
         ),
       ),
