@@ -246,7 +246,7 @@ class _FlashcardsScreenState extends ConsumerState<FlashcardsScreen>
     final bgColor = isDark ? const Color(0xFF161022) : const Color(0xFFF9F8FC);
     final surfaceColor = isDark ? const Color(0xFF1E1730) : Colors.white;
     final textMain = isDark ? Colors.white : const Color(0xFF120D1B);
-    final textSub = isDark ? const Color(0xFFA78BFA) : const Color(0xFF664C9A);
+    final textSub = isDark ? const Color(0xFFA1A1AA) : const Color(0xFF664C9A);
 
     return Scaffold(
       backgroundColor: bgColor,
@@ -263,7 +263,9 @@ class _FlashcardsScreenState extends ConsumerState<FlashcardsScreen>
                 SliverToBoxAdapter(
                   child: _buildAppBar(isDark, surfaceColor, textMain, textSub),
                 ),
-                SliverToBoxAdapter(child: _buildHeroSection(textMain, textSub)),
+                SliverToBoxAdapter(
+                  child: _buildHeroSection(textMain, textSub, isDark),
+                ),
                 SliverToBoxAdapter(
                   child: _buildCreateSection(
                     isDark,
@@ -360,7 +362,7 @@ class _FlashcardsScreenState extends ConsumerState<FlashcardsScreen>
     );
   }
 
-  Widget _buildHeroSection(Color textMain, Color textSub) {
+  Widget _buildHeroSection(Color textMain, Color textSub, bool isDark) {
     return Padding(
       padding: const EdgeInsets.fromLTRB(24, 24, 24, 24),
       child: Column(
@@ -392,7 +394,9 @@ class _FlashcardsScreenState extends ConsumerState<FlashcardsScreen>
                   const TextSpan(text: 'Study Smarter\n'),
                   TextSpan(
                     text: 'With AI',
-                    style: TextStyle(color: primaryColor),
+                    style: TextStyle(
+                      color: isDark ? Colors.white : primaryColor,
+                    ),
                   ),
                 ],
               ),

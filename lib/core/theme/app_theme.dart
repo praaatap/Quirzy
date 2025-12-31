@@ -20,15 +20,19 @@ class AppColors {
   static const Color lightTextSecondary = Color(0xFF664C9A); // Muted purple
 
   // Dark Theme Colors
-  static const Color darkPrimary = Color(0xFF5B13EC); // Same purple
+  static const Color darkPrimary = Color(
+    0xFF7C3AED,
+  ); // Brighter purple for dark mode
   static const Color darkPrimaryLight = Color(0xFF9333EA); // Lighter purple
-  static const Color darkPrimaryDark = Color(0xFF4A0FBF); // Deeper purple
-  static const Color darkSecondary = Color(0xFFEC4899); // Pink accent
-  static const Color darkBackground = Color(0xFF161022); // Deep purple-black
-  static const Color darkSurface = Color(0xFF1E1730); // Purple-tinted dark
-  static const Color darkSurfaceVariant = Color(0xFF2D2540); // Lighter surface
-  static const Color darkText = Color(0xFFFAFAFA); // Pure white
-  static const Color darkTextSecondary = Color(0xFFA78BFA); // Light purple
+  static const Color darkPrimaryDark = Color(0xFF5B13EC); // Deep purple base
+  static const Color darkSecondary = Color(0xFFF472B6); // Brighter pink accent
+  static const Color darkBackground = Color(0xFF0F0F0F); // Premium nearly-black
+  static const Color darkSurface = Color(0xFF1A1A1A); // Neutral dark surface
+  static const Color darkSurfaceVariant = Color(
+    0xFF262626,
+  ); // Lighter neutral surface
+  static const Color darkText = Color(0xFFFFFFFF); // Pure white
+  static const Color darkTextSecondary = Color(0xFFA1A1AA); // Neutral grey text
 
   // Semantic Colors
   static const Color success = Color(0xFF10B981);
@@ -103,22 +107,33 @@ class AppTheme {
   }
 
   static TextTheme _buildTextTheme(Color primary, Color secondary) {
-    // You can swap this back to Roboto if you prefer,
-    // but Plus Jakarta Sans looks more modern for "Quiz" apps.
-    return GoogleFonts.plusJakartaSansTextTheme().copyWith(
-      displayLarge: TextStyle(
-        fontSize: 32,
-        fontWeight: FontWeight.bold,
-        color: primary,
-      ),
-      displayMedium: TextStyle(
-        fontSize: 28,
-        fontWeight: FontWeight.bold,
-        color: primary,
-      ),
-      bodyLarge: TextStyle(fontSize: 16, color: primary),
-      bodyMedium: TextStyle(fontSize: 14, color: secondary),
-    );
+    // Using apply() strongly enforces the base colors across ALL text styles
+    // (display, headline, title, body, label) so nothing defaults to black/purple.
+    return GoogleFonts.plusJakartaSansTextTheme()
+        .apply(bodyColor: primary, displayColor: primary)
+        .copyWith(
+          displayLarge: TextStyle(
+            fontSize: 32,
+            fontWeight: FontWeight.bold,
+            color: primary,
+          ),
+          displayMedium: TextStyle(
+            fontSize: 28,
+            fontWeight: FontWeight.bold,
+            color: primary,
+          ),
+          // Body styles
+          bodyLarge: TextStyle(fontSize: 16, color: primary),
+          bodyMedium: TextStyle(fontSize: 14, color: secondary),
+          bodySmall: TextStyle(fontSize: 12, color: secondary),
+          // Ensure titles/labels are also correct
+          titleLarge: TextStyle(color: primary, fontWeight: FontWeight.w600),
+          titleMedium: TextStyle(color: primary, fontWeight: FontWeight.w500),
+          titleSmall: TextStyle(color: secondary, fontWeight: FontWeight.w500),
+          labelLarge: TextStyle(color: primary, fontWeight: FontWeight.w600),
+          labelMedium: TextStyle(color: secondary, fontWeight: FontWeight.w500),
+          labelSmall: TextStyle(color: secondary, fontWeight: FontWeight.w500),
+        );
   }
 
   // ☀️ LIGHT THEME
@@ -213,7 +228,7 @@ class AppTheme {
 
       colorScheme: const ColorScheme.dark(
         primary: AppColors.darkPrimary,
-        onPrimary: Colors.white, // White text on purple buttons
+        onPrimary: Colors.white,
         primaryContainer: AppColors.darkPrimaryDark,
         secondary: AppColors.darkSecondary,
         surface: AppColors.darkSurface,
@@ -221,6 +236,7 @@ class AppTheme {
         onSurfaceVariant: AppColors.darkTextSecondary,
         surfaceContainerHighest: AppColors.darkSurfaceVariant,
         error: AppColors.error,
+        outline: Color(0xFF404040), // Subtle divider color
       ),
 
       // ✅ Essential for FlashcardsScreen to work
@@ -230,7 +246,7 @@ class AppTheme {
           error: AppColors.error,
           warning: AppColors.warning,
           info: AppColors.info,
-          surfaceSubtle: AppColors.darkSurfaceVariant, // Purple-tinted dark
+          surfaceSubtle: AppColors.darkSurfaceVariant,
         ),
       ],
 
@@ -245,21 +261,26 @@ class AppTheme {
         centerTitle: true,
         scrolledUnderElevation: 0,
         systemOverlayStyle: SystemUiOverlayStyle.light,
+        iconTheme: IconThemeData(color: Colors.white),
       ),
 
       cardTheme: CardThemeData(
         color: AppColors.darkSurface,
         elevation: 0,
+        margin: EdgeInsets.zero,
         shape: RoundedRectangleBorder(
           borderRadius: _defaultRadius,
-          side: const BorderSide(color: AppColors.darkSurfaceVariant),
+          side: const BorderSide(
+            color: Color(0xFF333333),
+            width: 1,
+          ), // Subtle high-quality border
         ),
       ),
 
       elevatedButtonTheme: ElevatedButtonThemeData(
         style: ElevatedButton.styleFrom(
           backgroundColor: AppColors.darkPrimary,
-          foregroundColor: Colors.white, // High contrast text on purple
+          foregroundColor: Colors.white,
           elevation: 0,
           minimumSize: const Size(double.infinity, 56),
           shape: RoundedRectangleBorder(borderRadius: _defaultRadius),
@@ -267,17 +288,62 @@ class AppTheme {
         ),
       ),
 
+      // 🚫 STOP PURPLE TEXT LEAKS
+      iconTheme: const IconThemeData(color: AppColors.darkTextSecondary),
+
+      listTileTheme: ListTileThemeData(
+        contentPadding: const EdgeInsets.symmetric(horizontal: 16),
+        iconColor: AppColors.darkTextSecondary,
+        textColor: AppColors.darkText,
+        titleTextStyle: GoogleFonts.plusJakartaSans(
+          color: AppColors.darkText,
+          fontWeight: FontWeight.w600,
+          fontSize: 16,
+        ),
+        subtitleTextStyle: GoogleFonts.plusJakartaSans(
+          color: AppColors.darkTextSecondary,
+          fontSize: 14,
+        ),
+      ),
+
+      textButtonTheme: TextButtonThemeData(
+        style: TextButton.styleFrom(
+          foregroundColor: Colors.white, // Buttons are white, not purple
+          textStyle: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w600),
+        ),
+      ),
+
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
-        fillColor: AppColors.darkSurfaceVariant, // Dark surface
+        fillColor: AppColors.darkSurfaceVariant,
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 16,
+          vertical: 16,
+        ),
+        hintStyle: TextStyle(
+          color: AppColors.darkTextSecondary.withOpacity(0.5),
+        ),
+        labelStyle: const TextStyle(color: AppColors.darkTextSecondary),
+        floatingLabelStyle: const TextStyle(color: AppColors.darkPrimary),
+        prefixIconColor: AppColors.darkTextSecondary,
+        suffixIconColor: AppColors.darkTextSecondary,
         border: OutlineInputBorder(
           borderRadius: _defaultRadius,
-          borderSide: BorderSide.none,
+          borderSide: const BorderSide(color: Colors.transparent),
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: _defaultRadius,
+          borderSide: const BorderSide(color: Colors.transparent),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: _defaultRadius,
           borderSide: const BorderSide(color: AppColors.darkPrimary, width: 2),
         ),
+      ),
+
+      dividerTheme: const DividerThemeData(
+        color: Color(0xFF333333),
+        thickness: 1,
       ),
     );
   }

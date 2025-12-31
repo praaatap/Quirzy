@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:showcaseview/showcaseview.dart';
 
 import 'package:quirzy/core/theme/app_theme.dart';
+import 'package:quirzy/features/settings/providers/settings_provider.dart';
 import 'package:quirzy/core/widgets/app/app_widgets.dart';
 import 'package:quirzy/routes/router.dart';
 
@@ -22,7 +23,9 @@ class QuirzyApp extends ConsumerWidget {
       // ===========================================
       theme: AppTheme.light(),
       darkTheme: AppTheme.dark(),
-      themeMode: ThemeMode.light, // Use light theme by default
+      themeMode: ref.watch(settingsProvider).darkMode
+          ? ThemeMode.dark
+          : ThemeMode.light,
 
       routerConfig: router,
 

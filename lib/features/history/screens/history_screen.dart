@@ -96,7 +96,7 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen>
     const primaryLight = Color(0xFFEFE9FD);
     final bgColor = isDark ? const Color(0xFF161022) : const Color(0xFFF9F8FC);
     final textMain = isDark ? Colors.white : const Color(0xFF120D1B);
-    final textSub = isDark ? const Color(0xFFA78BFA) : const Color(0xFF664C9A);
+    final textSub = isDark ? const Color(0xFFA1A1AA) : const Color(0xFF664C9A);
 
     return Scaffold(
       backgroundColor: bgColor,
@@ -120,7 +120,12 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen>
 
                     // Hero Section
                     SliverToBoxAdapter(
-                      child: _buildHeroSection(textMain, textSub, primaryColor),
+                      child: _buildHeroSection(
+                        textMain,
+                        textSub,
+                        primaryColor,
+                        isDark,
+                      ),
                     ),
 
                     // Tab Bar
@@ -192,7 +197,12 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen>
     );
   }
 
-  Widget _buildHeroSection(Color textMain, Color textSub, Color primaryColor) {
+  Widget _buildHeroSection(
+    Color textMain,
+    Color textSub,
+    Color primaryColor,
+    bool isDark,
+  ) {
     return Padding(
       padding: const EdgeInsets.fromLTRB(24, 8, 24, 24),
       child: Column(
@@ -211,7 +221,7 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen>
                 const TextSpan(text: 'Your Learning\n'),
                 TextSpan(
                   text: 'Journey',
-                  style: TextStyle(color: primaryColor),
+                  style: TextStyle(color: isDark ? Colors.white : primaryColor),
                 ),
               ],
             ),

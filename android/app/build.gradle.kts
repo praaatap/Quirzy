@@ -55,8 +55,12 @@ android {
 
     buildTypes {
         getByName("release") {
-            // use the real release signing config (not debug)
-            signingConfig = signingConfigs.getByName("release")
+            // Check if key.properties provided a storeFile, otherwise fallback to debug signing
+            if (keystoreProperties.getProperty("storeFile") != null) {
+                signingConfig = signingConfigs.getByName("release")
+            } else {
+                signingConfig = signingConfigs.getByName("debug")
+            }
 
             isMinifyEnabled = false
             isShrinkResources = false

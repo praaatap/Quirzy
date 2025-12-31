@@ -1,5 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 // ==========================================
 // SETTINGS STATE
@@ -54,8 +54,6 @@ final settingsProvider = NotifierProvider<SettingsNotifier, SettingsState>(
 );
 
 class SettingsNotifier extends Notifier<SettingsState> {
-  final _storage = const FlutterSecureStorage();
-
   @override
   SettingsState build() {
     _loadSettings();
@@ -63,57 +61,58 @@ class SettingsNotifier extends Notifier<SettingsState> {
   }
 
   Future<void> _loadSettings() async {
-    final notifications = await _storage.read(key: 'notifications_enabled');
-    final emailNotif = await _storage.read(key: 'email_notifications');
-    final sound = await _storage.read(key: 'sound_enabled');
-    final darkMode = await _storage.read(key: 'dark_mode');
-    final language = await _storage.read(key: 'language');
-    final autoSave = await _storage.read(key: 'auto_save');
-    final navbarStyle = await _storage.read(key: 'navbar_style');
+    final prefs = await SharedPreferences.getInstance();
 
     state = SettingsState(
-      notificationsEnabled: notifications == 'true',
-      emailNotifications: emailNotif != 'false',
-      soundEnabled: sound != 'false',
-      darkMode: darkMode == 'true',
-      language: language ?? 'English',
-      autoSaveProgress: autoSave != 'false',
-      navbarStyle: navbarStyle ?? 'material',
+      notificationsEnabled: prefs.getBool('notifications_enabled') ?? true,
+      emailNotifications: prefs.getBool('email_notifications') ?? true,
+      soundEnabled: prefs.getBool('sound_enabled') ?? true,
+      darkMode: prefs.getBool('dark_mode') ?? false,
+      language: prefs.getString('language') ?? 'English',
+      autoSaveProgress: prefs.getBool('auto_save') ?? true,
+      navbarStyle: prefs.getString('navbar_style') ?? 'material',
     );
   }
 
   Future<void> toggleNotifications(bool value) async {
-    await _storage.write(key: 'notifications_enabled', value: value.toString());
     state = state.copyWith(notificationsEnabled: value);
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool('notifications_enabled', value);
   }
 
   Future<void> toggleEmailNotifications(bool value) async {
-    await _storage.write(key: 'email_notifications', value: value.toString());
     state = state.copyWith(emailNotifications: value);
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool('email_notifications', value);
   }
 
   Future<void> toggleSound(bool value) async {
-    await _storage.write(key: 'sound_enabled', value: value.toString());
     state = state.copyWith(soundEnabled: value);
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool('sound_enabled', value);
   }
 
   Future<void> toggleDarkMode(bool value) async {
-    await _storage.write(key: 'dark_mode', value: value.toString());
     state = state.copyWith(darkMode: value);
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool('dark_mode', value);
   }
 
   Future<void> setLanguage(String value) async {
-    await _storage.write(key: 'language', value: value);
     state = state.copyWith(language: value);
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('language', value);
   }
 
   Future<void> toggleAutoSave(bool value) async {
-    await _storage.write(key: 'auto_save', value: value.toString());
     state = state.copyWith(autoSaveProgress: value);
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool('auto_save', value);
   }
 
   Future<void> setNavbarStyle(String style) async {
-    await _storage.write(key: 'navbar_style', value: style);
     state = state.copyWith(navbarStyle: style);
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('navbar_style', style);
   }
 }

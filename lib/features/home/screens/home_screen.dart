@@ -394,7 +394,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
     final bgColor = isDark ? const Color(0xFF161022) : const Color(0xFFF9F8FC);
     final surfaceColor = isDark ? const Color(0xFF1E1730) : Colors.white;
     final textMain = isDark ? Colors.white : const Color(0xFF120D1B);
-    final textSub = isDark ? const Color(0xFFA78BFA) : const Color(0xFF664C9A);
+    final textSub = isDark ? const Color(0xFFA1A1AA) : const Color(0xFF664C9A);
 
     return Scaffold(
       backgroundColor: bgColor,
@@ -504,7 +504,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                   style: GoogleFonts.plusJakartaSans(
                     fontSize: 13,
                     fontWeight: FontWeight.bold,
-                    color: primaryColor,
+                    color: isDark ? Colors.white : primaryColor,
                   ),
                 ),
               ],
@@ -605,7 +605,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                   const TextSpan(text: 'What do you want to\n'),
                   TextSpan(
                     text: 'learn today?',
-                    style: TextStyle(color: primaryColor),
+                    style: TextStyle(
+                      color: isDark ? Colors.white : primaryColor,
+                    ),
                   ),
                 ],
               ),
