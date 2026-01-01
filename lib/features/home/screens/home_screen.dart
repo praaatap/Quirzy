@@ -439,7 +439,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
 
           // Main Content
           SafeArea(
-            bottom: false,
+            bottom: true,
             child:
                 CustomScrollView(
                       physics: const BouncingScrollPhysics(),
@@ -472,7 +472,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                         ),
                         SliverToBoxAdapter(child: _buildGenerateButton()),
                         SliverToBoxAdapter(
-                          child: _buildRecentSection(
+                          child: _buildDailyTriviaSection(
                             isDark,
                             surfaceColor,
                             textMain,
@@ -939,174 +939,102 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
     );
   }
 
-  Widget _buildRecentSection(
+  Widget _buildDailyTriviaSection(
     bool isDark,
     Color surfaceColor,
     Color textMain,
     Color textSub,
   ) {
-    final recentItems = [
-      {
-        'title': 'Biology 101',
-        'subtitle': 'Cell Structure',
-        'icon': Icons.science_rounded,
-        'iconBg': const Color(0xFFE3F2FD),
-        'iconColor': const Color(0xFF1565C0),
-        'count': '15 cards',
-      },
-      {
-        'title': 'World History',
-        'subtitle': 'Ancient Civilizations',
-        'icon': Icons.history_edu_rounded,
-        'iconBg': const Color(0xFFFFF3E0),
-        'iconColor': const Color(0xFFEF6C00),
-        'count': '20 cards',
-      },
-      {
-        'title': 'Mathematics',
-        'subtitle': 'Algebra Basics',
-        'icon': Icons.calculate_rounded,
-        'iconBg': const Color(0xFFE8F5E9),
-        'iconColor': const Color(0xFF2E7D32),
-        'count': '12 cards',
-      },
-    ];
-
     return Padding(
       padding: const EdgeInsets.fromLTRB(24, 32, 24, 0),
       child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
+              const Icon(
+                Icons.lightbulb_rounded,
+                color: Colors.amber,
+                size: 20,
+              ),
+              const SizedBox(width: 8),
               Text(
-                'Recent Generations',
+                'Daily Brain Boost',
                 style: GoogleFonts.plusJakartaSans(
                   fontSize: 18,
                   fontWeight: FontWeight.bold,
                   color: textMain,
                 ),
               ),
-              GestureDetector(
-                onTap: () => HapticFeedback.lightImpact(),
-                child: Text(
-                  'View All',
-                  style: GoogleFonts.plusJakartaSans(
-                    fontSize: 14,
-                    fontWeight: FontWeight.bold,
-                    color: primaryColor,
-                  ),
-                ),
-              ),
             ],
           ),
           const SizedBox(height: 16),
-          Column(
-            children: recentItems.asMap().entries.map((entry) {
-              final index = entry.key;
-              final item = entry.value;
-              return _buildRecentItem(
-                    item,
-                    isDark,
-                    surfaceColor,
-                    textMain,
-                    textSub,
-                  )
-                  .animate(delay: (400 + (index * 100)).ms)
-                  .fade(duration: 500.ms)
-                  .slideX(begin: 0.1, end: 0, curve: Curves.easeOut);
-            }).toList(),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildRecentItem(
-    Map<String, dynamic> item,
-    bool isDark,
-    Color surfaceColor,
-    Color textMain,
-    Color textSub,
-  ) {
-    return GestureDetector(
-      onTap: () => HapticFeedback.lightImpact(),
-      child: Container(
-        margin: const EdgeInsets.only(bottom: 12),
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: surfaceColor,
-          borderRadius: BorderRadius.circular(20),
-          border: isDark ? Border.all(color: const Color(0xFF2D2540)) : null,
-          boxShadow: isDark
-              ? null
-              : [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.03),
-                    blurRadius: 10,
-                    offset: const Offset(0, 4),
-                  ),
-                ],
-        ),
-        child: Row(
-          children: [
-            Container(
-              width: 52,
-              height: 52,
-              decoration: BoxDecoration(
-                color: isDark
-                    ? (item['iconColor'] as Color).withOpacity(0.2)
-                    : item['iconBg'] as Color,
-                borderRadius: BorderRadius.circular(14),
-              ),
-              child: Icon(
-                item['icon'] as IconData,
-                color: item['iconColor'] as Color,
-                size: 26,
-              ),
-            ),
-            const SizedBox(width: 14),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    item['title'] as String,
-                    style: GoogleFonts.plusJakartaSans(
-                      fontSize: 15,
-                      fontWeight: FontWeight.bold,
-                      color: textMain,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    item['subtitle'] as String,
-                    style: GoogleFonts.plusJakartaSans(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w500,
-                      color: textSub,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-              decoration: BoxDecoration(
-                color: isDark ? primaryColor.withOpacity(0.2) : primaryLight,
-                borderRadius: BorderRadius.circular(9999),
-              ),
-              child: Text(
-                item['count'] as String,
-                style: GoogleFonts.plusJakartaSans(
-                  fontSize: 11,
-                  fontWeight: FontWeight.bold,
-                  color: primaryColor,
+          Container(
+                padding: const EdgeInsets.all(20),
+                decoration: BoxDecoration(
+                  color: surfaceColor,
+                  borderRadius: BorderRadius.circular(24),
+                  border: isDark
+                      ? Border.all(color: const Color(0xFF2D2540))
+                      : null,
+                  boxShadow: isDark
+                      ? null
+                      : [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.04),
+                            blurRadius: 15,
+                            offset: const Offset(0, 5),
+                          ),
+                        ],
                 ),
-              ),
-            ),
-          ],
-        ),
+                child: Row(
+                  children: [
+                    Container(
+                      width: 56,
+                      height: 56,
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFFFF8E1),
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                      child: const Icon(
+                        Icons.school_rounded,
+                        color: Colors.orange,
+                        size: 28,
+                      ),
+                    ),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Did you know?',
+                            style: GoogleFonts.plusJakartaSans(
+                              fontSize: 14,
+                              fontWeight: FontWeight.bold,
+                              color: textMain,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            'Spaced repetition increases learning retention by up to 200%.',
+                            style: GoogleFonts.plusJakartaSans(
+                              fontSize: 13,
+                              fontWeight: FontWeight.w500,
+                              color: textSub,
+                              height: 1.4,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              )
+              .animate(delay: 300.ms)
+              .fade(duration: 600.ms)
+              .slideY(begin: 0.1, end: 0, curve: Curves.easeOut),
+        ],
       ),
     );
   }

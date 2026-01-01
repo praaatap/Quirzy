@@ -635,7 +635,7 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen>
         : 0;
     final isIncomplete = quiz['isIncomplete'] == true || totalQuestions == 0;
 
-    // Format date
+    // Date Text
     final now = DateTime.now();
     String dateText;
     if (_isSameDay(createdAt, now)) {
@@ -646,108 +646,166 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen>
       dateText = '${_getMonthName(createdAt.month)} ${createdAt.day}';
     }
 
-    // Score colors
+    // Colors
+    final surfaceColor = isDark ? const Color(0xFF1E1730) : Colors.white;
     final (Color scoreBg, Color scoreText) = _getScoreColors(
       percentage,
       isIncomplete,
-    );
-
-    // Icon and colors
-    final (IconData icon, Color iconBg, Color iconColor) = _getSubjectStyle(
-      title,
-      primaryColor,
-      primaryLight,
     );
 
     return GestureDetector(
       onTap: () => _navigateToStats(quiz),
       child:
           Container(
-                margin: const EdgeInsets.only(bottom: 12),
-                padding: const EdgeInsets.all(16),
+                margin: const EdgeInsets.only(bottom: 16),
                 decoration: BoxDecoration(
-                  color: isDark ? const Color(0xFF1A1A1E) : Colors.white,
+                  color: surfaceColor,
                   borderRadius: BorderRadius.circular(24),
-                  border: Border.all(
-                    color: isDark
-                        ? const Color(0xFF27272A)
-                        : Colors.transparent,
-                  ),
-                  boxShadow: isDark
-                      ? null
-                      : [
-                          BoxShadow(
-                            color: Colors.black.withOpacity(0.03),
-                            blurRadius: 10,
-                            offset: const Offset(0, 2),
-                          ),
-                        ],
-                ),
-                child: Row(
-                  children: [
-                    // Icon
-                    Container(
-                      width: 56,
-                      height: 56,
-                      decoration: BoxDecoration(
-                        color: iconBg,
-                        borderRadius: BorderRadius.circular(16),
-                      ),
-                      child: Icon(icon, color: iconColor, size: 28),
-                    ),
-                    const SizedBox(width: 16),
-
-                    // Content
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            title,
-                            style: GoogleFonts.plusJakartaSans(
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold,
-                              color: textMain,
-                              height: 1.2,
-                            ),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                          const SizedBox(height: 4),
-                          Text(
-                            isIncomplete
-                                ? '$dateText • Incomplete'
-                                : '$dateText • $totalQuestions questions',
-                            style: GoogleFonts.plusJakartaSans(
-                              fontSize: 12,
-                              fontWeight: FontWeight.w500,
-                              color: textSub,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-
-                    // Score Badge
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 10,
-                        vertical: 6,
-                      ),
-                      decoration: BoxDecoration(
-                        color: scoreBg,
-                        borderRadius: BorderRadius.circular(9999),
-                      ),
-                      child: Text(
-                        isIncomplete ? '--' : '$percentage%',
-                        style: GoogleFonts.plusJakartaSans(
-                          fontSize: 12,
-                          fontWeight: FontWeight.bold,
-                          color: scoreText,
-                        ),
-                      ),
+                  border: isDark ? Border.all(color: Colors.white10) : null,
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(isDark ? 0.2 : 0.05),
+                      blurRadius: 20,
+                      offset: const Offset(0, 4),
                     ),
                   ],
+                ),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(24),
+                  child: Stack(
+                    children: [
+                      // Wave background pattern
+                      Positioned(
+                        right: -20,
+                        bottom: -20,
+                        child: Icon(
+                          Icons.history_edu_rounded,
+                          size: 100,
+                          color: primaryColor.withOpacity(0.05),
+                        ),
+                      ),
+
+                      Padding(
+                        padding: const EdgeInsets.all(20),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                // Date Pill
+                                Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 12,
+                                    vertical: 6,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: primaryColor.withOpacity(0.1),
+                                    borderRadius: BorderRadius.circular(999),
+                                  ),
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Icon(
+                                        Icons.calendar_today_rounded,
+                                        size: 14,
+                                        color: primaryColor,
+                                      ),
+                                      const SizedBox(width: 6),
+                                      Text(
+                                        dateText,
+                                        style: GoogleFonts.plusJakartaSans(
+                                          fontSize: 12,
+                                          fontWeight: FontWeight.bold,
+                                          color: primaryColor,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                // Score Badge
+                                Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 10,
+                                    vertical: 6,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: scoreBg,
+                                    borderRadius: BorderRadius.circular(9999),
+                                  ),
+                                  child: Text(
+                                    isIncomplete
+                                        ? 'Incomplete'
+                                        : '$percentage%',
+                                    style: GoogleFonts.plusJakartaSans(
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.bold,
+                                      color: scoreText,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 16),
+                            Text(
+                              title,
+                              style: GoogleFonts.plusJakartaSans(
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                                color: textMain,
+                                height: 1.3,
+                              ),
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                            const SizedBox(height: 8),
+                            // Progress Bar
+                            LinearProgressIndicator(
+                              value: isIncomplete ? 0 : (percentage / 100),
+                              backgroundColor: isDark
+                                  ? Colors.white10
+                                  : Colors.grey.withOpacity(0.1),
+                              valueColor: AlwaysStoppedAnimation<Color>(
+                                scoreText,
+                              ),
+                              borderRadius: BorderRadius.circular(4),
+                              minHeight: 6,
+                            ),
+                            const SizedBox(height: 12),
+                            Row(
+                              children: [
+                                Text(
+                                  isIncomplete
+                                      ? 'Continue Quiz'
+                                      : '$totalQuestions Questions',
+                                  style: GoogleFonts.plusJakartaSans(
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w600,
+                                    color: textSub,
+                                  ),
+                                ),
+                                const Spacer(),
+                                Text(
+                                  'View Stats',
+                                  style: GoogleFonts.plusJakartaSans(
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w600,
+                                    color: primaryColor,
+                                  ),
+                                ),
+                                const SizedBox(width: 4),
+                                Icon(
+                                  Icons.arrow_forward_rounded,
+                                  size: 16,
+                                  color: primaryColor,
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               )
               .animate()
@@ -791,67 +849,7 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen>
     }
   }
 
-  (IconData, Color, Color) _getSubjectStyle(
-    String title,
-    Color primaryColor,
-    Color primaryLight,
-  ) {
-    final lowerTitle = title.toLowerCase();
-
-    if (lowerTitle.contains('biology') || lowerTitle.contains('science')) {
-      return (
-        Icons.science_rounded,
-        const Color(0xFFE3F2FD),
-        const Color(0xFF1565C0),
-      );
-    } else if (lowerTitle.contains('history') ||
-        lowerTitle.contains('european')) {
-      return (
-        Icons.history_edu_rounded,
-        const Color(0xFFFFF3E0),
-        const Color(0xFFEF6C00),
-      );
-    } else if (lowerTitle.contains('art') || lowerTitle.contains('movement')) {
-      return (Icons.brush_rounded, primaryLight, primaryColor);
-    } else if (lowerTitle.contains('python') ||
-        lowerTitle.contains('code') ||
-        lowerTitle.contains('programming')) {
-      return (
-        Icons.code_rounded,
-        const Color(0xFFF3F4F6),
-        const Color(0xFF6B7280),
-      );
-    } else if (lowerTitle.contains('math') || lowerTitle.contains('calculus')) {
-      return (
-        Icons.calculate_rounded,
-        const Color(0xFFE8F5E9),
-        const Color(0xFF2E7D32),
-      );
-    } else if (lowerTitle.contains('chemistry')) {
-      return (
-        Icons.science_rounded,
-        const Color(0xFFFCE4EC),
-        const Color(0xFFC2185B),
-      );
-    } else if (lowerTitle.contains('geography') ||
-        lowerTitle.contains('world')) {
-      return (
-        Icons.public_rounded,
-        const Color(0xFFE3F2FD),
-        const Color(0xFF1565C0),
-      );
-    } else if (lowerTitle.contains('language') ||
-        lowerTitle.contains('vocab') ||
-        lowerTitle.contains('french')) {
-      return (
-        Icons.translate_rounded,
-        const Color(0xFFFFF3E0),
-        const Color(0xFFEF6C00),
-      );
-    } else {
-      return (Icons.quiz_rounded, primaryLight, primaryColor);
-    }
-  }
+  // Unused _getSubjectStyle removed
 
   Widget _buildCTAButton(Color primaryColor) {
     return GestureDetector(

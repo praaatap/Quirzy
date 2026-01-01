@@ -512,58 +512,57 @@ class _QuiryHomeState extends ConsumerState<QuiryHome>
   }
 
   Widget _buildPrivacyCheckbox(bool isDark) {
-    return Showcase(
-      key: _checkboxKey,
-      title: 'Accept Policy',
-      description: 'Required to continue',
-      child: GestureDetector(
-        onTap: () {
-          HapticFeedback.lightImpact();
-          setState(() => _isPrivacyPolicyAccepted = !_isPrivacyPolicyAccepted);
-        },
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-          decoration: BoxDecoration(
-            color: isDark ? const Color(0xFF1E1730) : const Color(0xFFF8FAFC),
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(
-              color: _isPrivacyPolicyAccepted
-                  ? primaryColor
-                  : (isDark
-                        ? const Color(0xFF2D2540)
-                        : const Color(0xFFE2E8F0)),
-              width: 1.5,
-            ),
+    return GestureDetector(
+      onTap: () {
+        HapticFeedback.lightImpact();
+        setState(() => _isPrivacyPolicyAccepted = !_isPrivacyPolicyAccepted);
+      },
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        decoration: BoxDecoration(
+          color: isDark ? const Color(0xFF1E1730) : const Color(0xFFF8FAFC),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+            color: _isPrivacyPolicyAccepted
+                ? primaryColor
+                : (isDark ? const Color(0xFF2D2540) : const Color(0xFFE2E8F0)),
+            width: 1.5,
           ),
-          child: Row(
-            children: [
-              Container(
-                width: 24,
-                height: 24,
-                decoration: BoxDecoration(
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 24,
+              height: 24,
+              decoration: BoxDecoration(
+                color: _isPrivacyPolicyAccepted
+                    ? primaryColor
+                    : Colors.transparent,
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(
                   color: _isPrivacyPolicyAccepted
                       ? primaryColor
-                      : Colors.transparent,
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(
-                    color: _isPrivacyPolicyAccepted
-                        ? primaryColor
-                        : (isDark
-                              ? const Color(0xFF475569)
-                              : const Color(0xFFCBD5E1)),
-                    width: 2,
-                  ),
+                      : (isDark
+                            ? const Color(0xFF475569)
+                            : const Color(0xFFCBD5E1)),
+                  width: 2,
                 ),
-                child: _isPrivacyPolicyAccepted
-                    ? const Icon(
-                        Icons.check_rounded,
-                        color: Colors.white,
-                        size: 16,
-                      )
-                    : null,
               ),
-              const SizedBox(width: 12),
-              Expanded(
+              child: _isPrivacyPolicyAccepted
+                  ? const Icon(
+                      Icons.check_rounded,
+                      color: Colors.white,
+                      size: 16,
+                    )
+                  : null,
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Showcase(
+                key: _checkboxKey,
+                title: 'Accept Policy',
+                description: 'Required to continue',
+                targetBorderRadius: BorderRadius.circular(8),
                 child: GestureDetector(
                   onTap: () => Navigator.of(
                     context,
@@ -603,8 +602,8 @@ class _QuiryHomeState extends ConsumerState<QuiryHome>
                   ),
                 ),
               ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );

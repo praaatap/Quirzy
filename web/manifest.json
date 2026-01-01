@@ -1,6 +1,6 @@
 {
-    "name": "quirzy",
-    "short_name": "quirzy",
+    "name": "Quirzy",
+    "short_name": "Quirzy",
     "start_url": ".",
     "display": "standalone",
     "background_color": "#0175C2",

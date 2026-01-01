@@ -8,6 +8,7 @@ import 'package:quirzy/features/auth/presentation/providers/auth_provider.dart';
 import 'package:quirzy/core/services/ad_service.dart';
 import 'package:quirzy/core/services/notification_service.dart';
 import 'package:quirzy/core/services/storage/hive_cache_service.dart';
+import 'package:quirzy/core/services/local_notification_service.dart';
 
 Future<void> initializeApp(WidgetRef ref) async {
   // System UI & Error Handling
@@ -33,4 +34,5 @@ Future<void> initializeApp(WidgetRef ref) async {
   // Background Tasks
   Future.microtask(() => AdService().initialize());
   Future.microtask(() => ref.read(notificationProvider.notifier).initialize());
+  Future.microtask(() => LocalNotificationService.init());
 }
