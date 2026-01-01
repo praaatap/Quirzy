@@ -42,9 +42,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
 
           // Main content
           CustomScrollView(
-            physics: const AlwaysScrollableScrollPhysics(
-              parent: BouncingScrollPhysics(),
-            ),
+            physics: const AlwaysScrollableScrollPhysics(),
             slivers: [
               _buildAppBar(theme),
               _buildHeader(theme),

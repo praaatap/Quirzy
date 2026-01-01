@@ -443,7 +443,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
             bottom: true,
             child:
                 CustomScrollView(
-                      physics: const BouncingScrollPhysics(),
                       slivers: [
                         SliverToBoxAdapter(
                           child: _buildAppBar(isDark, textMain, textSub),

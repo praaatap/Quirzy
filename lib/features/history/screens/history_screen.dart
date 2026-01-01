@@ -96,9 +96,7 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen>
               color: primaryColor,
               child:
                   CustomScrollView(
-                        physics: const AlwaysScrollableScrollPhysics(
-                          parent: BouncingScrollPhysics(),
-                        ),
+                        physics: const AlwaysScrollableScrollPhysics(),
                         slivers: [
                           // App Bar
                           SliverToBoxAdapter(child: _buildAppBar(textMain)),

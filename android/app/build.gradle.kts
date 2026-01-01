@@ -34,7 +34,7 @@ android {
 
     defaultConfig {
         applicationId = "com.ps9labs.quirzy"
-        minSdk = 23
+        minSdk = flutter.minSdkVersion
         targetSdk = 36
         versionCode = flutter.versionCode
         versionName = "1.1"
