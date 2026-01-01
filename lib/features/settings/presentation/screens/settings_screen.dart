@@ -323,25 +323,6 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               color: Colors.green,
               onTap: () => showLanguageDialog(context, theme, ref),
             ),
-            Divider(
-              height: 1,
-              color: theme.colorScheme.outline.withOpacity(0.2),
-            ),
-            SettingsNavigationTile(
-              theme: theme,
-              icon: Icons.navigation,
-              title: 'Navigation Bar Style',
-              subtitle: settings.navbarStyle == 'material3'
-                  ? 'Material 3'
-                  : 'Custom Modern',
-              color: Colors.deepPurple,
-              onTap: () => showNavbarStyleDialog(
-                context,
-                theme,
-                settings.navbarStyle,
-                ref,
-              ),
-            ),
           ],
         ),
       ),

@@ -80,7 +80,7 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen>
     // Colors matching HTML reference
     const primaryColor = Color(0xFF5B13EC);
     const primaryLight = Color(0xFFEFE9FD);
-    final bgColor = isDark ? const Color(0xFF161022) : const Color(0xFFF9F8FC);
+    final bgColor = isDark ? const Color(0xFF0F0F0F) : const Color(0xFFF9F8FC);
     final textMain = isDark ? Colors.white : const Color(0xFF120D1B);
     final textSub = isDark ? Colors.white70 : const Color(0xFF664C9A);
 
@@ -211,13 +211,7 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen>
                       ),
             ),
 
-            // Floating CTA Button
-            Positioned(
-              left: 24,
-              right: 24,
-              bottom: 24,
-              child: _buildCTAButton(primaryColor),
-            ),
+          
           ],
         ),
       ),
@@ -655,7 +649,7 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen>
     }
 
     // Colors
-    final surfaceColor = isDark ? const Color(0xFF1E1730) : Colors.white;
+    final surfaceColor = isDark ? const Color(0xFF1A1A1A) : Colors.white;
     final (Color scoreBg, Color scoreText) = _getScoreColors(
       percentage,
       isIncomplete,

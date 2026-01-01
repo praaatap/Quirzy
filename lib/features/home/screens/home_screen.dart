@@ -371,8 +371,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     // Theme-aware colors
-    final bgColor = isDark ? const Color(0xFF161022) : const Color(0xFFF9F8FC);
-    final surfaceColor = isDark ? const Color(0xFF1E1730) : Colors.white;
+    final bgColor = isDark ? const Color(0xFF0F0F0F) : const Color(0xFFF9F8FC);
+    final surfaceColor = isDark ? const Color(0xFF1A1A1A) : Colors.white;
     final textMain = isDark ? Colors.white : const Color(0xFF120D1B);
     final textSub = isDark ? Colors.white70 : const Color(0xFF664C9A);
 
@@ -1030,7 +1030,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                   decoration: BoxDecoration(
                     gradient: LinearGradient(
                       colors: isDark
-                          ? [const Color(0xFF2D2540), const Color(0xFF1E1730)]
+                          ? [const Color(0xFF252525), const Color(0xFF171717)]
                           : [const Color(0xFFFFF8E1), Colors.white],
                       begin: Alignment.topLeft,
                       end: Alignment.bottomRight,

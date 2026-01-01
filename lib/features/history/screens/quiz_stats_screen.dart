@@ -183,7 +183,7 @@ class _QuizStatsScreenState extends State<QuizStatsScreen>
       backgroundColor: Colors.transparent,
       builder: (context) {
         final isDark = Theme.of(context).brightness == Brightness.dark;
-        final bg = isDark ? const Color(0xFF1E1730) : Colors.white;
+        final bg = isDark ? const Color(0xFF1A1A1A) : Colors.white;
         final textMain = isDark ? Colors.white : const Color(0xFF120D1B);
 
         return Container(
@@ -292,12 +292,12 @@ class _QuizStatsScreenState extends State<QuizStatsScreen>
     bool isCorrect,
     bool isDark,
   ) {
-    final cardColor = isDark ? const Color(0xFF1E1730) : Colors.white;
+    final cardColor = isDark ? const Color(0xFF1A1A1A) : Colors.white;
     final borderColor = isDark
         ? Colors.white.withOpacity(0.1)
         : const Color(0xFFE2E8F0);
     final textMain = isDark ? Colors.white : const Color(0xFF120D1B);
-    final textSub = isDark ? const Color(0xFFA78BFA) : const Color(0xFF64748B);
+    final textSub = isDark ? const Color(0xFFA1A1AA) : const Color(0xFF64748B);
 
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
@@ -447,10 +447,10 @@ class _QuizStatsScreenState extends State<QuizStatsScreen>
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     // Theme Colors matching HomeScreen
-    final bgColor = isDark ? const Color(0xFF161022) : const Color(0xFFF9F8FC);
-    final surfaceColor = isDark ? const Color(0xFF1E1730) : Colors.white;
+    final bgColor = isDark ? const Color(0xFF0F0F0F) : const Color(0xFFF9F8FC);
+    final surfaceColor = isDark ? const Color(0xFF1A1A1A) : Colors.white;
     final textMain = isDark ? Colors.white : const Color(0xFF120D1B);
-    final textSub = isDark ? const Color(0xFFA78BFA) : const Color(0xFF64748B);
+    final textSub = isDark ? const Color(0xFFA1A1AA) : const Color(0xFF64748B);
 
     // Extract Data
     final title =

@@ -226,7 +226,7 @@ class _QuiryHomeState extends ConsumerState<QuiryHome>
     final isProcessing = isAuthLoading || _isGoogleLoading;
 
     return Scaffold(
-      backgroundColor: isDark ? const Color(0xFF0F0A18) : Colors.white,
+      backgroundColor: isDark ? const Color(0xFF0F0F0F) : Colors.white,
       body: Stack(
         children: [
           // 1. Animated Radial Background
@@ -318,10 +318,10 @@ class _QuiryHomeState extends ConsumerState<QuiryHome>
                                 ? null
                                 : _handleGoogleSignIn,
                             backgroundColor: isDark
-                                ? const Color(0xFF1E1730)
+                                ? const Color(0xFF1A1A1A)
                                 : Colors.white,
                             borderColor: isDark
-                                ? const Color(0xFF2D2540)
+                                ? const Color(0xFF262626)
                                 : const Color(0xFFE2E8F0),
                             child: isProcessing
                                 ? SizedBox(
@@ -400,7 +400,7 @@ class _QuiryHomeState extends ConsumerState<QuiryHome>
               height: size.width * 0.8, // Square aspect ratio
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(40),
-                color: isDark ? const Color(0xFF1E1730) : Colors.white,
+                color: isDark ? const Color(0xFF1A1A1A) : Colors.white,
                 boxShadow: [
                   BoxShadow(
                     color: primaryColor.withOpacity(0.25),
@@ -451,7 +451,7 @@ class _QuiryHomeState extends ConsumerState<QuiryHome>
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
               decoration: BoxDecoration(
-                color: isDark ? const Color(0xFF2D2540) : Colors.white,
+                color: isDark ? const Color(0xFF262626) : Colors.white,
                 borderRadius: BorderRadius.circular(20),
                 boxShadow: [
                   BoxShadow(
@@ -520,12 +520,12 @@ class _QuiryHomeState extends ConsumerState<QuiryHome>
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         decoration: BoxDecoration(
-          color: isDark ? const Color(0xFF1E1730) : const Color(0xFFF8FAFC),
+          color: isDark ? const Color(0xFF1A1A1A) : const Color(0xFFF8FAFC),
           borderRadius: BorderRadius.circular(16),
           border: Border.all(
             color: _isPrivacyPolicyAccepted
                 ? primaryColor
-                : (isDark ? const Color(0xFF2D2540) : const Color(0xFFE2E8F0)),
+                : (isDark ? const Color(0xFF262626) : const Color(0xFFE2E8F0)),
             width: 1.5,
           ),
         ),

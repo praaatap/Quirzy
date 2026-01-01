@@ -68,7 +68,7 @@ class _DailyRewardSheetState extends State<DailyRewardSheet>
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final bgColor = isDark ? const Color(0xFF1E1730) : Colors.white;
+    final bgColor = isDark ? const Color(0xFF1A1A1A) : Colors.white;
     final textColor = isDark ? Colors.white : const Color(0xFF120D1B);
     const primaryColor = Color(0xFF5B13EC); // Quirzy Purple
     const accentColor = Color(0xFFFFD700); // Gold
@@ -174,7 +174,7 @@ class _DailyRewardSheetState extends State<DailyRewardSheet>
                   vertical: 20,
                 ),
                 decoration: BoxDecoration(
-                  color: isDark ? const Color(0xFF251E38) : Colors.grey.shade50,
+                  color: isDark ? const Color(0xFF262626) : Colors.grey.shade50,
                   borderRadius: BorderRadius.circular(24),
                   border: Border.all(
                     color: isDark ? Colors.white10 : const Color(0xFFF3F4F6),

@@ -222,8 +222,8 @@ class _FlashcardsScreenState extends ConsumerState<FlashcardsScreen>
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
 
-    final bgColor = isDark ? const Color(0xFF161022) : const Color(0xFFF9F8FC);
-    final surfaceColor = isDark ? const Color(0xFF1E1730) : Colors.white;
+    final bgColor = isDark ? const Color(0xFF0F0F0F) : const Color(0xFFF9F8FC);
+    final surfaceColor = isDark ? const Color(0xFF1A1A1A) : Colors.white;
     final textMain = isDark ? Colors.white : const Color(0xFF120D1B);
     final textSub = isDark ? const Color(0xFFA1A1AA) : const Color(0xFF664C9A);
 

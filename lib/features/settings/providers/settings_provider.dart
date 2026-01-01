@@ -12,7 +12,6 @@ class SettingsState {
   final bool darkMode;
   final String language;
   final bool autoSaveProgress;
-  final String navbarStyle;
 
   SettingsState({
     this.notificationsEnabled = true,
@@ -21,7 +20,6 @@ class SettingsState {
     this.darkMode = false,
     this.language = 'English',
     this.autoSaveProgress = true,
-    this.navbarStyle = 'material',
   });
 
   SettingsState copyWith({
@@ -31,7 +29,6 @@ class SettingsState {
     bool? darkMode,
     String? language,
     bool? autoSaveProgress,
-    String? navbarStyle,
   }) {
     return SettingsState(
       notificationsEnabled: notificationsEnabled ?? this.notificationsEnabled,
@@ -40,7 +37,6 @@ class SettingsState {
       darkMode: darkMode ?? this.darkMode,
       language: language ?? this.language,
       autoSaveProgress: autoSaveProgress ?? this.autoSaveProgress,
-      navbarStyle: navbarStyle ?? this.navbarStyle,
     );
   }
 }
@@ -70,7 +66,6 @@ class SettingsNotifier extends Notifier<SettingsState> {
       darkMode: prefs.getBool('dark_mode') ?? false,
       language: prefs.getString('language') ?? 'English',
       autoSaveProgress: prefs.getBool('auto_save') ?? true,
-      navbarStyle: prefs.getString('navbar_style') ?? 'material',
     );
   }
 
@@ -108,11 +103,5 @@ class SettingsNotifier extends Notifier<SettingsState> {
     state = state.copyWith(autoSaveProgress: value);
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool('auto_save', value);
-  }
-
-  Future<void> setNavbarStyle(String style) async {
-    state = state.copyWith(navbarStyle: style);
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString('navbar_style', style);
   }
 }

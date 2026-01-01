@@ -48,7 +48,7 @@ class _QuizGenerationLoadingScreenState
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final bgColor = isDark ? const Color(0xFF161022) : const Color(0xFFFFFFFF);
+    final bgColor = isDark ? const Color(0xFF0F0F0F) : const Color(0xFFFFFFFF);
     final textColor = isDark ? Colors.white : const Color(0xFF120D1B);
 
     return Scaffold(

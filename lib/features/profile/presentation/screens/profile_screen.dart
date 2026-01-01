@@ -8,7 +8,7 @@ import 'package:flutter_animate/flutter_animate.dart';
 import 'package:quirzy/routes/app_routes.dart';
 import 'package:quirzy/features/auth/presentation/providers/auth_provider.dart';
 import 'package:quirzy/features/settings/providers/settings_provider.dart';
-import 'package:quirzy/features/settings/presentation/widgets/settings_dialogs.dart';
+
 import 'package:quirzy/providers/user_stats_provider.dart'; // Added
 import 'package:quirzy/features/profile/presentation/widgets/xp_calendar_widget.dart'; // Added
 
@@ -70,10 +70,10 @@ class _ProfileSettingsScreenState extends ConsumerState<ProfileSettingsScreen>
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     // Theme-aware colors
-    final bgColor = isDark ? const Color(0xFF161022) : const Color(0xFFF9F8FC);
-    final surfaceColor = isDark ? const Color(0xFF1E1730) : Colors.white;
+    final bgColor = isDark ? const Color(0xFF0F0F0F) : const Color(0xFFF9F8FC);
+    final surfaceColor = isDark ? const Color(0xFF1A1A1A) : Colors.white;
     final textMain = isDark ? Colors.white : const Color(0xFF120D1B);
-    final textSub = isDark ? const Color(0xFFA78BFA) : const Color(0xFF664C9A);
+    final textSub = isDark ? const Color(0xFFA1A1AA) : const Color(0xFF664C9A);
 
     return Scaffold(
       backgroundColor: bgColor,
@@ -423,24 +423,7 @@ class _ProfileSettingsScreenState extends ConsumerState<ProfileSettingsScreen>
           onChanged: (val) =>
               ref.read(settingsProvider.notifier).toggleDarkMode(val),
         ),
-        _buildSettingTile(
-          icon: Icons.details_rounded,
-          title: 'Navigation Style',
-          subtitle: settingsState.navbarStyle == 'material3'
-              ? 'Material 3'
-              : 'Custom Modern',
-          iconColor: Colors.deepPurple,
-          isDark: isDark,
-          surfaceColor: surfaceColor,
-          textMain: textMain,
-          textSub: textSub,
-          onTap: () => showNavbarStyleDialog(
-            context,
-            Theme.of(context),
-            settingsState.navbarStyle,
-            ref,
-          ),
-        ),
+
         _buildSettingTile(
           icon: Icons.language_rounded,
           title: 'Language',

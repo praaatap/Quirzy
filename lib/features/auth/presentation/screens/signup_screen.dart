@@ -366,7 +366,7 @@ class _SignUpPageState extends ConsumerState<SignUpPage>
     final primaryGreen = const Color(0xFF5B13EC);
     final secondaryBlue = const Color(0xFF8B5CF6);
     final bgLight = const Color(0xFFF9F8FC);
-    final bgDark = const Color(0xFF161022);
+    final bgDark = const Color(0xFF0F0F0F);
 
     final textMain = isDark ? Colors.white : const Color(0xFF120D1B);
     final textSub = isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B);

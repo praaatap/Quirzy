@@ -7,7 +7,7 @@ import 'package:quirzy/features/flashcards/screens/flashcards_screen.dart';
 import 'package:quirzy/features/history/screens/history_screen.dart';
 import 'package:quirzy/features/home/screens/home_screen.dart';
 import 'package:quirzy/features/profile/presentation/screens/profile_screen.dart';
-import 'package:quirzy/features/settings/providers/settings_provider.dart'; // Added import
+
 import 'package:quirzy/providers/tab_index_provider.dart';
 
 class MainScreen extends ConsumerStatefulWidget {
@@ -29,16 +29,11 @@ class _MainScreenState extends ConsumerState<MainScreen> {
   @override
   Widget build(BuildContext context) {
     final selectedIndex = ref.watch(tabIndexProvider);
-    final navbarStyle = ref.watch(settingsProvider).navbarStyle;
 
     return Scaffold(
-      extendBody: true, // Allows body to extend behind navbar
+      extendBody: true,
       body: IndexedStack(index: selectedIndex, children: _screens),
-      bottomNavigationBar: RepaintBoundary(
-        child: navbarStyle == 'custom'
-            ? _buildCustomNavigationBar(context, selectedIndex)
-            : _buildMaterial3NavigationBar(context, selectedIndex),
-      ),
+      bottomNavigationBar: _buildMaterial3NavigationBar(context, selectedIndex),
     );
   }
 
@@ -49,194 +44,64 @@ class _MainScreenState extends ConsumerState<MainScreen> {
     // Premium Colors
     const primaryColor = Color(0xFF5B13EC);
 
-    return ClipRRect(
-      child: BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-        child: Container(
-          decoration: BoxDecoration(
-            color: isDark
-                ? const Color(0xFF161022).withOpacity(0.85)
-                : Colors.white.withOpacity(0.9),
-            border: Border(
-              top: BorderSide(
-                color: isDark
-                    ? const Color(0xFF2D2540).withOpacity(0.5)
-                    : const Color(0xFFE2E8F0),
-                width: 1,
-              ),
-            ),
-          ),
-          child: NavigationBarTheme(
-            data: NavigationBarThemeData(
-              backgroundColor: Colors.transparent,
-              indicatorColor: primaryColor,
-              indicatorShape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(16),
-              ),
-              labelTextStyle: WidgetStateProperty.resolveWith((states) {
-                final isSelected = states.contains(WidgetState.selected);
-                return theme.textTheme.labelMedium?.copyWith(
-                  fontSize: 12,
-                  fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
-                  color: isSelected
-                      ? (isDark ? Colors.white : primaryColor)
-                      : (isDark ? Colors.white54 : const Color(0xFF64748B)),
-                );
-              }),
-              iconTheme: WidgetStateProperty.resolveWith((states) {
-                final isSelected = states.contains(WidgetState.selected);
-                return IconThemeData(
-                  size: 24,
-                  color: isSelected
-                      ? Colors.white
-                      : (isDark ? Colors.white54 : const Color(0xFF64748B)),
-                );
-              }),
-              elevation: 0,
-            ),
-            child: NavigationBar(
-              selectedIndex: selectedIndex,
-              onDestinationSelected: (index) {
-                HapticFeedback.lightImpact();
-                ref.read(tabIndexProvider.notifier).state = index;
-              },
-              labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
-              height: 70,
-              destinations: const [
-                NavigationDestination(
-                  icon: Icon(Icons.home_outlined),
-                  selectedIcon: Icon(Icons.home_rounded),
-                  label: 'Home',
-                ),
-                NavigationDestination(
-                  icon: Icon(Icons.style_outlined),
-                  selectedIcon: Icon(Icons.style_rounded),
-                  label: 'Cards',
-                ),
-                NavigationDestination(
-                  icon: Icon(Icons.history_outlined),
-                  selectedIcon: Icon(Icons.history_rounded),
-                  label: 'History',
-                ),
-                NavigationDestination(
-                  icon: Icon(Icons.person_outline_rounded),
-                  selectedIcon: Icon(Icons.person_rounded),
-                  label: 'Account',
-                ),
-              ],
-            ),
-          ),
+    return NavigationBarTheme(
+      data: NavigationBarThemeData(
+        backgroundColor: isDark ? const Color(0xFF0F0F0F) : Colors.white,
+        indicatorColor: primaryColor,
+        indicatorShape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
         ),
+        labelTextStyle: WidgetStateProperty.resolveWith((states) {
+          final isSelected = states.contains(WidgetState.selected);
+          return theme.textTheme.labelMedium?.copyWith(
+            fontSize: 12,
+            fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+            color: isSelected
+                ? (isDark ? Colors.white : primaryColor)
+                : (isDark ? Colors.white54 : const Color(0xFF64748B)),
+          );
+        }),
+        iconTheme: WidgetStateProperty.resolveWith((states) {
+          final isSelected = states.contains(WidgetState.selected);
+          return IconThemeData(
+            size: 24,
+            color: isSelected
+                ? Colors.white
+                : (isDark ? Colors.white54 : const Color(0xFF64748B)),
+          );
+        }),
+        elevation: 0,
       ),
-    );
-  }
-
-  Widget _buildCustomNavigationBar(BuildContext context, int selectedIndex) {
-    final theme = context.theme;
-    final isDark = theme.brightness == Brightness.dark;
-    const primaryColor = Color(0xFF5B13EC);
-
-    final items = [
-      {'icon': Icons.home_rounded, 'label': 'Home'},
-      {'icon': Icons.style_rounded, 'label': 'Cards'},
-      {'icon': Icons.history_rounded, 'label': 'History'},
-      {'icon': Icons.person_rounded, 'label': 'Account'},
-    ];
-
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(24, 0, 24, 32),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(32),
-        child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
-          child: Container(
-            height: 72,
-            decoration: BoxDecoration(
-              color: isDark
-                  ? const Color(0xFF1E1E24).withOpacity(0.7)
-                  : Colors.white.withOpacity(0.7),
-              borderRadius: BorderRadius.circular(32),
-              border: Border.all(
-                color: isDark
-                    ? Colors.white.withOpacity(0.1)
-                    : Colors.white.withOpacity(0.6),
-                width: 1,
-              ),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.1),
-                  blurRadius: 20,
-                  offset: const Offset(0, 10),
-                  spreadRadius: -5,
-                ),
-              ],
-            ),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-              children: items.asMap().entries.map((entry) {
-                final index = entry.key;
-                final item = entry.value;
-                final isSelected = selectedIndex == index;
-
-                return GestureDetector(
-                  onTap: () {
-                    HapticFeedback.lightImpact(); // Cleaner haptic
-                    ref.read(tabIndexProvider.notifier).state = index;
-                  },
-                  child: AnimatedContainer(
-                    duration: const Duration(milliseconds: 300),
-                    curve: Curves.easeOutCubic,
-                    padding: EdgeInsets.symmetric(
-                      horizontal: isSelected ? 20 : 12,
-                      vertical: 8,
-                    ),
-                    decoration: BoxDecoration(
-                      color: isSelected
-                          ? primaryColor
-                          : Colors.transparent, // Solid primary when selected
-                      borderRadius: BorderRadius.circular(24),
-                      boxShadow: isSelected
-                          ? [
-                              BoxShadow(
-                                color: primaryColor.withOpacity(0.4),
-                                blurRadius: 12,
-                                offset: const Offset(0, 4),
-                              ),
-                            ]
-                          : null,
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(
-                          item['icon'] as IconData,
-                          color: isSelected
-                              ? Colors.white
-                              : (isDark
-                                    ? Colors.white.withOpacity(0.5)
-                                    : const Color(0xFF64748B)),
-                          size: 24,
-                        ),
-                        if (isSelected) ...[
-                          const SizedBox(width: 8),
-                          Text(
-                            item['label'] as String,
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontWeight: FontWeight.bold,
-                              fontSize: 14,
-                              fontFamily: 'PlusJakartaSans',
-                            ),
-                          ),
-                        ],
-                      ],
-                    ),
-                  ),
-                );
-              }).toList(),
-            ),
+      child: NavigationBar(
+        selectedIndex: selectedIndex,
+        onDestinationSelected: (index) {
+          HapticFeedback.lightImpact();
+          ref.read(tabIndexProvider.notifier).state = index;
+        },
+        labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
+        height: 80,
+        destinations: const [
+          NavigationDestination(
+            icon: Icon(Icons.home_outlined),
+            selectedIcon: Icon(Icons.home_rounded),
+            label: 'Home',
           ),
-        ),
+          NavigationDestination(
+            icon: Icon(Icons.style_outlined),
+            selectedIcon: Icon(Icons.style_rounded),
+            label: 'Cards',
+          ),
+          NavigationDestination(
+            icon: Icon(Icons.history_outlined),
+            selectedIcon: Icon(Icons.history_rounded),
+            label: 'History',
+          ),
+          NavigationDestination(
+            icon: Icon(Icons.person_outline_rounded),
+            selectedIcon: Icon(Icons.person_rounded),
+            label: 'Account',
+          ),
+        ],
       ),
     );
   }
