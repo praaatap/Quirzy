@@ -2,13 +2,14 @@ name: Android Release Build
 
 on:
   push:
-    branches:
-      - main
-    
+    tags:
+      - 'v*'
 
 jobs:
   build:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
 
     steps:
       - name: Checkout Repository
@@ -35,15 +36,24 @@ jobs:
       - name: Build APK (Release)
         run: flutter build apk --release
 
+      - name: Build App Bundle (Release)
+        run: flutter build appbundle
+
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
           name: android-apk
           path: build/app/outputs/flutter-apk/app-release.apk
 
+      - name: Upload App Bundle
+        uses: actions/upload-artifact@v4
+        with:
+          name: android-bundle
+          path: build/app/outputs/bundle/release/app-release.aab
+
       - name: Create GitHub Release
-        if: startsWith(github.ref, 'refs/tags/')
         uses: softprops/action-gh-release@v1
+        if: startsWith(github.ref, 'refs/tags/')
         with:
           files: |
             build/app/outputs/flutter-apk/app-release.apk
