@@ -292,7 +292,7 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen>
       margin: const EdgeInsets.symmetric(horizontal: 24),
       padding: const EdgeInsets.all(4),
       decoration: BoxDecoration(
-        color: isDark ? const Color(0xFF252525) : Colors.white,
+        color: isDark ? const Color(0xFF171717) : Colors.white,
         borderRadius: BorderRadius.circular(9999), // Full rounded
         border: Border.all(
           color: isDark ? Colors.transparent : const Color(0xFFF3F4F6),
@@ -395,7 +395,7 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen>
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
                 color: isDark
-                    ? const Color(0xFF252525)
+                    ? const Color(0xFF171717)
                     : primaryColor.withOpacity(0.05),
                 borderRadius: BorderRadius.circular(24),
                 border: Border.all(
@@ -472,7 +472,7 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen>
               height: 96,
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: isDark ? const Color(0xFF252525) : Colors.white,
+                color: isDark ? const Color(0xFF171717) : Colors.white,
                 borderRadius: BorderRadius.circular(24),
                 border: Border.all(
                   color: isDark
@@ -645,7 +645,7 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen>
     }
 
     // Colors
-    final surfaceColor = isDark ? const Color(0xFF252525) : Colors.white;
+    final surfaceColor = isDark ? const Color(0xFF171717) : Colors.white;
     final (Color scoreBg, Color scoreText) = _getScoreColors(
       percentage,
       isIncomplete,

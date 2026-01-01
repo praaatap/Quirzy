@@ -173,7 +173,7 @@ class _FlashcardStudyScreenState extends ConsumerState<FlashcardStudyScreen>
 
     // Premium Theme Colors
     final bgColor = isDark ? const Color(0xFF0F0F0F) : const Color(0xFFF9F8FC);
-    final surfaceColor = isDark ? const Color(0xFF1A1A1A) : Colors.white;
+    final surfaceColor = isDark ? const Color(0xFF171717) : Colors.white;
     final textMain = isDark ? Colors.white : const Color(0xFF120D1B);
     final textSub = isDark ? const Color(0xFFA1A1AA) : const Color(0xFF664C9A);
 

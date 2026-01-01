@@ -223,7 +223,7 @@ class _FlashcardsScreenState extends ConsumerState<FlashcardsScreen>
     final isDark = theme.brightness == Brightness.dark;
 
     final bgColor = isDark ? const Color(0xFF0F0F0F) : const Color(0xFFF9F8FC);
-    final surfaceColor = isDark ? const Color(0xFF252525) : Colors.white;
+    final surfaceColor = isDark ? const Color(0xFF171717) : Colors.white;
     final textMain = isDark ? Colors.white : const Color(0xFF120D1B);
     final textSub = isDark ? const Color(0xFFA1A1AA) : const Color(0xFF664C9A);
 
@@ -313,7 +313,7 @@ class _FlashcardsScreenState extends ConsumerState<FlashcardsScreen>
       margin: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
       padding: const EdgeInsets.all(4),
       decoration: BoxDecoration(
-        color: isDark ? const Color(0xFF252525) : Colors.white,
+        color: isDark ? const Color(0xFF171717) : Colors.white,
         borderRadius: BorderRadius.circular(9999), // Full rounded
         border: Border.all(
           color: isDark ? Colors.transparent : const Color(0xFFF3F4F6),
