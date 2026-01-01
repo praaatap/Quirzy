@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:animated_text_kit/animated_text_kit.dart';
+import 'package:loading_animation_widget/loading_animation_widget.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -119,19 +120,12 @@ class _SplashScreenState extends State<SplashScreen>
 
               const SizedBox(height: 16),
 
-              // Simple Material Linear Progress Indicator
+              // Improved Loading Animation
               FadeTransition(
                 opacity: _logoOpacity,
-                child: SizedBox(
-                  width: 150, // Constrained width
-                  child: LinearProgressIndicator(
-                    backgroundColor: Colors.white.withOpacity(0.2),
-                    valueColor: const AlwaysStoppedAnimation<Color>(
-                      Colors.white,
-                    ),
-                    minHeight: 4,
-                    borderRadius: BorderRadius.circular(2),
-                  ),
+                child: LoadingAnimationWidget.staggeredDotsWave(
+                  color: Colors.white,
+                  size: 40,
                 ),
               ),
             ],
