@@ -593,7 +593,7 @@ class _QuiryHomeState extends ConsumerState<QuiryHome>
                       style: GoogleFonts.plusJakartaSans(
                         fontSize: 13,
                         color: isDark
-                            ? const Color(0xFFA78BFA)
+                            ? Colors.white70
                             : const Color(0xFF64748B),
                         height: 1.4,
                       ),

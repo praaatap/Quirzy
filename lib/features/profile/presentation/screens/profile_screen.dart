@@ -263,31 +263,6 @@ class _ProfileSettingsScreenState extends ConsumerState<ProfileSettingsScreen>
             ),
           ),
           const SizedBox(height: 16),
-          GestureDetector(
-            onTap: () => HapticFeedback.lightImpact(),
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-              decoration: BoxDecoration(
-                color: isDark ? primaryColor.withOpacity(0.2) : primaryLight,
-                borderRadius: BorderRadius.circular(9999),
-              ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  const Icon(Icons.edit_rounded, color: primaryColor, size: 16),
-                  const SizedBox(width: 8),
-                  Text(
-                    'Edit Profile',
-                    style: GoogleFonts.plusJakartaSans(
-                      fontSize: 13,
-                      fontWeight: FontWeight.bold,
-                      color: primaryColor,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
         ],
       ),
     );
@@ -391,7 +366,9 @@ class _ProfileSettingsScreenState extends ConsumerState<ProfileSettingsScreen>
             style: GoogleFonts.plusJakartaSans(
               fontSize: 28,
               fontWeight: FontWeight.bold,
-              color: isPrimary ? primaryColor : textMain,
+              color: isPrimary
+                  ? (isDark ? Colors.white : primaryColor)
+                  : textMain,
             ),
           ),
         ],
@@ -414,7 +391,7 @@ class _ProfileSettingsScreenState extends ConsumerState<ProfileSettingsScreen>
           icon: Icons.dark_mode_rounded,
           title: 'Dark Mode',
           subtitle: 'Easier on the eyes',
-          value: settingsState.darkMode,
+          value: isDark,
           iconColor: const Color(0xFF6366F1),
           isDark: isDark,
           surfaceColor: surfaceColor,

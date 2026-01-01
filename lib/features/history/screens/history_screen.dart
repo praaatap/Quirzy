@@ -649,6 +649,7 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen>
     final (Color scoreBg, Color scoreText) = _getScoreColors(
       percentage,
       isIncomplete,
+      isDark,
     );
 
     return GestureDetector(
@@ -698,7 +699,9 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen>
                                     vertical: 6,
                                   ),
                                   decoration: BoxDecoration(
-                                    color: primaryColor.withOpacity(0.1),
+                                    color: isDark
+                                        ? Colors.white10
+                                        : primaryColor.withOpacity(0.1),
                                     borderRadius: BorderRadius.circular(999),
                                   ),
                                   child: Row(
@@ -707,7 +710,9 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen>
                                       Icon(
                                         Icons.calendar_today_rounded,
                                         size: 14,
-                                        color: primaryColor,
+                                        color: isDark
+                                            ? Colors.white
+                                            : primaryColor,
                                       ),
                                       const SizedBox(width: 6),
                                       Text(
@@ -715,7 +720,9 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen>
                                         style: GoogleFonts.plusJakartaSans(
                                           fontSize: 12,
                                           fontWeight: FontWeight.bold,
-                                          color: primaryColor,
+                                          color: isDark
+                                              ? Colors.white
+                                              : primaryColor,
                                         ),
                                       ),
                                     ],
@@ -788,14 +795,14 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen>
                                   style: GoogleFonts.plusJakartaSans(
                                     fontSize: 12,
                                     fontWeight: FontWeight.w600,
-                                    color: primaryColor,
+                                    color: isDark ? Colors.white : primaryColor,
                                   ),
                                 ),
                                 const SizedBox(width: 4),
                                 Icon(
                                   Icons.arrow_forward_rounded,
                                   size: 16,
-                                  color: primaryColor,
+                                  color: isDark ? Colors.white : primaryColor,
                                 ),
                               ],
                             ),
@@ -834,15 +841,38 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen>
     return months[month - 1];
   }
 
-  (Color, Color) _getScoreColors(int percentage, bool isIncomplete) {
+  (Color, Color) _getScoreColors(
+    int percentage,
+    bool isIncomplete,
+    bool isDark,
+  ) {
     if (isIncomplete) {
+      if (isDark) return (Colors.white10, Colors.white60);
       return (const Color(0xFFF3F4F6), const Color(0xFF6B7280));
     }
     if (percentage >= 80) {
+      if (isDark) {
+        return (
+          const Color(0xFF2E7D32).withOpacity(0.2),
+          const Color(0xFF4ADE80),
+        );
+      }
       return (const Color(0xFFE8F5E9), const Color(0xFF2E7D32)); // Green
     } else if (percentage >= 50) {
+      if (isDark) {
+        return (
+          const Color(0xFFFBC02D).withOpacity(0.2),
+          const Color(0xFFFFD740),
+        );
+      }
       return (const Color(0xFFFFF8E1), const Color(0xFFFBC02D)); // Yellow
     } else {
+      if (isDark) {
+        return (
+          const Color(0xFFC62828).withOpacity(0.2),
+          const Color(0xFFFF5252),
+        );
+      }
       return (const Color(0xFFFFEBEE), const Color(0xFFC62828)); // Red
     }
   }

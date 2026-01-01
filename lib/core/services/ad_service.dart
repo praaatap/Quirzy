@@ -1,30 +1,34 @@
 import 'package:flutter/foundation.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
-import 'package:shared_preferences/shared_preferences.dart';
+import 'package:hive_flutter/hive_flutter.dart';
 
-class AdService { 
+class AdService {
   static final AdService _instance = AdService._internal();
   factory AdService() => _instance;
   AdService._internal();
 
   RewardedAd? _rewardedAd;
-  bool _isLoadingAd = false; 
+  bool _isLoadingAd = false;
   int _quizCount = 0;
   final int _freeLimit = 1;
 
   // ✅ TEST AD UNIT ID (Android)
   final String _adUnitId = "ca-app-pub-9548640268387299/3279512839";
 
+  Box? _box;
+
   // Initialize
   Future<void> initialize() async {
+    if (_box != null) return; // Already initialized
     await MobileAds.instance.initialize(); // Ensure SDK is initialized first
-    await _loadQuizCount();
+    _box = await Hive.openBox('ad_data');
+    _loadQuizCount();
     _loadRewardedAd();
   }
 
-  Future<void> _loadQuizCount() async {
-    final prefs = await SharedPreferences.getInstance();
-    _quizCount = prefs.getInt('quiz_count') ?? 0;
+  void _loadQuizCount() {
+    if (_box == null) return;
+    _quizCount = _box!.get('quiz_count', defaultValue: 0);
     debugPrint('📊 Current Quiz Count: $_quizCount');
   }
 
@@ -35,8 +39,10 @@ class AdService {
 
   Future<void> incrementQuizCount() async {
     _quizCount++;
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setInt('quiz_count', _quizCount);
+    if (_box != null) {
+      await _box!.put('quiz_count', _quizCount);
+    }
+    debugPrint('📊 Quiz Count Incremented: $_quizCount');
   }
 
   bool isLimitReached() {
@@ -92,7 +98,7 @@ class AdService {
         onAdFailedToLoad: (err) {
           debugPrint('❌ AdService: Ad Failed to Load: $err');
           _rewardedAd = null;
-          _isLoadingAd = false; 
+          _isLoadingAd = false;
           // Retry with longer delay
           Future.delayed(const Duration(seconds: 5), () {
             _loadRewardedAd();

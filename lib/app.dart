@@ -23,9 +23,11 @@ class QuirzyApp extends ConsumerWidget {
       // ===========================================
       theme: AppTheme.light(),
       darkTheme: AppTheme.dark(),
-      themeMode: ref.watch(settingsProvider).darkMode
-          ? ThemeMode.dark
-          : ThemeMode.light,
+      themeMode: ref.watch(settingsProvider).useSystemTheme
+          ? ThemeMode.system
+          : (ref.watch(settingsProvider).darkMode
+                ? ThemeMode.dark
+                : ThemeMode.light),
 
       routerConfig: router,
 

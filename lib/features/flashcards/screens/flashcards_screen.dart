@@ -8,6 +8,7 @@ import 'package:quirzy/features/flashcards/screens/flashcard_study_screen.dart';
 import 'package:quirzy/core/widgets/loading/shimmer_loading.dart';
 import 'package:quirzy/features/quiz/screens/quiz_generation_loading_screen.dart';
 import 'package:flutter_animate/flutter_animate.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
 // ==========================================
 // REDESIGNED FLASHCARDS SCREEN
@@ -33,6 +34,8 @@ class _FlashcardsScreenState extends ConsumerState<FlashcardsScreen>
   bool _isLoading = true;
   bool _isGenerating = false;
   int _selectedTab = 0;
+  final FlutterSecureStorage _storage = const FlutterSecureStorage();
+  String _userName = 'Quiz Master';
 
   // Static colors
   static const primaryColor = Color(0xFF5B13EC);
@@ -41,12 +44,20 @@ class _FlashcardsScreenState extends ConsumerState<FlashcardsScreen>
   @override
   void initState() {
     super.initState();
+    _loadUserData();
     _initAndLoad();
   }
 
   Future<void> _initAndLoad() async {
     await FlashcardCacheService.init();
     await _loadFlashcardSets();
+  }
+
+  Future<void> _loadUserData() async {
+    final name = await _storage.read(key: 'user_name');
+    if (mounted && name != null) {
+      setState(() => _userName = name);
+    }
   }
 
   Future<void> _loadFlashcardSets({bool forceRefresh = false}) async {
@@ -500,7 +511,7 @@ class _FlashcardsScreenState extends ConsumerState<FlashcardsScreen>
                                 style: GoogleFonts.plusJakartaSans(
                                   fontSize: 12,
                                   fontWeight: FontWeight.bold,
-                                  color: primaryColor,
+                                  color: isDark ? Colors.white : primaryColor,
                                 ),
                               ),
                             ],
@@ -635,51 +646,58 @@ class _FlashcardsScreenState extends ConsumerState<FlashcardsScreen>
           Row(
             children: [
               Container(
-                padding: const EdgeInsets.all(10),
+                width: 44,
+                height: 44,
                 decoration: BoxDecoration(
-                  color: primaryColor,
-                  borderRadius: BorderRadius.circular(14),
+                  shape: BoxShape.circle,
+                  gradient: const LinearGradient(
+                    colors: [primaryColor, Color(0xFF9333EA)],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: primaryColor.withOpacity(0.3),
+                      blurRadius: 10,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
                 ),
-                child: const Icon(
-                  Icons.style_rounded,
-                  color: Colors.white,
-                  size: 22,
+                child: Center(
+                  child: Text(
+                    _userName.isNotEmpty ? _userName[0].toUpperCase() : 'Q',
+                    style: GoogleFonts.plusJakartaSans(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                    ),
+                  ),
                 ),
               ),
               const SizedBox(width: 12),
-              Text(
-                'Flashcards',
-                style: GoogleFonts.plusJakartaSans(
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
-                  color: textMain,
-                  letterSpacing: -0.3,
-                ),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Flashcards',
+                    style: GoogleFonts.plusJakartaSans(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                      color: textMain,
+                      letterSpacing: -0.3,
+                    ),
+                  ),
+                  Text(
+                    'Your Collection',
+                    style: GoogleFonts.plusJakartaSans(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w500,
+                      color: textSub,
+                    ),
+                  ),
+                ],
               ),
             ],
-          ),
-          GestureDetector(
-            onTap: () => HapticFeedback.lightImpact(),
-            child: Container(
-              padding: const EdgeInsets.all(10),
-              decoration: BoxDecoration(
-                color: surfaceColor,
-                borderRadius: BorderRadius.circular(12),
-                border: isDark
-                    ? Border.all(color: const Color(0xFF2D2540))
-                    : null,
-                boxShadow: isDark
-                    ? null
-                    : [
-                        BoxShadow(
-                          color: Colors.black.withOpacity(0.04),
-                          blurRadius: 10,
-                          offset: const Offset(0, 2),
-                        ),
-                      ],
-              ),
-              child: Icon(Icons.search_rounded, color: textSub, size: 22),
-            ),
           ),
         ],
       ),
@@ -918,7 +936,7 @@ class _FlashcardsScreenState extends ConsumerState<FlashcardsScreen>
                       style: GoogleFonts.plusJakartaSans(
                         fontSize: 28,
                         fontWeight: FontWeight.bold,
-                        color: primaryColor,
+                        color: isDark ? Colors.white : primaryColor,
                       ),
                     ),
                   ],

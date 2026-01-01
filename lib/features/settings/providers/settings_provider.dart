@@ -12,6 +12,7 @@ class SettingsState {
   final bool darkMode;
   final String language;
   final bool autoSaveProgress;
+  final bool useSystemTheme;
 
   SettingsState({
     this.notificationsEnabled = true,
@@ -20,6 +21,7 @@ class SettingsState {
     this.darkMode = false,
     this.language = 'English',
     this.autoSaveProgress = true,
+    this.useSystemTheme = true,
   });
 
   SettingsState copyWith({
@@ -29,6 +31,7 @@ class SettingsState {
     bool? darkMode,
     String? language,
     bool? autoSaveProgress,
+    bool? useSystemTheme,
   }) {
     return SettingsState(
       notificationsEnabled: notificationsEnabled ?? this.notificationsEnabled,
@@ -37,6 +40,7 @@ class SettingsState {
       darkMode: darkMode ?? this.darkMode,
       language: language ?? this.language,
       autoSaveProgress: autoSaveProgress ?? this.autoSaveProgress,
+      useSystemTheme: useSystemTheme ?? this.useSystemTheme,
     );
   }
 }
@@ -66,6 +70,8 @@ class SettingsNotifier extends Notifier<SettingsState> {
       darkMode: prefs.getBool('dark_mode') ?? false,
       language: prefs.getString('language') ?? 'English',
       autoSaveProgress: prefs.getBool('auto_save') ?? true,
+      useSystemTheme:
+          prefs.getBool('use_system_theme') ?? !prefs.containsKey('dark_mode'),
     );
   }
 
@@ -88,9 +94,10 @@ class SettingsNotifier extends Notifier<SettingsState> {
   }
 
   Future<void> toggleDarkMode(bool value) async {
-    state = state.copyWith(darkMode: value);
+    state = state.copyWith(darkMode: value, useSystemTheme: false);
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool('dark_mode', value);
+    await prefs.setBool('use_system_theme', false);
   }
 
   Future<void> setLanguage(String value) async {

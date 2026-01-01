@@ -326,7 +326,7 @@ class _FlashcardStudyScreenState extends ConsumerState<FlashcardStudyScreen>
                     fontSize: 10,
                     fontWeight: FontWeight.bold,
                     letterSpacing: 1.5,
-                    color: primaryColor,
+                    color: isDark ? Colors.white70 : primaryColor,
                   ),
                 ),
                 Text(
@@ -372,7 +372,7 @@ class _FlashcardStudyScreenState extends ConsumerState<FlashcardStudyScreen>
                 style: GoogleFonts.plusJakartaSans(
                   fontSize: 12,
                   fontWeight: FontWeight.bold,
-                  color: primaryColor,
+                  color: isDark ? Colors.white : primaryColor,
                 ),
               ),
             ],

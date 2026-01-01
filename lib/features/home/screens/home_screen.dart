@@ -12,6 +12,8 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:quirzy/features/quiz/screens/start_quiz_screen.dart';
 import 'package:quirzy/features/quiz/services/quiz_service.dart';
 import 'package:quirzy/features/flashcards/screens/flashcards_screen.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:quirzy/core/services/ad_service.dart';
 
 // ==========================================
 // REDESIGNED HOME SCREEN
@@ -31,6 +33,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
   final FocusNode _inputFocusNode = FocusNode();
   bool _isGenerating = false;
   int _remainingFree = 5;
+  final FlutterSecureStorage _storage = const FlutterSecureStorage();
+  String _userName = 'Quiz Master';
 
   // Speech to Text
   late stt.SpeechToText _speech;
@@ -47,8 +51,22 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
   @override
   void initState() {
     super.initState();
+    _loadUserData();
     _initAnimations();
     _speech = stt.SpeechToText();
+    _initAdService();
+  }
+
+  Future<void> _initAdService() async {
+    await AdService().initialize();
+    if (mounted) setState(() {});
+  }
+
+  Future<void> _loadUserData() async {
+    final name = await _storage.read(key: 'user_name');
+    if (mounted && name != null) {
+      setState(() => _userName = name);
+    }
   }
 
   void _initAnimations() {
@@ -257,8 +275,28 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
     }
 
     HapticFeedback.lightImpact();
-    // Show configuration dialog instead of generating immediately
-    _showQuizConfigurationDialog(topic);
+
+    // Check Free Limit
+    if (!AdService().isLimitReached()) {
+      // Consuming free credit
+      AdService().incrementQuizCount();
+      _showQuizConfigurationDialog(topic);
+    } else {
+      // Limit Reached -> Show Ad
+      AdService().showRewardedAd(
+        onRewardEarned: () {
+          if (mounted) {
+            _showQuizConfigurationDialog(topic);
+          }
+        },
+        onAdFailed: () {
+          // Fallback: Proceed even if ad fails (to avoid blocking user)
+          if (mounted) {
+            _showQuizConfigurationDialog(topic);
+          }
+        },
+      );
+    }
   }
 
   void _showQuizConfigurationDialog(String topic) {
@@ -505,36 +543,52 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
           Row(
             children: [
               Container(
-                padding: const EdgeInsets.all(10),
+                width: 48,
+                height: 48,
                 decoration: BoxDecoration(
-                  color: primaryColor,
-                  borderRadius: BorderRadius.circular(14),
+                  shape: BoxShape.circle,
+                  gradient: const LinearGradient(
+                    colors: [primaryColor, Color(0xFF9333EA)],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: primaryColor.withOpacity(0.3),
+                      blurRadius: 12,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
                 ),
-                child: const Icon(
-                  Icons.flash_on_rounded,
-                  color: Colors.white,
-                  size: 22,
+                child: Center(
+                  child: Text(
+                    _userName.isNotEmpty ? _userName[0].toUpperCase() : 'Q',
+                    style: GoogleFonts.plusJakartaSans(
+                      fontSize: 22,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                    ),
+                  ),
                 ),
               ),
-              const SizedBox(width: 12),
+              const SizedBox(width: 14),
               Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'Quirzy',
+                    'Hello,',
                     style: GoogleFonts.plusJakartaSans(
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
-                      color: textMain,
-                      letterSpacing: -0.3,
+                      fontSize: 13,
+                      fontWeight: FontWeight.w500,
+                      color: textSub,
                     ),
                   ),
                   Text(
-                    'AI Quiz Generator',
+                    _userName,
                     style: GoogleFonts.plusJakartaSans(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w500,
-                      color: textSub,
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: textMain,
                     ),
                   ),
                 ],
@@ -544,19 +598,39 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
             decoration: BoxDecoration(
-              color: isDark ? primaryColor.withOpacity(0.2) : primaryLight,
+              color: isDark ? const Color(0xFF1F1B2E) : Colors.white,
               borderRadius: BorderRadius.circular(9999),
+              border: Border.all(
+                color: isDark ? Colors.white10 : Colors.grey.withOpacity(0.1),
+              ),
+              boxShadow: isDark
+                  ? null
+                  : [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.04),
+                        blurRadius: 10,
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
             ),
             child: Row(
               children: [
-                Icon(Icons.bolt_rounded, color: primaryColor, size: 18),
+                Icon(
+                  AdService().isLimitReached()
+                      ? Icons.play_circle_filled_rounded
+                      : Icons.bolt_rounded,
+                  color: Colors.amber,
+                  size: 20,
+                ),
                 const SizedBox(width: 6),
                 Text(
-                  '$_remainingFree free',
+                  AdService().isLimitReached()
+                      ? 'Ad Supported'
+                      : '${AdService().getRemainingFreeQuizzes()} Free',
                   style: GoogleFonts.plusJakartaSans(
-                    fontSize: 13,
+                    fontSize: 14,
                     fontWeight: FontWeight.bold,
-                    color: isDark ? Colors.white : primaryColor,
+                    color: textMain,
                   ),
                 ),
               ],
@@ -830,78 +904,30 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                 borderRadius: BorderRadius.circular(16),
                 borderSide: const BorderSide(color: primaryColor, width: 2),
               ),
-              suffixIcon: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  // Google Colored Mic
-                  GestureDetector(
-                    onTap: () {
-                      HapticFeedback.lightImpact();
-                      _listen();
-                    },
-                    child: Container(
-                      padding: const EdgeInsets.all(10),
-                      decoration: BoxDecoration(
-                        color: isDark
-                            ? const Color(0xFF1E1730).withOpacity(0.5)
-                            : Colors.white,
-                        borderRadius: BorderRadius.circular(12),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withOpacity(0.05),
-                            blurRadius: 4,
-                            offset: const Offset(0, 2),
-                          ),
-                        ],
-                      ),
-                      child: ShaderMask(
-                        shaderCallback: (Rect bounds) {
-                          return const LinearGradient(
-                            begin: Alignment.topLeft,
-                            end: Alignment.bottomRight,
-                            colors: [
-                              Color(0xFF4285F4), // Blue
-                              Color(0xFFEA4335), // Red
-                              Color(0xFFFBBC05), // Yellow
-                              Color(0xFF34A853), // Green
-                            ],
-                          ).createShader(bounds);
-                        },
-                        child: const Icon(
-                          Icons.mic_rounded,
-                          color: Colors.white,
-                          size: 24,
-                        ),
-                      ),
+              suffixIcon: Padding(
+                padding: const EdgeInsets.all(6),
+                child: GestureDetector(
+                  onTap: () {
+                    HapticFeedback.lightImpact();
+                    _listen();
+                  },
+                  child: Container(
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      color: primaryColor.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: const Icon(
+                      Icons.mic_rounded,
+                      color: primaryColor,
+                      size: 24,
                     ),
                   ),
-                  const SizedBox(width: 8),
-                  _buildInputAction(Icons.image_outlined, isDark),
-                  const SizedBox(width: 8),
-                ],
+                ),
               ),
             ),
           ),
         ],
-      ),
-    );
-  }
-
-  Widget _buildInputAction(IconData icon, bool isDark, {VoidCallback? onTap}) {
-    return GestureDetector(
-      onTap: () {
-        HapticFeedback.lightImpact();
-        onTap?.call();
-      },
-      child: Container(
-        padding: const EdgeInsets.all(10),
-        decoration: BoxDecoration(
-          color: isDark
-              ? primaryColor.withOpacity(0.2)
-              : primaryLight.withOpacity(0.5),
-          borderRadius: BorderRadius.circular(12),
-        ),
-        child: Icon(icon, color: primaryColor, size: 20),
       ),
     );
   }
