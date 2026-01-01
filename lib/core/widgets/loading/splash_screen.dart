@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:animated_text_kit/animated_text_kit.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -89,16 +90,29 @@ class _SplashScreenState extends State<SplashScreen>
               ),
               const SizedBox(height: 48),
 
-              // "Please wait" text
-              FadeTransition(
-                opacity: _logoOpacity,
-                child: const Text(
-                  'Please wait',
-                  style: TextStyle(
+              // Animated Text instead of static FadeTransition
+              SizedBox(
+                height: 30, // Fixed height to prevent layout jumps
+                child: DefaultTextStyle(
+                  style: const TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.w500,
-                    color: Colors.white, // Requested white text
+                    color: Colors.white,
                     letterSpacing: 0.5,
+                  ),
+                  child: AnimatedTextKit(
+                    animatedTexts: [
+                      TyperAnimatedText(
+                        'Please wait...',
+                        speed: const Duration(milliseconds: 100),
+                      ),
+                      TyperAnimatedText(
+                        'Getting things ready...',
+                        speed: const Duration(milliseconds: 80),
+                      ),
+                    ],
+                    repeatForever: true,
+                    pause: const Duration(milliseconds: 1000),
                   ),
                 ),
               ),

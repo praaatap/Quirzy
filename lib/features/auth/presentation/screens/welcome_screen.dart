@@ -41,6 +41,7 @@ class _QuiryHomeState extends ConsumerState<QuiryHome>
   // Local State
   bool _isPrivacyPolicyAccepted = false;
   bool _isGoogleLoading = false;
+  bool _hasShowcaseBeenShown = false;
 
   // Keys
   final GlobalKey _checkboxKey = GlobalKey();
@@ -112,13 +113,7 @@ class _QuiryHomeState extends ConsumerState<QuiryHome>
     _floatAnimation = Tween<double>(begin: -10, end: 10).animate(
       CurvedAnimation(parent: _floatController, curve: Curves.easeInOutSine),
     );
-
-    // 4. Showcase Trigger
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!_isPrivacyPolicyAccepted) {
-        ShowCaseWidget.of(context).startShowCase([_checkboxKey]);
-      }
-    });
+    // Showcase is now triggered in build method with correct context
   }
 
   @override
@@ -158,9 +153,17 @@ class _QuiryHomeState extends ConsumerState<QuiryHome>
     );
   }
 
-  Future<void> _handleGoogleSignIn() async {
+  void _triggerShowcase(BuildContext showcaseContext) {
+    if (mounted) {
+      ShowCaseWidget.of(showcaseContext).startShowCase([_checkboxKey]);
+    }
+  }
+
+  Future<void> _handleGoogleSignIn(BuildContext showcaseContext) async {
     if (!_isPrivacyPolicyAccepted) {
       _showConsentRequiredMessage();
+      // Highlight the checkbox again if they missed it
+      _triggerShowcase(showcaseContext);
       return;
     }
     if (_isGoogleLoading) return;
@@ -225,146 +228,162 @@ class _QuiryHomeState extends ConsumerState<QuiryHome>
     final isAuthLoading = ref.watch(authProvider).isLoading;
     final isProcessing = isAuthLoading || _isGoogleLoading;
 
-    return Scaffold(
-      backgroundColor: isDark ? const Color(0xFF0F0F0F) : Colors.white,
-      body: Stack(
-        children: [
-          // 1. Animated Radial Background
-          AnimatedBuilder(
-            animation: _backgroundController,
-            builder: (context, child) {
-              return CustomPaint(
-                painter: _BackgroundPainter(
-                  animationValue: _backgroundController.value,
-                  isDark: isDark,
-                  primaryColor: primaryColor,
-                ),
-                size: Size.infinite,
-              );
-            },
-          ),
+    return ShowCaseWidget(
+      builder: (showcaseContext) {
+        // Trigger showcase on first build if policy not accepted
+        if (!_hasShowcaseBeenShown && !_isPrivacyPolicyAccepted) {
+          _hasShowcaseBeenShown = true;
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (mounted) {
+              _triggerShowcase(showcaseContext);
+            }
+          });
+        }
 
-          // 2. Content
-          SafeArea(
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 24.0),
-              child: Column(
-                children: [
-                  const Spacer(flex: 1),
-
-                  // --- HERO SECTION ---
-                  FadeTransition(
-                    opacity: _fadeHero,
-                    child: SlideTransition(
-                      position: _slideHero,
-                      child: _buildHeroSection(size, isDark),
+        return Scaffold(
+          backgroundColor: isDark ? const Color(0xFF0F0F0F) : Colors.white,
+          body: Stack(
+            children: [
+              // 1. Animated Radial Background
+              AnimatedBuilder(
+                animation: _backgroundController,
+                builder: (context, child) {
+                  return CustomPaint(
+                    painter: _BackgroundPainter(
+                      animationValue: _backgroundController.value,
+                      isDark: isDark,
+                      primaryColor: primaryColor,
                     ),
-                  ),
-
-                  const Spacer(flex: 1),
-
-                  // --- TEXT SECTION ---
-                  FadeTransition(
-                    opacity: _fadeText,
-                    child: SlideTransition(
-                      position: _slideText,
-                      child: Column(
-                        children: [
-                          Text(
-                            "Unlock your potential\nwith Quirzy",
-                            textAlign: TextAlign.center,
-                            style: GoogleFonts.plusJakartaSans(
-                              fontSize: 32,
-                              fontWeight: FontWeight.bold,
-                              color: isDark
-                                  ? Colors.white
-                                  : const Color(0xFF1E293B),
-                              height: 1.2,
-                              letterSpacing: -0.5,
-                            ),
-                          ),
-                          const SizedBox(height: 16),
-                          Text(
-                            "Master any subject with smart, AI-generated quizzes tailored just for you.",
-                            textAlign: TextAlign.center,
-                            style: GoogleFonts.plusJakartaSans(
-                              fontSize: 16,
-                              color: isDark
-                                  ? const Color(0xFF94A3B8)
-                                  : const Color(0xFF64748B),
-                              height: 1.5,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-
-                  const Spacer(flex: 2),
-
-                  // --- BOTTOM SECTION ---
-                  FadeTransition(
-                    opacity: _fadeButtons,
-                    child: SlideTransition(
-                      position: _slideButtons,
-                      child: Column(
-                        children: [
-                          _buildPrivacyCheckbox(isDark),
-                          const SizedBox(height: 24),
-
-                          // Google Button
-                          _AnimatedButton(
-                            onPressed: isProcessing
-                                ? null
-                                : _handleGoogleSignIn,
-                            backgroundColor: isDark
-                                ? const Color(0xFF1A1A1A)
-                                : Colors.white,
-                            borderColor: isDark
-                                ? const Color(0xFF262626)
-                                : const Color(0xFFE2E8F0),
-                            child: isProcessing
-                                ? SizedBox(
-                                    height: 20,
-                                    width: 20,
-                                    child: CircularProgressIndicator(
-                                      strokeWidth: 2,
-                                      color: primaryColor,
-                                    ),
-                                  )
-                                : Row(
-                                    mainAxisAlignment: MainAxisAlignment.center,
-                                    children: [
-                                      Image.asset(
-                                        'assets/icon/google_icon.png',
-                                        height: 22,
-                                      ),
-                                      const SizedBox(width: 12),
-                                      Text(
-                                        "Continue with Google",
-                                        style: GoogleFonts.plusJakartaSans(
-                                          fontWeight: FontWeight.bold,
-                                          fontSize: 16,
-                                          color: isDark
-                                              ? Colors.white
-                                              : const Color(0xFF1E293B),
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                          ),
-
-                          const SizedBox(height: 24),
-                        ],
-                      ),
-                    ),
-                  ),
-                ],
+                    size: Size.infinite,
+                  );
+                },
               ),
-            ),
+
+              // 2. Content
+              SafeArea(
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 24.0),
+                  child: Column(
+                    children: [
+                      const Spacer(flex: 1),
+
+                      // --- HERO SECTION ---
+                      FadeTransition(
+                        opacity: _fadeHero,
+                        child: SlideTransition(
+                          position: _slideHero,
+                          child: _buildHeroSection(size, isDark),
+                        ),
+                      ),
+
+                      const Spacer(flex: 1),
+
+                      // --- TEXT SECTION ---
+                      FadeTransition(
+                        opacity: _fadeText,
+                        child: SlideTransition(
+                          position: _slideText,
+                          child: Column(
+                            children: [
+                              Text(
+                                "Unlock your potential\nwith Quirzy",
+                                textAlign: TextAlign.center,
+                                style: GoogleFonts.plusJakartaSans(
+                                  fontSize: 32,
+                                  fontWeight: FontWeight.bold,
+                                  color: isDark
+                                      ? Colors.white
+                                      : const Color(0xFF1E293B),
+                                  height: 1.2,
+                                  letterSpacing: -0.5,
+                                ),
+                              ),
+                              const SizedBox(height: 16),
+                              Text(
+                                "Master any subject with smart, AI-generated quizzes tailored just for you.",
+                                textAlign: TextAlign.center,
+                                style: GoogleFonts.plusJakartaSans(
+                                  fontSize: 16,
+                                  color: isDark
+                                      ? const Color(0xFF94A3B8)
+                                      : const Color(0xFF64748B),
+                                  height: 1.5,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+
+                      const Spacer(flex: 2),
+
+                      // --- BOTTOM SECTION ---
+                      FadeTransition(
+                        opacity: _fadeButtons,
+                        child: SlideTransition(
+                          position: _slideButtons,
+                          child: Column(
+                            children: [
+                              _buildPrivacyCheckbox(isDark),
+                              const SizedBox(height: 24),
+
+                              // Google Button
+                              _AnimatedButton(
+                                onPressed: isProcessing
+                                    ? null
+                                    : () =>
+                                          _handleGoogleSignIn(showcaseContext),
+                                backgroundColor: isDark
+                                    ? const Color(0xFF1A1A1A)
+                                    : Colors.white,
+                                borderColor: isDark
+                                    ? const Color(0xFF262626)
+                                    : const Color(0xFFE2E8F0),
+                                child: isProcessing
+                                    ? SizedBox(
+                                        height: 20,
+                                        width: 20,
+                                        child: CircularProgressIndicator(
+                                          strokeWidth: 2,
+                                          color: primaryColor,
+                                        ),
+                                      )
+                                    : Row(
+                                        mainAxisAlignment:
+                                            MainAxisAlignment.center,
+                                        children: [
+                                          Image.asset(
+                                            'assets/icon/google_icon.png',
+                                            height: 22,
+                                          ),
+                                          const SizedBox(width: 12),
+                                          Text(
+                                            "Continue with Google",
+                                            style: GoogleFonts.plusJakartaSans(
+                                              fontWeight: FontWeight.bold,
+                                              fontSize: 16,
+                                              color: isDark
+                                                  ? Colors.white
+                                                  : const Color(0xFF1E293B),
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                              ),
+
+                              const SizedBox(height: 24),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
           ),
-        ],
-      ),
+        );
+      },
     );
   }
 
@@ -512,57 +531,59 @@ class _QuiryHomeState extends ConsumerState<QuiryHome>
   }
 
   Widget _buildPrivacyCheckbox(bool isDark) {
-    return GestureDetector(
-      onTap: () {
-        HapticFeedback.lightImpact();
-        setState(() => _isPrivacyPolicyAccepted = !_isPrivacyPolicyAccepted);
-      },
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-        decoration: BoxDecoration(
-          color: isDark ? const Color(0xFF1A1A1A) : const Color(0xFFF8FAFC),
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(
-            color: _isPrivacyPolicyAccepted
-                ? primaryColor
-                : (isDark ? const Color(0xFF262626) : const Color(0xFFE2E8F0)),
-            width: 1.5,
+    return Showcase(
+      key: _checkboxKey,
+      title: 'Required',
+      description: 'Please accept the Privacy Policy to continue',
+      targetBorderRadius: BorderRadius.circular(16),
+      child: GestureDetector(
+        onTap: () {
+          HapticFeedback.lightImpact();
+          setState(() => _isPrivacyPolicyAccepted = !_isPrivacyPolicyAccepted);
+        },
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          decoration: BoxDecoration(
+            color: isDark ? const Color(0xFF1A1A1A) : const Color(0xFFF8FAFC),
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(
+              color: _isPrivacyPolicyAccepted
+                  ? primaryColor
+                  : (isDark
+                        ? const Color(0xFF262626)
+                        : const Color(0xFFE2E8F0)),
+              width: 1.5,
+            ),
           ),
-        ),
-        child: Row(
-          children: [
-            Container(
-              width: 24,
-              height: 24,
-              decoration: BoxDecoration(
-                color: _isPrivacyPolicyAccepted
-                    ? primaryColor
-                    : Colors.transparent,
-                borderRadius: BorderRadius.circular(8),
-                border: Border.all(
+          child: Row(
+            children: [
+              Container(
+                width: 24,
+                height: 24,
+                decoration: BoxDecoration(
                   color: _isPrivacyPolicyAccepted
                       ? primaryColor
-                      : (isDark
-                            ? const Color(0xFF475569)
-                            : const Color(0xFFCBD5E1)),
-                  width: 2,
+                      : Colors.transparent,
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(
+                    color: _isPrivacyPolicyAccepted
+                        ? primaryColor
+                        : (isDark
+                              ? const Color(0xFF475569)
+                              : const Color(0xFFCBD5E1)),
+                    width: 2,
+                  ),
                 ),
+                child: _isPrivacyPolicyAccepted
+                    ? const Icon(
+                        Icons.check_rounded,
+                        color: Colors.white,
+                        size: 16,
+                      )
+                    : null,
               ),
-              child: _isPrivacyPolicyAccepted
-                  ? const Icon(
-                      Icons.check_rounded,
-                      color: Colors.white,
-                      size: 16,
-                    )
-                  : null,
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Showcase(
-                key: _checkboxKey,
-                title: 'Accept Policy',
-                description: 'Required to continue',
-                targetBorderRadius: BorderRadius.circular(8),
+              const SizedBox(width: 12),
+              Expanded(
                 child: GestureDetector(
                   onTap: () => Navigator.of(
                     context,
@@ -602,8 +623,8 @@ class _QuiryHomeState extends ConsumerState<QuiryHome>
                   ),
                 ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
