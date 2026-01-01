@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:avatar_glow/avatar_glow.dart';
 import 'package:quirzy/features/quiz/screens/quiz_question_screen.dart';
 
 class StartQuizScreen extends ConsumerStatefulWidget {
@@ -101,42 +102,7 @@ class _StartQuizScreenState extends ConsumerState<StartQuizScreen>
       body: Stack(
         children: [
           // Background decoration
-          Positioned(
-            top: -100,
-            right: -80,
-            child: Container(
-              width: 300,
-              height: 300,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                gradient: RadialGradient(
-                  colors: [
-                    theme.colorScheme.primary.withOpacity(isDark ? 0.15 : 0.2),
-                    theme.colorScheme.primary.withOpacity(0),
-                  ],
-                ),
-              ),
-            ),
-          ),
-          Positioned(
-            bottom: 100,
-            left: -80,
-            child: Container(
-              width: 250,
-              height: 250,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                gradient: RadialGradient(
-                  colors: [
-                    theme.colorScheme.secondary.withOpacity(
-                      isDark ? 0.1 : 0.15,
-                    ),
-                    theme.colorScheme.secondary.withOpacity(0),
-                  ],
-                ),
-              ),
-            ),
-          ),
+          // Background decoration removed for simple dark theme
 
           // Main content
           SafeArea(
@@ -178,29 +144,37 @@ class _StartQuizScreenState extends ConsumerState<StartQuizScreen>
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
                             // Quiz icon
-                            Container(
-                              padding: const EdgeInsets.all(28),
-                              decoration: BoxDecoration(
-                                gradient: LinearGradient(
-                                  colors: [
-                                    theme.colorScheme.primary,
-                                    theme.colorScheme.primary.withOpacity(0.8),
+                            // Quiz icon with Avatar Glow
+                            AvatarGlow(
+                              glowColor: theme.colorScheme.primary,
+                              duration: const Duration(milliseconds: 2000),
+                              repeat: true,
+                              child: Container(
+                                padding: const EdgeInsets.all(28),
+                                decoration: BoxDecoration(
+                                  gradient: LinearGradient(
+                                    colors: [
+                                      theme.colorScheme.primary,
+                                      theme.colorScheme.primary.withOpacity(
+                                        0.8,
+                                      ),
+                                    ],
+                                  ),
+                                  shape: BoxShape.circle,
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: theme.colorScheme.primary
+                                          .withOpacity(0.3),
+                                      blurRadius: 20,
+                                      offset: const Offset(0, 8),
+                                    ),
                                   ],
                                 ),
-                                shape: BoxShape.circle,
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: theme.colorScheme.primary
-                                        .withOpacity(0.3),
-                                    blurRadius: 20,
-                                    offset: const Offset(0, 8),
-                                  ),
-                                ],
-                              ),
-                              child: const Icon(
-                                Icons.quiz_rounded,
-                                size: 48,
-                                color: Colors.white,
+                                child: const Icon(
+                                  Icons.quiz_rounded,
+                                  size: 48,
+                                  color: Colors.white,
+                                ),
                               ),
                             ),
 

@@ -10,7 +10,6 @@ import 'package:quirzy/features/auth/presentation/providers/auth_provider.dart';
 import 'package:quirzy/features/settings/providers/settings_provider.dart';
 
 import 'package:quirzy/providers/user_stats_provider.dart'; // Added
-import 'package:quirzy/features/profile/presentation/widgets/xp_calendar_widget.dart'; // Added
 
 // ==========================================
 // REDESIGNED PROFILE SCREEN
@@ -112,23 +111,6 @@ class _ProfileSettingsScreenState extends ConsumerState<ProfileSettingsScreen>
                             .animate(delay: 200.ms)
                             .fade(duration: 600.ms)
                             .slideX(begin: 0.1, end: 0, curve: Curves.easeOut),
-                  ),
-                  SliverToBoxAdapter(
-                    child:
-                        Padding(
-                              padding: const EdgeInsets.fromLTRB(24, 24, 24, 0),
-                              child: XPCalendarWidget(
-                                activityData: userStats.activityHeatmap,
-                                isDark: isDark,
-                                primaryColor: primaryColor,
-                              ),
-                            )
-                            .animate(delay: 300.ms)
-                            .fade(duration: 600.ms)
-                            .scale(
-                              begin: const Offset(0.95, 0.95),
-                              curve: Curves.easeOut,
-                            ),
                   ),
                   SliverToBoxAdapter(
                     child: _buildPreferencesSection(

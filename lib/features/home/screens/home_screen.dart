@@ -276,27 +276,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
 
     HapticFeedback.lightImpact();
 
-    // Check Free Limit
-    if (!AdService().isLimitReached()) {
-      // Consuming free credit
-      AdService().incrementQuizCount();
-      _showQuizConfigurationDialog(topic);
-    } else {
-      // Limit Reached -> Show Ad
-      AdService().showRewardedAd(
-        onRewardEarned: () {
-          if (mounted) {
-            _showQuizConfigurationDialog(topic);
-          }
-        },
-        onAdFailed: () {
-          // Fallback: Proceed even if ad fails (to avoid blocking user)
-          if (mounted) {
-            _showQuizConfigurationDialog(topic);
-          }
-        },
-      );
-    }
+    // Directly show configuration dialog (Ad check moved to confirmation)
+    _showQuizConfigurationDialog(topic);
   }
 
   void _showQuizConfigurationDialog(String topic) {
@@ -307,8 +288,27 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
       builder: (context) => _QuizConfigSheet(
         topic: topic,
         onGenerate: (count, difficulty) {
-          Navigator.pop(context);
-          _startGeneration(topic, count, difficulty);
+          Navigator.pop(context); // Close sheet first
+
+          // Trigger Ad Check Here
+          if (!AdService().isLimitReached()) {
+            AdService().incrementQuizCount();
+            _startGeneration(topic, count, difficulty);
+          } else {
+            AdService().showRewardedAd(
+              onRewardEarned: () {
+                if (mounted) {
+                  _startGeneration(topic, count, difficulty);
+                }
+              },
+              onAdFailed: () {
+                // Fallback
+                if (mounted) {
+                  _startGeneration(topic, count, difficulty);
+                }
+              },
+            );
+          }
         },
       ),
     );
@@ -625,7 +625,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                 const SizedBox(width: 6),
                 Text(
                   AdService().isLimitReached()
-                      ? 'Ad Supported'
+                      ? 'Ads'
                       : '${AdService().getRemainingFreeQuizzes()} Free',
                   style: GoogleFonts.plusJakartaSans(
                     fontSize: 14,
@@ -1165,7 +1165,7 @@ class _QuizConfigSheetState extends State<_QuizConfigSheet> {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final bgColor = isDark ? const Color(0xFF1E1730) : Colors.white;
+    final bgColor = isDark ? const Color(0xFF0F0F0F) : Colors.white;
     final textColor = isDark ? Colors.white : const Color(0xFF1E293B);
 
     return Container(

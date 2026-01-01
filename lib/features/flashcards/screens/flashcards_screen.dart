@@ -9,6 +9,7 @@ import 'package:quirzy/core/widgets/loading/shimmer_loading.dart';
 import 'package:quirzy/features/quiz/screens/quiz_generation_loading_screen.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:quirzy/core/services/ad_service.dart';
 
 // ==========================================
 // REDESIGNED FLASHCARDS SCREEN
@@ -87,6 +88,23 @@ class _FlashcardsScreenState extends ConsumerState<FlashcardsScreen>
     HapticFeedback.mediumImpact();
     _focusNode.unfocus();
 
+    // Always show ad before flashcard generation (no free flashcards)
+    AdService().showRewardedAd(
+      onRewardEarned: () {
+        if (mounted) {
+          _startFlashcardGeneration(topic);
+        }
+      },
+      onAdFailed: () {
+        // Fallback: Proceed even if ad fails
+        if (mounted) {
+          _startFlashcardGeneration(topic);
+        }
+      },
+    );
+  }
+
+  Future<void> _startFlashcardGeneration(String topic) async {
     // Show AI Generation Loading Screen
     Navigator.push(
       context,

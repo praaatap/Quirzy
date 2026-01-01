@@ -824,56 +824,7 @@ class _QuizQuestionScreenState extends ConsumerState<QuizQuestionScreen>
   }
 
   Widget _buildBackground(ThemeData theme, bool isDark) {
-    return Stack(
-      children: [
-        Container(color: theme.scaffoldBackgroundColor),
-        Positioned(
-          top: -100,
-          right: -50,
-          child: Container(
-            width: 300,
-            height: 300,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              color: theme.colorScheme.primary.withOpacity(isDark ? 0.05 : 0.1),
-              image: null,
-            ),
-            child: BackdropFilter(
-              filter: ImageFilter.blur(sigmaX: 80, sigmaY: 80),
-              child: Container(
-                decoration: const BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: Colors.transparent,
-                ),
-              ),
-            ),
-          ),
-        ),
-        Positioned(
-          bottom: 100,
-          left: -50,
-          child: Container(
-            width: 250,
-            height: 250,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              color: theme.colorScheme.tertiary.withOpacity(
-                isDark ? 0.05 : 0.1,
-              ),
-            ),
-            child: BackdropFilter(
-              filter: ImageFilter.blur(sigmaX: 80, sigmaY: 80),
-              child: Container(
-                decoration: const BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: Colors.transparent,
-                ),
-              ),
-            ),
-          ),
-        ),
-      ],
-    );
+    return Container(color: theme.scaffoldBackgroundColor);
   }
 
   Color _getDifficultyColor(String difficulty, bool isDark) {

@@ -24,10 +24,9 @@ class _QuizGenerationLoadingScreenState
   late AnimationController _controller;
   final List<Color> _colors = [
     const Color(0xFF4285F4), // Blue
-    const Color(0xFF5B13EC), // Purple (Primary)
-    const Color(0xFF00C6FF), // Cyan
-    const Color(0xFF8B5CF6), // Lighter Purple
-    const Color(0xFF29B6F6), // Light Blue
+    const Color(0xFF64B5F6), // Light Blue
+    const Color(0xFF1E88E5), // Dark Blue
+    const Color(0xFF0D47A1), // Deep Blue
   ];
 
   @override
@@ -56,7 +55,7 @@ class _QuizGenerationLoadingScreenState
       body: Stack(
         fit: StackFit.expand,
         children: [
-          // 1. The Gemini-like Wave Animation
+          // 1. Blue Wave Animation
           AnimatedBuilder(
             animation: _controller,
             builder: (context, child) {
@@ -75,35 +74,44 @@ class _QuizGenerationLoadingScreenState
           Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              // Rotating/Pulsing AI Icon
-              Container(
-                padding: const EdgeInsets.all(20),
-                decoration: BoxDecoration(
-                  color: isDark ? Colors.white.withOpacity(0.1) : Colors.white,
-                  shape: BoxShape.circle,
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.05),
-                      blurRadius: 20,
-                      spreadRadius: 5,
+              // Static Icon with Spinning Ring
+              Stack(
+                alignment: Alignment.center,
+                children: [
+                  // Spinning Outer Ring
+                  SizedBox(
+                    width: 120,
+                    height: 120,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 3,
+                      valueColor: AlwaysStoppedAnimation<Color>(
+                        const Color(0xFF4285F4),
+                      ),
                     ),
-                  ],
-                ),
-                child: RotationTransition(
-                  turns: _controller,
-                  child: ShaderMask(
-                    shaderCallback: (bounds) => LinearGradient(
-                      colors: _colors,
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                    ).createShader(bounds),
+                  ),
+                  // Static Icon
+                  Container(
+                    padding: const EdgeInsets.all(24),
+                    decoration: BoxDecoration(
+                      color: isDark
+                          ? Colors.white.withOpacity(0.05)
+                          : Colors.white,
+                      shape: BoxShape.circle,
+                      boxShadow: [
+                        BoxShadow(
+                          color: const Color(0xFF4285F4).withOpacity(0.2),
+                          blurRadius: 20,
+                          spreadRadius: 2,
+                        ),
+                      ],
+                    ),
                     child: const Icon(
                       Icons.auto_awesome_rounded,
-                      size: 48,
+                      size: 40,
                       color: Colors.white,
                     ),
                   ),
-                ),
+                ],
               ),
               const SizedBox(height: 48),
 

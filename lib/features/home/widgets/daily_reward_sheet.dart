@@ -4,7 +4,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter_animate/flutter_animate.dart';
-import 'package:table_calendar/table_calendar.dart';
 
 class DailyRewardSheet extends StatefulWidget {
   final int day;
@@ -57,14 +56,6 @@ class _DailyRewardSheetState extends State<DailyRewardSheet>
     super.dispose();
   }
 
-  // Returns list of 7 days ending today
-  List<DateTime> _getLast7Days() {
-    final today = DateTime.now();
-    return List.generate(7, (index) {
-      return today.subtract(Duration(days: 6 - index));
-    });
-  }
-
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
@@ -72,8 +63,6 @@ class _DailyRewardSheetState extends State<DailyRewardSheet>
     final textColor = isDark ? Colors.white : const Color(0xFF120D1B);
     const primaryColor = Color(0xFF5B13EC); // Quirzy Purple
     const accentColor = Color(0xFFFFD700); // Gold
-
-    final weekDays = _getLast7Days();
 
     return Stack(
       alignment: Alignment.topCenter,
@@ -165,143 +154,6 @@ class _DailyRewardSheetState extends State<DailyRewardSheet>
                   color: isDark ? Colors.white60 : Colors.black54,
                 ),
               ),
-              const SizedBox(height: 32),
-
-              // Calendar Grid (Table Calendar)
-              Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 8,
-                  vertical: 12,
-                ),
-                decoration: BoxDecoration(
-                  color: isDark ? const Color(0xFF262626) : Colors.grey.shade50,
-                  borderRadius: BorderRadius.circular(24),
-                  border: Border.all(
-                    color: isDark ? Colors.white10 : const Color(0xFFF3F4F6),
-                  ),
-                ),
-                child: TableCalendar(
-                  firstDay: DateTime.now().subtract(const Duration(days: 365)),
-                  lastDay: DateTime.now().add(const Duration(days: 365)),
-                  focusedDay: DateTime.now(),
-                  currentDay: DateTime.now(),
-                  calendarFormat: CalendarFormat.week,
-                  headerVisible: false,
-                  daysOfWeekStyle: DaysOfWeekStyle(
-                    weekdayStyle: GoogleFonts.plusJakartaSans(
-                      fontSize: 12,
-                      fontWeight: FontWeight.bold,
-                      color: isDark ? Colors.white38 : Colors.black38,
-                    ),
-                    weekendStyle: GoogleFonts.plusJakartaSans(
-                      fontSize: 12,
-                      fontWeight: FontWeight.bold,
-                      color: isDark ? Colors.white38 : Colors.black38,
-                    ),
-                  ),
-                  calendarStyle: CalendarStyle(
-                    defaultTextStyle: GoogleFonts.plusJakartaSans(
-                      fontWeight: FontWeight.bold,
-                      color: textColor,
-                    ),
-                    weekendTextStyle: GoogleFonts.plusJakartaSans(
-                      fontWeight: FontWeight.bold,
-                      color: textColor,
-                    ),
-                    todayDecoration: BoxDecoration(
-                      color: primaryColor,
-                      shape: BoxShape.rectangle,
-                      borderRadius: BorderRadius.circular(10),
-                      boxShadow: [
-                        BoxShadow(
-                          color: primaryColor.withOpacity(0.4),
-                          blurRadius: 8,
-                          offset: const Offset(0, 4),
-                        ),
-                      ],
-                    ),
-                    todayTextStyle: GoogleFonts.plusJakartaSans(
-                      color: Colors.white,
-                      fontWeight: FontWeight.bold,
-                    ),
-                    // Logic for highlighting previous streak days is a bit complex
-                    // without a list of claimed dates.
-                    // Assuming 'widget.day' is the streak, we highlight the last N days?
-                    // TableCalendar doesn't support 'range' highlight for this well without
-                    // a custom builder.
-                    // Using markerBuilder or specific decoration logic.
-                  ),
-                  calendarBuilders: CalendarBuilders(
-                    defaultBuilder: (context, day, focusedDay) {
-                      // Check if this day is part of the streak
-                      // Streak = previous (widget.day - 1) days
-                      final today = DateTime.now();
-                      final difference = today.difference(day).inDays;
-                      final isStreak =
-                          difference > 0 && difference < widget.day;
-
-                      if (isStreak) {
-                        return Center(
-                          child: Container(
-                            width: 36,
-                            height: 36,
-                            decoration: BoxDecoration(
-                              color: primaryColor.withOpacity(0.1),
-                              borderRadius: BorderRadius.circular(10),
-                              border: Border.all(
-                                color: primaryColor,
-                                width: 1.5,
-                              ),
-                            ),
-                            child: Center(
-                              child: Text(
-                                '${day.day}',
-                                style: GoogleFonts.plusJakartaSans(
-                                  color: primaryColor,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                            ),
-                          ),
-                        );
-                      }
-                      return null; // Use default
-                    },
-                    todayBuilder: (context, day, focusedDay) {
-                      return Center(
-                        child: Container(
-                          width: 36,
-                          height: 36,
-                          decoration: BoxDecoration(
-                            color: primaryColor,
-                            borderRadius: BorderRadius.circular(10),
-                            boxShadow: [
-                              BoxShadow(
-                                color: primaryColor.withOpacity(0.4),
-                                blurRadius: 8,
-                                offset: const Offset(0, 4),
-                              ),
-                            ],
-                          ),
-                          child: const Center(
-                            child: Icon(
-                              Icons.check_rounded,
-                              color: Colors.white,
-                              size: 20,
-                            ),
-                          ),
-                        ),
-                      ).animate().scale(
-                        begin: const Offset(0.8, 0.8),
-                        end: const Offset(1, 1),
-                        duration: 400.ms,
-                        curve: Curves.easeOutBack,
-                      );
-                    },
-                  ),
-                ),
-              ),
-
               const SizedBox(height: 32),
 
               // XP Reward Label
