@@ -468,12 +468,7 @@ class _FlashcardStudyScreenState extends ConsumerState<FlashcardStudyScreen>
             // Wave Pattern (Only on front or desired style)
             if (isFront)
               Positioned.fill(
-                child: CustomPaint(
-                  painter: _WavePatternPainter(
-                    color: primaryColor.withOpacity(0.08),
-                    secondaryColor: Colors.deepPurpleAccent.withOpacity(0.05),
-                  ),
-                ),
+                child: CustomPaint(painter: _RuledPaperPainter(isDark: isDark)),
               ),
 
             // Content
@@ -486,23 +481,22 @@ class _FlashcardStudyScreenState extends ConsumerState<FlashcardStudyScreen>
                     children: [
                       Text(
                         isFront ? 'QUESTION' : 'ANSWER',
-                        style: GoogleFonts.plusJakartaSans(
-                          fontSize: 12,
+                        style: GoogleFonts.kalam(
+                          fontSize: 14,
                           fontWeight: FontWeight.bold,
                           letterSpacing: 2.0,
-                          color: primaryColor,
+                          color: isDark ? Colors.white60 : Colors.black45,
                         ),
                       ),
                       const SizedBox(height: 32),
                       Text(
                         text,
                         textAlign: TextAlign.center,
-                        style: GoogleFonts.plusJakartaSans(
-                          fontSize: 26, // Larger text
-                          fontWeight: FontWeight.bold,
-                          height: 1.3,
+                        style: GoogleFonts.kalam(
+                          fontSize: 32, // Larger handwriting
+                          fontWeight: FontWeight.w600,
+                          height: 1.4,
                           color: textColor,
-                          letterSpacing: -0.5,
                         ),
                       ),
                       const SizedBox(height: 48),
@@ -513,14 +507,14 @@ class _FlashcardStudyScreenState extends ConsumerState<FlashcardStudyScreen>
                             isFront
                                 ? Icons.touch_app_rounded
                                 : Icons.replay_rounded,
-                            size: 16,
+                            size: 18,
                             color: isDark ? Colors.white38 : Colors.black38,
                           ),
                           const SizedBox(width: 8),
                           Text(
                             isFront ? 'Tap to flip' : 'Tap to flip back',
-                            style: GoogleFonts.plusJakartaSans(
-                              fontSize: 14,
+                            style: GoogleFonts.kalam(
+                              fontSize: 16,
                               fontWeight: FontWeight.w600,
                               color: isDark ? Colors.white38 : Colors.black38,
                             ),
@@ -545,14 +539,12 @@ class _FlashcardStudyScreenState extends ConsumerState<FlashcardStudyScreen>
                 child: Container(
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
-                    color: Colors.black.withOpacity(
-                      0.4,
-                    ), // Dark translucent pill
-                    borderRadius: BorderRadius.circular(50),
+                    color: Colors.black.withOpacity(0.05),
+                    shape: BoxShape.circle,
                   ),
-                  child: const Icon(
+                  child: Icon(
                     Icons.volume_up_rounded,
-                    color: Colors.white,
+                    color: isDark ? Colors.white70 : Colors.black54,
                     size: 20,
                   ),
                 ),
@@ -572,56 +564,29 @@ class _FlashcardStudyScreenState extends ConsumerState<FlashcardStudyScreen>
           Expanded(
             child: _ControlButton(
               icon: Icons.close_rounded,
-              label: 'Needs Review',
-              iconColor: const Color(0xFFEF4444), // Red
+              label: 'Review',
+              iconColor: const Color(0xFFEF4444),
               onTap: _markForReview,
               isDark: isDark,
               surfaceColor: surfaceColor,
               textMain: textMain,
+              backgroundColor: const Color(0xFFEF4444).withOpacity(0.1),
             ),
           ),
           const SizedBox(width: 16),
           Expanded(
-            child: GestureDetector(
+            child: _ControlButton(
+              icon: Icons.check_rounded,
+              label: 'Got it',
+              iconColor: const Color(0xFF10B981),
               onTap: () {
-                HapticFeedback.heavyImpact(); // Satisfying click
+                HapticFeedback.heavyImpact();
                 _markAsMastered();
               },
-              child: Container(
-                height: 64,
-                decoration: BoxDecoration(
-                  color: const Color(
-                    0xFF8B5CF6,
-                  ), // Bright Purple like screenshot
-                  borderRadius: BorderRadius.circular(20),
-                  boxShadow: [
-                    BoxShadow(
-                      color: const Color(0xFF8B5CF6).withOpacity(0.4),
-                      blurRadius: 16,
-                      offset: const Offset(0, 8),
-                    ),
-                  ],
-                ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    const Icon(
-                      Icons.check_rounded,
-                      color: Colors.white,
-                      size: 28,
-                    ),
-                    const SizedBox(width: 8),
-                    Text(
-                      'Got it!',
-                      style: GoogleFonts.plusJakartaSans(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.white,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
+              isDark: isDark,
+              surfaceColor: surfaceColor,
+              textMain: textMain,
+              backgroundColor: const Color(0xFF10B981).withOpacity(0.1),
             ),
           ),
         ],
@@ -638,6 +603,7 @@ class _ControlButton extends StatelessWidget {
   final bool isDark;
   final Color surfaceColor;
   final Color textMain;
+  final Color backgroundColor;
 
   const _ControlButton({
     required this.icon,
@@ -647,6 +613,7 @@ class _ControlButton extends StatelessWidget {
     required this.isDark,
     required this.surfaceColor,
     required this.textMain,
+    required this.backgroundColor,
   });
 
   @override
@@ -657,17 +624,30 @@ class _ControlButton extends StatelessWidget {
         height: 64,
         decoration: BoxDecoration(
           color: surfaceColor,
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(
-            color: isDark ? Colors.white10 : Colors.black12,
-            width: 1,
-          ),
+          borderRadius: BorderRadius.circular(24),
+          border: isDark
+              ? Border.all(color: Colors.white10)
+              : Border.all(color: Colors.black.withOpacity(0.05)),
+          boxShadow: [
+            BoxShadow(
+              color: backgroundColor, // Colored shadow/glow
+              blurRadius: 0,
+              offset: const Offset(0, 4),
+            ),
+          ],
         ),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(icon, color: iconColor, size: 24),
-            const SizedBox(width: 8),
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: backgroundColor,
+                shape: BoxShape.circle,
+              ),
+              child: Icon(icon, color: iconColor, size: 20),
+            ),
+            const SizedBox(width: 12),
             Text(
               label,
               style: GoogleFonts.plusJakartaSans(
@@ -683,62 +663,35 @@ class _ControlButton extends StatelessWidget {
   }
 }
 
-class _WavePatternPainter extends CustomPainter {
-  final Color color;
-  final Color secondaryColor;
-
-  _WavePatternPainter({required this.color, required this.secondaryColor});
+class _RuledPaperPainter extends CustomPainter {
+  final bool isDark;
+  _RuledPaperPainter({required this.isDark});
 
   @override
   void paint(Canvas canvas, Size size) {
     final paint = Paint()
-      ..color = color
-      ..style = PaintingStyle.fill;
+      ..color = isDark
+          ? Colors.white.withOpacity(0.05)
+          : Colors.blue.withOpacity(0.1)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 1.0;
 
-    final paint2 = Paint()
-      ..color = secondaryColor
-      ..style = PaintingStyle.fill;
+    // Red margin line (optional, classic paper look)
+    final marginPaint = Paint()
+      ..color = isDark
+          ? Colors.red.withOpacity(0.2)
+          : Colors.red.withOpacity(0.1)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 1.0;
 
-    // Pattern 1 (Top Wave)
-    final path = Path();
-    path.moveTo(0, 0);
-    path.lineTo(0, size.height * 0.4);
-    path.quadraticBezierTo(
-      size.width * 0.25,
-      size.height * 0.5,
-      size.width * 0.5,
-      size.height * 0.4,
-    );
-    path.quadraticBezierTo(
-      size.width * 0.75,
-      size.height * 0.3,
-      size.width,
-      size.height * 0.45,
-    );
-    path.lineTo(size.width, 0);
-    path.close();
-    canvas.drawPath(path, paint);
+    // Draw horizontal lines
+    final double lineHeight = 40.0;
+    for (double y = 60; y < size.height; y += lineHeight) {
+      canvas.drawLine(Offset(0, y), Offset(size.width, y), paint);
+    }
 
-    // Pattern 2 (Overlapping Wave)
-    final path2 = Path();
-    path2.moveTo(0, 0);
-    path2.lineTo(0, size.height * 0.25);
-    path2.quadraticBezierTo(
-      size.width * 0.3,
-      size.height * 0.35,
-      size.width * 0.6,
-      size.height * 0.25,
-    );
-    path2.quadraticBezierTo(
-      size.width * 0.8,
-      size.height * 0.15,
-      size.width,
-      size.height * 0.3,
-    );
-    path2.lineTo(size.width, 0);
-    path2.close();
-
-    canvas.drawPath(path2, paint2);
+    // Draw vertical margin line
+    canvas.drawLine(const Offset(40, 0), Offset(40, size.height), marginPaint);
   }
 
   @override
