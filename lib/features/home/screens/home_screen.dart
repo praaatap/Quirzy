@@ -11,6 +11,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:quirzy/features/quiz/screens/start_quiz_screen.dart';
 import 'package:quirzy/features/quiz/services/quiz_service.dart';
+import 'package:quirzy/features/flashcards/screens/flashcards_screen.dart';
 
 // ==========================================
 // REDESIGNED HOME SCREEN
@@ -373,7 +374,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
     final bgColor = isDark ? const Color(0xFF161022) : const Color(0xFFF9F8FC);
     final surfaceColor = isDark ? const Color(0xFF1E1730) : Colors.white;
     final textMain = isDark ? Colors.white : const Color(0xFF120D1B);
-    final textSub = isDark ? const Color(0xFFA1A1AA) : const Color(0xFF664C9A);
+    final textSub = isDark ? Colors.white70 : const Color(0xFF664C9A);
 
     return Scaffold(
       backgroundColor: bgColor,
@@ -658,6 +659,31 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
     return 'Good Evening 👋';
   }
 
+  void _handleQuickAction(String label) {
+    if (label == 'AI Gen') {
+      // Scroll to topic input
+      _inputFocusNode.requestFocus();
+    } else if (label == 'Quick') {
+      // Generate General Knowledge Quiz
+      _startGeneration('General Knowledge', 10, 'medium');
+    } else if (label == 'Deep') {
+      // Focus input for deep dive
+      _inputFocusNode.requestFocus();
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Enter a topic for a deep dive!'),
+          backgroundColor: primaryColor,
+          duration: const Duration(seconds: 1),
+        ),
+      );
+    } else if (label == 'Study') {
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (context) => const FlashcardsScreen()),
+      );
+    }
+  }
+
   Widget _buildQuickActions(bool isDark, Color surfaceColor, Color textSub) {
     final quickActions = [
       {
@@ -688,8 +714,13 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: quickActions.asMap().entries.map((entry) {
           final delay = entry.key * 100;
+          final label = entry.value['label'] as String;
+
           return GestureDetector(
-                onTap: () => HapticFeedback.lightImpact(),
+                onTap: () {
+                  HapticFeedback.lightImpact();
+                  _handleQuickAction(label);
+                },
                 child: Column(
                   children: [
                     Container(
@@ -719,7 +750,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                     ),
                     const SizedBox(height: 10),
                     Text(
-                      entry.value['label'] as String,
+                      label,
                       style: GoogleFonts.plusJakartaSans(
                         fontSize: 12,
                         fontWeight: FontWeight.w600,
@@ -779,7 +810,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
               hintText: "Enter a topic (e.g., 'Photosynthesis')",
               hintStyle: GoogleFonts.plusJakartaSans(
                 fontSize: 15,
-                color: textSub.withOpacity(0.6),
+                color: isDark ? Colors.white60 : textSub.withOpacity(0.6),
               ),
               contentPadding: const EdgeInsets.all(16),
               border: OutlineInputBorder(
@@ -951,84 +982,128 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Icon(
-                Icons.lightbulb_rounded,
-                color: Colors.amber,
-                size: 20,
+              Row(
+                children: [
+                  const Icon(
+                    Icons.event_note_rounded,
+                    color: Colors.orangeAccent,
+                    size: 20,
+                  ),
+                  const SizedBox(width: 8),
+                  Text(
+                    'Daily AI Challenge',
+                    style: GoogleFonts.plusJakartaSans(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: textMain,
+                    ),
+                  ),
+                ],
               ),
-              const SizedBox(width: 8),
-              Text(
-                'Daily Brain Boost',
-                style: GoogleFonts.plusJakartaSans(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                  color: textMain,
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                decoration: BoxDecoration(
+                  color: Colors.orangeAccent.withOpacity(0.2),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Text(
+                  'XP x2',
+                  style: GoogleFonts.plusJakartaSans(
+                    fontSize: 10,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.orange,
+                  ),
                 ),
               ),
             ],
           ),
           const SizedBox(height: 16),
-          Container(
-                padding: const EdgeInsets.all(20),
-                decoration: BoxDecoration(
-                  color: surfaceColor,
-                  borderRadius: BorderRadius.circular(24),
-                  border: isDark
-                      ? Border.all(color: const Color(0xFF2D2540))
-                      : null,
-                  boxShadow: isDark
-                      ? null
-                      : [
-                          BoxShadow(
-                            color: Colors.black.withOpacity(0.04),
-                            blurRadius: 15,
-                            offset: const Offset(0, 5),
-                          ),
-                        ],
-                ),
-                child: Row(
-                  children: [
-                    Container(
-                      width: 56,
-                      height: 56,
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFFFF8E1),
-                        borderRadius: BorderRadius.circular(16),
-                      ),
-                      child: const Icon(
-                        Icons.school_rounded,
-                        color: Colors.orange,
-                        size: 28,
+          GestureDetector(
+                onTap: () {
+                  HapticFeedback.mediumImpact();
+                  _startGeneration('Future Tech', 15, 'Medium');
+                },
+                child: Container(
+                  padding: const EdgeInsets.all(20),
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: isDark
+                          ? [const Color(0xFF2D2540), const Color(0xFF1E1730)]
+                          : [const Color(0xFFFFF8E1), Colors.white],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    ),
+                    borderRadius: BorderRadius.circular(24),
+                    border: Border.all(
+                      color: Colors.orangeAccent.withOpacity(
+                        isDark ? 0.3 : 0.5,
                       ),
                     ),
-                    const SizedBox(width: 16),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'Did you know?',
-                            style: GoogleFonts.plusJakartaSans(
-                              fontSize: 14,
-                              fontWeight: FontWeight.bold,
-                              color: textMain,
-                            ),
-                          ),
-                          const SizedBox(height: 4),
-                          Text(
-                            'Spaced repetition increases learning retention by up to 200%.',
-                            style: GoogleFonts.plusJakartaSans(
-                              fontSize: 13,
-                              fontWeight: FontWeight.w500,
-                              color: textSub,
-                              height: 1.4,
-                            ),
-                          ),
-                        ],
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.orange.withOpacity(0.1),
+                        blurRadius: 20,
+                        offset: const Offset(0, 8),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
+                  child: Row(
+                    children: [
+                      Container(
+                        width: 56,
+                        height: 56,
+                        decoration: BoxDecoration(
+                          color: Colors.orangeAccent,
+                          borderRadius: BorderRadius.circular(16),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.orangeAccent.withOpacity(0.4),
+                              blurRadius: 10,
+                              offset: const Offset(0, 4),
+                            ),
+                          ],
+                        ),
+                        child: const Icon(
+                          Icons.emoji_events_rounded,
+                          color: Colors.white,
+                          size: 28,
+                        ),
+                      ),
+                      const SizedBox(width: 16),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Topic: Future Tech',
+                              style: GoogleFonts.plusJakartaSans(
+                                fontSize: 15,
+                                fontWeight: FontWeight.bold,
+                                color: textMain,
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              'Play today\'s challenge to earn double XP provided by AI!',
+                              style: GoogleFonts.plusJakartaSans(
+                                fontSize: 13,
+                                fontWeight: FontWeight.w500,
+                                color: textSub,
+                                height: 1.4,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      Icon(
+                        Icons.arrow_forward_ios_rounded,
+                        size: 16,
+                        color: textSub,
+                      ),
+                    ],
+                  ),
                 ),
               )
               .animate(delay: 300.ms)

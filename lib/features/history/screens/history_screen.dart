@@ -82,7 +82,7 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen>
     const primaryLight = Color(0xFFEFE9FD);
     final bgColor = isDark ? const Color(0xFF161022) : const Color(0xFFF9F8FC);
     final textMain = isDark ? Colors.white : const Color(0xFF120D1B);
-    final textSub = isDark ? const Color(0xFFA1A1AA) : const Color(0xFF664C9A);
+    final textSub = isDark ? Colors.white70 : const Color(0xFF664C9A);
 
     return Scaffold(
       backgroundColor: bgColor,
@@ -404,9 +404,15 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen>
               height: 96,
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: primaryColor.withOpacity(0.05),
+                color: isDark
+                    ? const Color(0xFF1A1A1E)
+                    : primaryColor.withOpacity(0.05),
                 borderRadius: BorderRadius.circular(24),
-                border: Border.all(color: primaryColor.withOpacity(0.1)),
+                border: Border.all(
+                  color: isDark
+                      ? Colors.white10
+                      : primaryColor.withOpacity(0.1),
+                ),
               ),
               child: Stack(
                 children: [
@@ -444,7 +450,7 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen>
                             style: GoogleFonts.plusJakartaSans(
                               fontSize: 30,
                               fontWeight: FontWeight.bold,
-                              color: primaryColor,
+                              color: isDark ? Colors.white : primaryColor,
                             ),
                           ),
                           const SizedBox(width: 4),
@@ -455,7 +461,9 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen>
                               style: GoogleFonts.plusJakartaSans(
                                 fontSize: 10,
                                 fontWeight: FontWeight.w500,
-                                color: primaryColor.withOpacity(0.7),
+                                color: isDark
+                                    ? Colors.white70
+                                    : primaryColor.withOpacity(0.7),
                               ),
                             ),
                           ),

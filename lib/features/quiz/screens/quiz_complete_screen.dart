@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:quirzy/features/quiz/services/quiz_service.dart';
+import 'package:in_app_review/in_app_review.dart';
 
 class QuizCompleteScreen extends ConsumerStatefulWidget {
   final String quizId;
@@ -72,6 +73,24 @@ class _QuizCompleteScreenState extends ConsumerState<QuizCompleteScreen>
     _scaleController.forward();
     await Future.delayed(const Duration(milliseconds: 300));
     _fadeController.forward();
+
+    // Trigger in-app review after animations
+    _requestReview();
+  }
+
+  Future<void> _requestReview() async {
+    try {
+      final InAppReview inAppReview = InAppReview.instance;
+      if (await inAppReview.isAvailable()) {
+        // Wait a small moment to not interrupt the score reveal
+        await Future.delayed(const Duration(seconds: 2));
+        if (mounted) {
+          inAppReview.requestReview();
+        }
+      }
+    } catch (e) {
+      debugPrint('Error requesting review: $e');
+    }
   }
 
   Future<void> _saveResult() async {
