@@ -1,4 +1,5 @@
 import 'dart:math';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -63,15 +64,44 @@ class _FlashcardStudyScreenState extends ConsumerState<FlashcardStudyScreen>
   }
 
   Future<void> _initTTS() async {
-    await flutterTts.setLanguage("en-US");
+    // Set engine (Android) - helps with audio quality
+    await flutterTts.setEngine("com.google.android.tts");
+
+    // Set language to Indian English
+    await flutterTts.setLanguage("en-IN");
+
+    // Audio quality settings to prevent cracking
     await flutterTts.setPitch(1.0);
-    await flutterTts.setSpeechRate(0.5);
+    await flutterTts.setSpeechRate(0.45); // Slightly slower for clarity
+    await flutterTts.setVolume(
+      0.9,
+    ); // Slightly lower volume to prevent clipping
+
+    // Set audio attributes for better quality (Android)
+    await flutterTts.setQueueMode(1); // 1 = add to queue, prevents overlapping
+
+    // Completion handler
+    flutterTts.setCompletionHandler(() {
+      // Speech completed
+    });
+
+    // Error handler
+    flutterTts.setErrorHandler((message) {
+      debugPrint('TTS Error: $message');
+    });
   }
 
   Future<void> _speak(String text) async {
-    if (text.isNotEmpty) {
-      await flutterTts.speak(text);
-    }
+    if (text.isEmpty) return;
+
+    // Stop any current speech first to prevent overlap/distortion
+    await flutterTts.stop();
+
+    // Small delay to allow audio cleanup
+    await Future.delayed(const Duration(milliseconds: 50));
+
+    // Speak the text
+    await flutterTts.speak(text);
   }
 
   @override

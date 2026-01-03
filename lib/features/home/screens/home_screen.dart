@@ -33,8 +33,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
   final FocusNode _inputFocusNode = FocusNode();
   bool _isGenerating = false;
   int _remainingFree = 5;
-  final FlutterSecureStorage _storage = const FlutterSecureStorage();
+  static const FlutterSecureStorage _storage = FlutterSecureStorage();
   String _userName = 'Quiz Master';
+
+  // Cached instances for performance
+  SharedPreferences? _prefs;
 
   // Speech to Text
   late stt.SpeechToText _speech;
@@ -77,7 +80,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
   Future<void> _checkDailyReward() async {
     if (!mounted) return;
 
-    final prefs = await SharedPreferences.getInstance();
+    // Use cached prefs for better performance
+    _prefs ??= await SharedPreferences.getInstance();
+    final prefs = _prefs!;
+
     final lastDateStr = prefs.getString('last_daily_reward_date');
     final todayStr = DateTime.now().toIso8601String().split('T').first;
 
@@ -104,6 +110,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
 
   @override
   void dispose() {
+    // Proper cleanup to prevent memory leaks
+    _topicController.dispose();
+    _inputFocusNode.dispose();
     super.dispose();
   }
 
@@ -509,14 +518,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                           ),
                         ),
                         SliverToBoxAdapter(child: _buildGenerateButton()),
-                        SliverToBoxAdapter(
-                          child: _buildDailyTriviaSection(
-                            isDark,
-                            surfaceColor,
-                            textMain,
-                            textSub,
-                          ),
-                        ),
                         const SliverToBoxAdapter(child: SizedBox(height: 100)),
                       ],
                     )
@@ -992,150 +993,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                 curve: Curves.easeInOut,
               )
               .shimmer(delay: 500.ms, duration: 2000.ms, color: Colors.white12),
-    );
-  }
-
-  Widget _buildDailyTriviaSection(
-    bool isDark,
-    Color surfaceColor,
-    Color textMain,
-    Color textSub,
-  ) {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(24, 32, 24, 0),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Row(
-                children: [
-                  const Icon(
-                    Icons.event_note_rounded,
-                    color: Colors.orangeAccent,
-                    size: 20,
-                  ),
-                  const SizedBox(width: 8),
-                  Text(
-                    'Daily AI Challenge',
-                    style: GoogleFonts.plusJakartaSans(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                      color: textMain,
-                    ),
-                  ),
-                ],
-              ),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                decoration: BoxDecoration(
-                  color: Colors.orangeAccent.withOpacity(0.2),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Text(
-                  'XP x2',
-                  style: GoogleFonts.plusJakartaSans(
-                    fontSize: 10,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.orange,
-                  ),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 16),
-          GestureDetector(
-                onTap: () {
-                  HapticFeedback.mediumImpact();
-                  _startGeneration('Future Tech', 15, 'Medium');
-                },
-                child: Container(
-                  padding: const EdgeInsets.all(20),
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      colors: isDark
-                          ? [const Color(0xFF252525), const Color(0xFF171717)]
-                          : [const Color(0xFFFFF8E1), Colors.white],
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                    ),
-                    borderRadius: BorderRadius.circular(24),
-                    border: Border.all(
-                      color: Colors.orangeAccent.withOpacity(
-                        isDark ? 0.3 : 0.5,
-                      ),
-                    ),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.orange.withOpacity(0.1),
-                        blurRadius: 20,
-                        offset: const Offset(0, 8),
-                      ),
-                    ],
-                  ),
-                  child: Row(
-                    children: [
-                      Container(
-                        width: 56,
-                        height: 56,
-                        decoration: BoxDecoration(
-                          color: Colors.orangeAccent,
-                          borderRadius: BorderRadius.circular(16),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.orangeAccent.withOpacity(0.4),
-                              blurRadius: 10,
-                              offset: const Offset(0, 4),
-                            ),
-                          ],
-                        ),
-                        child: const Icon(
-                          Icons.emoji_events_rounded,
-                          color: Colors.white,
-                          size: 28,
-                        ),
-                      ),
-                      const SizedBox(width: 16),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              'Topic: Future Tech',
-                              style: GoogleFonts.plusJakartaSans(
-                                fontSize: 15,
-                                fontWeight: FontWeight.bold,
-                                color: textMain,
-                              ),
-                            ),
-                            const SizedBox(height: 4),
-                            Text(
-                              'Play today\'s challenge to earn double XP provided by AI!',
-                              style: GoogleFonts.plusJakartaSans(
-                                fontSize: 13,
-                                fontWeight: FontWeight.w500,
-                                color: textSub,
-                                height: 1.4,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      Icon(
-                        Icons.arrow_forward_ios_rounded,
-                        size: 16,
-                        color: textSub,
-                      ),
-                    ],
-                  ),
-                ),
-              )
-              .animate(delay: 300.ms)
-              .fade(duration: 600.ms)
-              .slideY(begin: 0.1, end: 0, curve: Curves.easeOut),
-        ],
-      ),
     );
   }
 }

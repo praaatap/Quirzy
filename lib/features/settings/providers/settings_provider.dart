@@ -54,14 +54,23 @@ final settingsProvider = NotifierProvider<SettingsNotifier, SettingsState>(
 );
 
 class SettingsNotifier extends Notifier<SettingsState> {
+  // Cached instance for faster access
+  SharedPreferences? _prefs;
+
   @override
   SettingsState build() {
     _loadSettings();
     return SettingsState();
   }
 
+  // Get cached or new instance
+  Future<SharedPreferences> _getPrefs() async {
+    _prefs ??= await SharedPreferences.getInstance();
+    return _prefs!;
+  }
+
   Future<void> _loadSettings() async {
-    final prefs = await SharedPreferences.getInstance();
+    final prefs = await _getPrefs();
 
     state = SettingsState(
       notificationsEnabled: prefs.getBool('notifications_enabled') ?? true,
@@ -77,38 +86,38 @@ class SettingsNotifier extends Notifier<SettingsState> {
 
   Future<void> toggleNotifications(bool value) async {
     state = state.copyWith(notificationsEnabled: value);
-    final prefs = await SharedPreferences.getInstance();
+    final prefs = await _getPrefs();
     await prefs.setBool('notifications_enabled', value);
   }
 
   Future<void> toggleEmailNotifications(bool value) async {
     state = state.copyWith(emailNotifications: value);
-    final prefs = await SharedPreferences.getInstance();
+    final prefs = await _getPrefs();
     await prefs.setBool('email_notifications', value);
   }
 
   Future<void> toggleSound(bool value) async {
     state = state.copyWith(soundEnabled: value);
-    final prefs = await SharedPreferences.getInstance();
+    final prefs = await _getPrefs();
     await prefs.setBool('sound_enabled', value);
   }
 
   Future<void> toggleDarkMode(bool value) async {
     state = state.copyWith(darkMode: value, useSystemTheme: false);
-    final prefs = await SharedPreferences.getInstance();
+    final prefs = await _getPrefs();
     await prefs.setBool('dark_mode', value);
     await prefs.setBool('use_system_theme', false);
   }
 
   Future<void> setLanguage(String value) async {
     state = state.copyWith(language: value);
-    final prefs = await SharedPreferences.getInstance();
+    final prefs = await _getPrefs();
     await prefs.setString('language', value);
   }
 
   Future<void> toggleAutoSave(bool value) async {
     state = state.copyWith(autoSaveProgress: value);
-    final prefs = await SharedPreferences.getInstance();
+    final prefs = await _getPrefs();
     await prefs.setBool('auto_save', value);
   }
 }

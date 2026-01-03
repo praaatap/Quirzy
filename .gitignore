@@ -1,4 +1,10 @@
-# Miscellaneous
+# ==========================================
+# QUIRZY APP - GITIGNORE
+# ==========================================
+
+# ==========================================
+# MISCELLANEOUS
+# ==========================================
 *.class
 *.log
 *.pyc
@@ -11,19 +17,30 @@
 .svn/
 .swiftpm/
 migrate_working_dir/
+Thumbs.db
+*.tmp
+*.temp
+*.bak
 
-# IntelliJ related
+# ==========================================
+# IDE / EDITOR
+# ==========================================
+# IntelliJ IDEA
 *.iml
 *.ipr
 *.iws
 .idea/
 
-# The .vscode folder contains launch configuration and tasks you configure in
-# VS Code which you may wish to be included in version control, so this line
-# is commented out by default.
+# VS Code (uncomment if you don't want to share settings)
 #.vscode/
 
-# Flutter/Dart/Pub related
+# Android Studio
+*.hprof
+local.properties
+
+# ==========================================
+# FLUTTER / DART / PUB
+# ==========================================
 **/doc/api/
 **/ios/Flutter/.last_build_id
 .dart_tool/
@@ -31,22 +48,139 @@ migrate_working_dir/
 .flutter-plugins-dependencies
 .pub-cache/
 .pub/
+pubspec.lock
+
+# Build outputs
 /build/
+build/
+**/build/
 
-# Symbolication related
-app.*.symbols
+# Generated files
+*.g.dart
+*.freezed.dart
+*.mocks.dart
+.packages
 
-# Obfuscation related
-app.*.map.json
-
-# Android Studio will place build artifacts here
+# ==========================================
+# ANDROID
+# ==========================================
 /android/app/debug
 /android/app/profile
 /android/app/release
+/android/.gradle/
+/android/gradle/
+/android/gradlew
+/android/gradlew.bat
+/android/local.properties
+/android/captures/
+/android/app/.cxx/
 
-# enviroment variables
+# ==========================================
+# iOS (if needed in future)
+# ==========================================
+**/ios/Pods/
+**/ios/.symlinks/
+**/ios/Flutter/Flutter.framework
+**/ios/Flutter/Flutter.podspec
+**/ios/Flutter/App.framework
+**/ios/Flutter/Generated.xcconfig
+**/ios/Flutter/flutter_export_environment.sh
+**/ios/ServiceDefinitions.json
+**/ios/Runner/GeneratedPluginRegistrant.*
+
+# ==========================================
+# SYMBOLICATION & OBFUSCATION
+# ==========================================
+app.*.symbols
+app.*.map.json
+/build/symbols/
+*.dSYM.zip
+*.dSYM
+
+# ==========================================
+# SENSITIVE FILES (NEVER COMMIT!)
+# ==========================================
+# Environment variables
 .env
+.env.*
+!.env.example
 
+# API Keys
+*.keystore
+*.jks
+*.pem
 
+# Android signing
 /android/key.properties
 /android/app/release-key.jks
+/android/app/upload-keystore.jks
+upload-keystore.jks
+
+# Google Services (contains API keys)
+# Uncomment if you want to keep it private
+# /android/app/google-services.json
+# /ios/Runner/GoogleService-Info.plist
+
+# Firebase
+firebase_options.dart
+
+# ==========================================
+# TESTING & COVERAGE
+# ==========================================
+coverage/
+*.lcov
+.test_coverage/
+test-results/
+
+# ==========================================
+# GENERATED DOCUMENTATION
+# ==========================================
+doc/api/
+*.md.backup
+
+# ==========================================
+# MISC BUILD ARTIFACTS
+# ==========================================
+*.apk
+*.aab
+*.ipa
+*.app
+*.exe
+*.dll
+*.so
+*.dylib
+
+# Except keep a demo APK folder if exists
+!assets/demo/
+
+# ==========================================
+# LOGS & DEBUG
+# ==========================================
+*.log
+logs/
+debug/
+crash_reports/
+
+# ==========================================
+# NODE (if using any JS tooling)
+# ==========================================
+node_modules/
+npm-debug.log
+yarn-error.log
+
+# ==========================================
+# MACOS
+# ==========================================
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+
+# ==========================================
+# WINDOWS
+# ==========================================
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+*.lnk

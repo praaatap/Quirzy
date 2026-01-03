@@ -60,8 +60,10 @@ class _DailyRewardSheetState extends State<DailyRewardSheet>
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final bgColor = isDark ? const Color(0xFF1A1A1A) : Colors.white;
-    final textColor = isDark ? Colors.white : const Color(0xFF120D1B);
+    final textColor = isDark ? Colors.white : Colors.black;
+    final subtextColor = isDark ? Colors.white70 : Colors.black87;
     const primaryColor = Color(0xFF5B13EC); // Quirzy Purple
+    const secondaryPurple = Color(0xFF7C3AED); // Lighter purple accent
     const accentColor = Color(0xFFFFD700); // Gold
 
     return Stack(
@@ -70,7 +72,16 @@ class _DailyRewardSheetState extends State<DailyRewardSheet>
         Container(
           padding: const EdgeInsets.all(32),
           decoration: BoxDecoration(
-            color: bgColor,
+            gradient: LinearGradient(
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+              colors: [
+                bgColor,
+                isDark
+                    ? primaryColor.withOpacity(0.05)
+                    : primaryColor.withOpacity(0.03),
+              ],
+            ),
             borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
           ),
           child: Column(
@@ -139,7 +150,7 @@ class _DailyRewardSheetState extends State<DailyRewardSheet>
                     style: GoogleFonts.plusJakartaSans(
                       fontSize: 20,
                       fontWeight: FontWeight.bold,
-                      color: textColor.withOpacity(0.8),
+                      color: secondaryPurple, // Purple accent
                     ),
                   ),
                 ],
@@ -151,7 +162,7 @@ class _DailyRewardSheetState extends State<DailyRewardSheet>
                 style: GoogleFonts.plusJakartaSans(
                   fontSize: 14,
                   fontWeight: FontWeight.w500,
-                  color: isDark ? Colors.white60 : Colors.black54,
+                  color: subtextColor, // Better contrast
                 ),
               ),
               const SizedBox(height: 32),

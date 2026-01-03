@@ -8,6 +8,7 @@ import 'package:flutter_animate/flutter_animate.dart';
 import 'package:quirzy/routes/app_routes.dart';
 import 'package:quirzy/features/auth/presentation/providers/auth_provider.dart';
 import 'package:quirzy/features/settings/providers/settings_provider.dart';
+import 'package:in_app_review/in_app_review.dart';
 
 import 'package:quirzy/providers/user_stats_provider.dart'; // Added
 
@@ -152,7 +153,7 @@ class _ProfileSettingsScreenState extends ConsumerState<ProfileSettingsScreen>
                         .fade(duration: 600.ms)
                         .slideY(begin: 0.2, end: 0, curve: Curves.easeOut),
                   ),
-                  const SliverToBoxAdapter(child: SizedBox(height: 100)),
+                  const SliverToBoxAdapter(child: SizedBox(height: 130)),
                 ],
               ),
       ),
@@ -487,14 +488,48 @@ class _ProfileSettingsScreenState extends ConsumerState<ProfileSettingsScreen>
       children: [
         _buildSettingTile(
           icon: Icons.info_outline_rounded,
-          title: 'About Quirzy',
-          subtitle: 'Version 1.0.0',
+          title: 'Quirzy Version',
+          subtitle: '2.0.0',
           iconColor: primaryColor,
           isDark: isDark,
           surfaceColor: surfaceColor,
           textMain: textMain,
           textSub: textSub,
           onTap: () {},
+        ),
+        _buildSettingTile(
+          icon: Icons.star_outline_rounded,
+          title: 'Rate App',
+          subtitle: 'Enjoying Quirzy? Rate us on Play Store',
+          iconColor: const Color(0xFFF59E0B),
+          isDark: isDark,
+          surfaceColor: surfaceColor,
+          textMain: textMain,
+          textSub: textSub,
+          onTap: () async {
+            try {
+              // Use in_app_review package to request rating
+              // This will show Google Play in-app review dialog
+              final InAppReview inAppReview = InAppReview.instance;
+              if (await inAppReview.isAvailable()) {
+                await inAppReview.requestReview();
+              } else {
+                // Fallback to opening Play Store
+                await inAppReview.openStoreListing(
+                  appStoreId: 'com.ps9labs.quirzy',
+                );
+              }
+            } catch (e) {
+              if (mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text('Unable to open rating: $e'),
+                    backgroundColor: Colors.red,
+                  ),
+                );
+              }
+            }
+          },
         ),
         _buildSettingTile(
           icon: Icons.help_outline_rounded,
@@ -690,7 +725,11 @@ class _ProfileSettingsScreenState extends ConsumerState<ProfileSettingsScreen>
               HapticFeedback.lightImpact();
               onChanged(val);
             },
-            activeColor: primaryColor,
+            // Native black/green styling instead of purple
+            activeColor: isDark ? Colors.white : Colors.black,
+            activeTrackColor: isDark
+                ? Colors.white.withOpacity(0.5)
+                : Colors.black.withOpacity(0.4),
           ),
         ],
       ),
@@ -772,12 +811,15 @@ class _ProfileSettingsScreenState extends ConsumerState<ProfileSettingsScreen>
           ),
           TextButton(
             onPressed: () async {
-              Navigator.pop(context); // Close dialog
+              // Store navigator reference before async operation
+              final navigator = Navigator.of(context);
+              final router = GoRouter.of(context);
+
+              navigator.pop(); // Close dialog
               await ref.read(authProvider.notifier).logout();
-              if (mounted) {
-                // Use GoRouter to switch to auth route correctly
-                context.go(AppRoutes.auth);
-              }
+
+              // Use stored router reference (safe even after widget disposal)
+              router.go(AppRoutes.auth);
             },
             child: Text(
               'Log Out',

@@ -14,6 +14,17 @@ class QuirzyApp extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final router = ref.watch(routerProvider);
 
+    // Use select() to only rebuild when theme-related settings change
+    // This prevents unnecessary rebuilds when other settings change
+    final useSystemTheme = ref.watch(
+      settingsProvider.select((s) => s.useSystemTheme),
+    );
+    final darkMode = ref.watch(settingsProvider.select((s) => s.darkMode));
+
+    final themeMode = useSystemTheme
+        ? ThemeMode.system
+        : (darkMode ? ThemeMode.dark : ThemeMode.light);
+
     return MaterialApp.router(
       title: 'Quirzy',
       debugShowCheckedModeBanner: false,
@@ -23,11 +34,7 @@ class QuirzyApp extends ConsumerWidget {
       // ===========================================
       theme: AppTheme.light(),
       darkTheme: AppTheme.dark(),
-      themeMode: ref.watch(settingsProvider).useSystemTheme
-          ? ThemeMode.system
-          : (ref.watch(settingsProvider).darkMode
-                ? ThemeMode.dark
-                : ThemeMode.light),
+      themeMode: themeMode,
 
       routerConfig: router,
 
