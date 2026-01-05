@@ -263,7 +263,217 @@ class OfflineQuizManager {
     };
   }
 
+  // ==========================================
+  // PERSONALIZED PRACTICE (Based on Last Quiz)
+  // ==========================================
+
+  static const String _lastQuizKey = 'last_quiz_info';
+  static const String _personalizedPracticeKey = 'personalized_practice';
+  static const String _personalizedPracticeDateKey =
+      'personalized_practice_date';
+  static const String _personalizedPracticeUsedKey =
+      'personalized_practice_used';
+
+  /// Save last quiz info for personalized practice
+  Future<void> saveLastQuizInfo({
+    required String quizId,
+    required String title,
+    required String topic,
+    required List<Map<String, dynamic>> questions,
+    required int score,
+    required int totalQuestions,
+    String? difficulty,
+  }) async {
+    if (_quizBox == null) await initialize();
+
+    final lastQuizInfo = {
+      'quizId': quizId,
+      'title': title,
+      'topic': topic,
+      'questions': questions,
+      'score': score,
+      'totalQuestions': totalQuestions,
+      'difficulty': difficulty ?? 'medium',
+      'completedAt': DateTime.now().toIso8601String(),
+      'wrongCount': totalQuestions - score,
+    };
+
+    await _quizBox!.put(_lastQuizKey, lastQuizInfo);
+    debugPrint('📝 Saved last quiz info: $title');
+
+    // Generate personalized practice if not already generated today
+    await _generatePersonalizedPractice(lastQuizInfo);
+  }
+
+  /// Get last quiz info
+  Map<String, dynamic>? getLastQuizInfo() {
+    if (_quizBox == null) return null;
+    final raw = _quizBox!.get(_lastQuizKey);
+    if (raw == null) return null;
+    return Map<String, dynamic>.from(raw as Map);
+  }
+
+  /// Generate personalized practice based on last quiz
+  Future<void> _generatePersonalizedPractice(
+    Map<String, dynamic> lastQuiz,
+  ) async {
+    final today = _formatDate(DateTime.now());
+    final existingDate = _quizBox!.get(_personalizedPracticeDateKey);
+
+    // Only generate once per day
+    if (existingDate == today) {
+      debugPrint('📚 Personalized practice already generated today');
+      return;
+    }
+
+    final questions = (lastQuiz['questions'] as List<dynamic>?) ?? [];
+    if (questions.isEmpty) return;
+
+    // Shuffle and create practice quiz
+    final practiceQuestions = List<Map<String, dynamic>>.from(
+      questions.map((e) => Map<String, dynamic>.from(e as Map)),
+    );
+    practiceQuestions.shuffle(_random);
+
+    // Take up to 10 questions for practice
+    final selectedQuestions = practiceQuestions.take(10).toList();
+
+    final topic = lastQuiz['topic'] ?? lastQuiz['title'] ?? 'Your Last Topic';
+
+    final personalizedPractice = {
+      'id': 'personalized_${DateTime.now().millisecondsSinceEpoch}',
+      'title': 'Practice: $topic',
+      'topic': topic,
+      'questions': selectedQuestions,
+      'difficulty': lastQuiz['difficulty'] ?? 'medium',
+      'basedOnQuizId': lastQuiz['quizId'],
+      'isAdFree': true, // No ads for daily personalized practice
+      'createdAt': DateTime.now().toIso8601String(),
+      'expiresAt': DateTime.now()
+          .add(const Duration(days: 1))
+          .toIso8601String(),
+    };
+
+    await _quizBox!.put(_personalizedPracticeKey, personalizedPractice);
+    await _quizBox!.put(_personalizedPracticeDateKey, today);
+    await _quizBox!.put(_personalizedPracticeUsedKey, false);
+
+    debugPrint(
+      '🎯 Generated personalized practice: $topic with ${selectedQuestions.length} questions',
+    );
+  }
+
+  /// Get today's personalized practice quiz (ad-free, once daily)
+  /// Returns null if already used today or no last quiz data
+  Map<String, dynamic>? getPersonalizedPractice() {
+    if (_quizBox == null) return null;
+
+    final today = _formatDate(DateTime.now());
+    final practiceDate = _quizBox!.get(_personalizedPracticeDateKey);
+
+    // Check if practice is from today
+    if (practiceDate != today) {
+      // Try to generate from last quiz
+      final lastQuiz = getLastQuizInfo();
+      if (lastQuiz != null) {
+        _generatePersonalizedPractice(lastQuiz);
+      } else {
+        return null;
+      }
+    }
+
+    // Check if already used today
+    final alreadyUsed = _quizBox!.get(
+      _personalizedPracticeUsedKey,
+      defaultValue: false,
+    );
+    if (alreadyUsed == true) {
+      return null; // Already used today's practice
+    }
+
+    final practice = _quizBox!.get(_personalizedPracticeKey);
+    if (practice == null) return null;
+
+    return Map<String, dynamic>.from(practice as Map);
+  }
+
+  /// Mark personalized practice as used (consumed for today)
+  Future<void> markPersonalizedPracticeUsed() async {
+    if (_quizBox == null) await initialize();
+    await _quizBox!.put(_personalizedPracticeUsedKey, true);
+    debugPrint('✅ Personalized practice used for today');
+  }
+
+  /// Check if personalized practice is available (not yet used today)
+  bool isPersonalizedPracticeAvailable() {
+    if (_quizBox == null) return false;
+
+    final today = _formatDate(DateTime.now());
+    final practiceDate = _quizBox!.get(_personalizedPracticeDateKey);
+
+    // No practice generated for today
+    if (practiceDate != today) {
+      // Check if we have last quiz to generate from
+      return getLastQuizInfo() != null;
+    }
+
+    // Check if already used
+    return _quizBox!.get(_personalizedPracticeUsedKey, defaultValue: false) !=
+        true;
+  }
+
+  /// Get personalized practice info for notifications
+  PersonalizedPracticeInfo? getPersonalizedPracticeInfo() {
+    final lastQuiz = getLastQuizInfo();
+    if (lastQuiz == null) return null;
+
+    final topic = lastQuiz['topic'] ?? lastQuiz['title'] ?? 'Recent Topic';
+    final wrongCount = lastQuiz['wrongCount'] ?? 0;
+    final isAvailable = isPersonalizedPracticeAvailable();
+
+    return PersonalizedPracticeInfo(
+      topic: topic,
+      wrongCount: wrongCount,
+      isAvailable: isAvailable,
+      lastQuizDate: lastQuiz['completedAt'] != null
+          ? DateTime.tryParse(lastQuiz['completedAt'] as String)
+          : null,
+    );
+  }
+
   String _formatDate(DateTime date) {
     return '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
+  }
+}
+
+/// Info about personalized practice for notifications
+class PersonalizedPracticeInfo {
+  final String topic;
+  final int wrongCount;
+  final bool isAvailable;
+  final DateTime? lastQuizDate;
+
+  PersonalizedPracticeInfo({
+    required this.topic,
+    required this.wrongCount,
+    required this.isAvailable,
+    this.lastQuizDate,
+  });
+
+  /// Get days since last quiz
+  int get daysSinceLastQuiz {
+    if (lastQuizDate == null) return 0;
+    return DateTime.now().difference(lastQuizDate!).inDays;
+  }
+
+  /// Get smart notification message
+  String getNotificationMessage() {
+    if (daysSinceLastQuiz >= 3) {
+      return "You're forgetting $topic. Practice now to retain it!";
+    } else if (wrongCount > 0) {
+      return "You missed $wrongCount questions on $topic. Ready to master it?";
+    } else {
+      return "Great job on $topic! Want to strengthen your knowledge?";
+    }
   }
 }

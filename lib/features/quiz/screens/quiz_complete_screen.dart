@@ -7,6 +7,8 @@ import 'package:quirzy/core/services/app_review_service.dart';
 import 'package:quirzy/core/services/game_effects_service.dart';
 import 'package:quirzy/core/services/offline_quiz_manager.dart';
 import 'package:quirzy/core/services/achievements_service.dart';
+import 'package:quirzy/core/services/mistake_flashcard_service.dart';
+import 'package:quirzy/core/widgets/shareable_result_card.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class QuizCompleteScreen extends ConsumerStatefulWidget {
@@ -125,8 +127,29 @@ class _QuizCompleteScreenState extends ConsumerState<QuizCompleteScreen>
       // Add questions to practice pool for offline mode
       await OfflineQuizManager().addToPracticePool(widget.questions);
 
+      // Create flashcards from wrong answers (Quiz → Mistake → Flashcard → Mastery loop)
+      await MistakeFlashcardService().processQuizMistakes(
+        quizId: widget.quizId,
+        quizTitle: widget.quizTitle,
+        questions: widget.questions,
+        userSelectedAnswers: widget.userSelectedAnswers,
+        correctAnswers: widget.userAnswers,
+      );
+
       // Check and unlock achievements
       await _checkAchievements();
+
+      // Save info for personalized practice (Smart Revision)
+      await OfflineQuizManager().saveLastQuizInfo(
+        quizId: widget.quizId,
+        title: widget.quizTitle,
+        topic: widget
+            .quizTitle, // Use title as topic since we don't have explicit topic
+        questions: widget.questions,
+        score: widget.score,
+        totalQuestions: widget.totalQuestions,
+        difficulty: widget.difficulty,
+      );
 
       if (mounted) {
         setState(() {
@@ -630,6 +653,32 @@ class _QuizCompleteScreenState extends ConsumerState<QuizCompleteScreen>
                                 ),
                               ),
                             ],
+                          ),
+                          const SizedBox(height: 8),
+                          // Share button
+                          TextButton.icon(
+                            onPressed: () {
+                              HapticFeedback.lightImpact();
+                              ShareableResultCard.shareResult(
+                                context: context,
+                                quizTitle: widget.quizTitle,
+                                score: widget.score,
+                                totalQuestions: widget.totalQuestions,
+                              );
+                            },
+                            icon: Icon(
+                              Icons.share_rounded,
+                              size: 18,
+                              color: theme.colorScheme.secondary,
+                            ),
+                            label: Text(
+                              'Share Result',
+                              style: GoogleFonts.poppins(
+                                fontSize: 13,
+                                fontWeight: FontWeight.w600,
+                                color: theme.colorScheme.secondary,
+                              ),
+                            ),
                           ),
                         ],
                       ),

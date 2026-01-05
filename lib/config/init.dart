@@ -15,6 +15,7 @@ import 'package:quirzy/core/services/rank_service.dart';
 import 'package:quirzy/core/services/achievements_service.dart';
 import 'package:quirzy/core/services/offline_quiz_manager.dart';
 import 'package:quirzy/core/services/background_initializer.dart';
+import 'package:quirzy/core/services/mistake_flashcard_service.dart';
 
 /// Stores pending rank-up result to show animation after app loads
 RankUpResult? pendingRankUpResult;
@@ -69,12 +70,18 @@ void _initializeBackgroundServices(WidgetRef ref) {
   // Use microtasks to spread work across frames
   Future.microtask(() => AdService().initialize());
   Future.microtask(() => ref.read(notificationProvider.notifier).initialize());
-  Future.microtask(() => OfflineQuizManager().initialize());
-  Future.microtask(() => AchievementsService().initialize());
   Future.microtask(() => BackgroundInitializer().initializeDeferredServices());
 
-  // Smart notifications - can wait
+  // Dependent services - initialize in order
   Future.microtask(() async {
+    // 1. Initialize data providers
+    await Future.wait([
+      OfflineQuizManager().initialize(),
+      MistakeFlashcardService().initialize(),
+      AchievementsService().initialize(),
+    ]);
+
+    // 2. Initialize consumers (Notifications)
     await SmartNotificationService().init();
     await SmartNotificationService().scheduleStreakReminder(
       hour: 20,

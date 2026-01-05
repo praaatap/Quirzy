@@ -4,6 +4,8 @@ import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:timezone/data/latest_all.dart' as tz;
 import 'package:timezone/timezone.dart' as tz;
+import 'package:quirzy/core/services/offline_quiz_manager.dart';
+import 'package:quirzy/core/services/mistake_flashcard_service.dart';
 
 /// Smart Notification Service for User Retention
 ///
