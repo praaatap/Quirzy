@@ -225,7 +225,8 @@ class _QuiryHomeState extends ConsumerState<QuiryHome>
     final isDark = theme.brightness == Brightness.dark;
     final size = MediaQuery.of(context).size;
 
-    final isAuthLoading = ref.watch(authProvider).isLoading;
+    // Only watch isLoading for better performance
+    final isAuthLoading = ref.watch(authProvider.select((s) => s.isLoading));
     final isProcessing = isAuthLoading || _isGoogleLoading;
 
     return ShowCaseWidget(

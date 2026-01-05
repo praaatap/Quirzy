@@ -609,8 +609,11 @@ class _SignUpPageState extends ConsumerState<SignUpPage>
                             secondaryColor: secondaryBlue,
                             child: Consumer(
                               builder: (context, ref, _) {
+                                // Only watch isLoading for better performance
                                 final isLoading =
-                                    ref.watch(authProvider).isLoading ||
+                                    ref.watch(
+                                      authProvider.select((s) => s.isLoading),
+                                    ) ||
                                     _isProcessing;
                                 return AnimatedSwitcher(
                                   duration: const Duration(milliseconds: 300),
@@ -1295,8 +1298,8 @@ class _AnimatedErrorWidget extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final authState = ref.watch(authProvider);
-    final error = authState.error?.toString();
+    // Only watch error for better performance
+    final error = ref.watch(authProvider.select((s) => s.error?.toString()));
 
     return AnimatedSwitcher(
       duration: const Duration(milliseconds: 300),

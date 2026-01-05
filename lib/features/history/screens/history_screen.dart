@@ -195,7 +195,7 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen>
 
                           // Bottom spacing for CTA
                           const SliverToBoxAdapter(
-                            child: SizedBox(height: 120),
+                            child: SizedBox(height: 114),
                           ),
                         ],
                       )
@@ -391,7 +391,7 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen>
           // Total Quizzes Card
           Expanded(
             child: Container(
-              height: 96,
+              height: 99,
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
                 color: isDark
@@ -469,7 +469,7 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen>
           // Avg Score Card
           Expanded(
             child: Container(
-              height: 96,
+              height: 99,
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
                 color: isDark ? const Color(0xFF171717) : Colors.white,
@@ -878,45 +878,6 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen>
   }
 
   // Unused _getSubjectStyle removed
-
-  Widget _buildCTAButton(Color primaryColor) {
-    return GestureDetector(
-      onTap: () {
-        HapticFeedback.lightImpact();
-        ref.read(tabIndexProvider.notifier).state = 0;
-      },
-      child: Container(
-        height: 56,
-        decoration: BoxDecoration(
-          color: primaryColor,
-          borderRadius: BorderRadius.circular(9999),
-          boxShadow: [
-            BoxShadow(
-              color: primaryColor.withOpacity(0.3),
-              blurRadius: 30,
-              offset: const Offset(0, 8),
-            ),
-          ],
-        ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            const Icon(Icons.add_circle_rounded, color: Colors.white, size: 24),
-            const SizedBox(width: 8),
-            Text(
-              'Start New Quiz',
-              style: GoogleFonts.plusJakartaSans(
-                fontSize: 16,
-                fontWeight: FontWeight.bold,
-                color: Colors.white,
-                letterSpacing: 0.3,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
 
   Widget _buildEmptyState(
     bool isDark,

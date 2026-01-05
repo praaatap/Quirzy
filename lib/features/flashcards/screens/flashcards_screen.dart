@@ -925,7 +925,7 @@ class _FlashcardsScreenState extends ConsumerState<FlashcardsScreen>
                 child: Opacity(opacity: value, child: child),
               ),
               child: Container(
-                height: 90,
+                height: 96,
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
                   color: isDark
@@ -973,7 +973,7 @@ class _FlashcardsScreenState extends ConsumerState<FlashcardsScreen>
                 child: Opacity(opacity: value, child: child),
               ),
               child: Container(
-                height: 90,
+                height: 96,
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
                   color: surfaceColor,

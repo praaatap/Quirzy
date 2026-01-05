@@ -5,6 +5,7 @@ import 'package:quirzy/app.dart';
 import 'package:quirzy/config/init.dart';
 import 'package:quirzy/core/theme/app_theme.dart';
 import 'package:quirzy/core/widgets/loading/splash_screen.dart';
+import 'package:flutter/services.dart';
 
 /// Global theme state loaded before app starts
 /// This eliminates the theme flash on startup
@@ -15,6 +16,7 @@ void main() async {
 
   // Load theme preference BEFORE first frame renders
   await _loadInitialTheme();
+  SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
 
   runApp(const ProviderScope(child: AppBootstrap()));
 }

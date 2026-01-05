@@ -427,64 +427,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
       backgroundColor: bgColor,
       body: Stack(
         children: [
-          // Background Gradient Mesh
-          Positioned(
-            top: -100,
-            right: -100,
-            child:
-                Container(
-                      width: 300,
-                      height: 300,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        gradient: RadialGradient(
-                          colors: [
-                            primaryColor.withOpacity(0.2),
-                            Colors.transparent,
-                          ],
-                          stops: const [0.3, 1.0],
-                        ),
-                      ),
-                    )
-                    .animate(
-                      onPlay: (controller) => controller.repeat(reverse: true),
-                    )
-                    .scale(
-                      begin: const Offset(1, 1),
-                      end: const Offset(1.2, 1.2),
-                      duration: 4000.ms,
-                      curve: Curves.easeInOut,
-                    ),
-          ),
-          Positioned(
-            bottom: 100,
-            left: -50,
-            child:
-                Container(
-                      width: 250,
-                      height: 250,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        gradient: RadialGradient(
-                          colors: [
-                            const Color(0xFF9C27B0).withOpacity(0.15),
-                            Colors.transparent,
-                          ],
-                          stops: const [0.3, 1.0],
-                        ),
-                      ),
-                    )
-                    .animate(
-                      onPlay: (controller) => controller.repeat(reverse: true),
-                    )
-                    .scale(
-                      begin: const Offset(1, 1),
-                      end: const Offset(1.3, 1.3),
-                      duration: 5000.ms,
-                      curve: Curves.easeInOut,
-                    ),
-          ),
-
           // Main Content
           SafeArea(
             bottom: true,

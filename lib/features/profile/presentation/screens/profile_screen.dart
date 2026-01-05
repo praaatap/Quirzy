@@ -66,7 +66,11 @@ class _ProfileSettingsScreenState extends ConsumerState<ProfileSettingsScreen>
   Widget build(BuildContext context) {
     super.build(context);
     final settingsState = ref.watch(settingsProvider);
-    final userStats = ref.watch(userStatsProvider);
+    // Only watch specific stats we need for better performance
+    final currentStreak = ref.watch(
+      userStatsProvider.select((s) => s.currentStreak),
+    );
+    final totalXP = ref.watch(userStatsProvider.select((s) => s.totalXP));
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     // Theme-aware colors
@@ -103,11 +107,12 @@ class _ProfileSettingsScreenState extends ConsumerState<ProfileSettingsScreen>
                   SliverToBoxAdapter(
                     child:
                         _buildStatsCards(
-                              userStats,
-                              isDark,
-                              surfaceColor,
-                              textMain,
-                              textSub,
+                              currentStreak: currentStreak,
+                              totalXP: totalXP,
+                              isDark: isDark,
+                              surfaceColor: surfaceColor,
+                              textMain: textMain,
+                              textSub: textSub,
                             )
                             .animate(delay: 200.ms)
                             .fade(duration: 600.ms)
@@ -194,20 +199,13 @@ class _ProfileSettingsScreenState extends ConsumerState<ProfileSettingsScreen>
           Container(
                 width: 100,
                 height: 100,
-                decoration: BoxDecoration(
-                  gradient: const LinearGradient(
+                decoration: const BoxDecoration(
+                  gradient: LinearGradient(
                     colors: [primaryColor, Color(0xFF9333EA)],
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
                   ),
                   shape: BoxShape.circle,
-                  boxShadow: [
-                    BoxShadow(
-                      color: primaryColor.withOpacity(0.3),
-                      blurRadius: 20,
-                      offset: const Offset(0, 8),
-                    ),
-                  ],
                 ),
                 child: Center(
                   child: Text(
@@ -229,7 +227,7 @@ class _ProfileSettingsScreenState extends ConsumerState<ProfileSettingsScreen>
               .shimmer(delay: 800.ms, duration: 1200.ms, color: Colors.white24),
           const SizedBox(height: 16),
           Text(
-            _userName,
+            _userName.split(' ').first, // Show only first name
             style: GoogleFonts.plusJakartaSans(
               fontSize: 24,
               fontWeight: FontWeight.bold,
@@ -251,13 +249,14 @@ class _ProfileSettingsScreenState extends ConsumerState<ProfileSettingsScreen>
     );
   }
 
-  Widget _buildStatsCards(
-    UserStatsState stats,
-    bool isDark,
-    Color surfaceColor,
-    Color textMain,
-    Color textSub,
-  ) {
+  Widget _buildStatsCards({
+    required int currentStreak,
+    required int totalXP,
+    required bool isDark,
+    required Color surfaceColor,
+    required Color textMain,
+    required Color textSub,
+  }) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 24),
       child: Row(
@@ -266,7 +265,7 @@ class _ProfileSettingsScreenState extends ConsumerState<ProfileSettingsScreen>
             child: _buildStatCard(
               icon: Icons.local_fire_department_rounded,
               label: 'STREAK',
-              value: '${stats.currentStreak} Days',
+              value: '$currentStreak Days',
               isPrimary: true,
               isDark: isDark,
               surfaceColor: surfaceColor,
@@ -279,7 +278,7 @@ class _ProfileSettingsScreenState extends ConsumerState<ProfileSettingsScreen>
             child: _buildStatCard(
               icon: Icons.bolt_rounded,
               label: 'TOTAL XP',
-              value: '${stats.totalXP}',
+              value: '$totalXP',
               isPrimary: false,
               isDark: isDark,
               surfaceColor: surfaceColor,
@@ -303,7 +302,7 @@ class _ProfileSettingsScreenState extends ConsumerState<ProfileSettingsScreen>
     required Color textSub,
   }) {
     return Container(
-      height: 90,
+      height: 96,
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: isPrimary
@@ -489,7 +488,7 @@ class _ProfileSettingsScreenState extends ConsumerState<ProfileSettingsScreen>
         _buildSettingTile(
           icon: Icons.info_outline_rounded,
           title: 'Quirzy Version',
-          subtitle: '2.0.0',
+          subtitle: '2.1.0',
           iconColor: primaryColor,
           isDark: isDark,
           surfaceColor: surfaceColor,

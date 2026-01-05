@@ -58,10 +58,10 @@ class _DailyRewardSheetState extends State<DailyRewardSheet>
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final bgColor = isDark ? const Color(0xFF1A1A1A) : Colors.white;
-    final textColor = isDark ? Colors.white : Colors.black;
-    final subtextColor = isDark ? Colors.white70 : Colors.black87;
+    // Pure black background - no transparency
+    const bgColor = Color(0xFF0A0A0A);
+    const textColor = Colors.white;
+    const subtextColor = Color(0xFFB0B0B0);
     const primaryColor = Color(0xFF5B13EC); // Quirzy Purple
     const secondaryPurple = Color(0xFF7C3AED); // Lighter purple accent
     const accentColor = Color(0xFFFFD700); // Gold
@@ -71,63 +71,37 @@ class _DailyRewardSheetState extends State<DailyRewardSheet>
       children: [
         Container(
           padding: const EdgeInsets.all(32),
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topCenter,
-              end: Alignment.bottomCenter,
-              colors: [
-                bgColor,
-                isDark
-                    ? primaryColor.withOpacity(0.05)
-                    : primaryColor.withOpacity(0.03),
-              ],
-            ),
-            borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
+          decoration: const BoxDecoration(
+            color: bgColor, // Pure black, no gradient
+            borderRadius: BorderRadius.vertical(top: Radius.circular(32)),
           ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              // LeetCode-style Flame Icon
+              // Flame Icon - Clean style
               ScaleTransition(
                 scale: _pulseAnimation,
                 child: Container(
-                  width: 120,
-                  height: 120,
-                  padding: const EdgeInsets.all(24),
+                  width: 100,
+                  height: 100,
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
-                    gradient: RadialGradient(
-                      colors: [
-                        primaryColor.withOpacity(0.2),
-                        primaryColor.withOpacity(0.05),
-                        Colors.transparent,
-                      ],
-                      stops: const [0.5, 0.8, 1.0],
+                    color: const Color(0xFF1A1A1A), // Dark grey circle
+                    border: Border.all(
+                      color: const Color(0xFF2A2A2A),
+                      width: 2,
                     ),
                   ),
-                  child: Container(
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: primaryColor.withOpacity(0.1),
-                      boxShadow: [
-                        BoxShadow(
-                          color: primaryColor.withOpacity(0.5),
-                          blurRadius: 20,
-                          spreadRadius: 2,
-                        ),
-                      ],
-                    ),
-                    child: const Icon(
-                      Icons.local_fire_department_rounded,
-                      size: 56,
-                      color: primaryColor, // Purple flame
-                    ),
+                  child: const Icon(
+                    Icons.local_fire_department_rounded,
+                    size: 48,
+                    color: primaryColor, // Purple flame
                   ),
                 ),
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: 24),
 
-              // Streak Count
+              // Streak Count - White number, Purple "Day Streak"
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 crossAxisAlignment: CrossAxisAlignment.baseline,
@@ -136,33 +110,33 @@ class _DailyRewardSheetState extends State<DailyRewardSheet>
                   Text(
                     '${widget.day}',
                     style: GoogleFonts.plusJakartaSans(
-                      fontSize: 48,
+                      fontSize: 52,
                       fontWeight: FontWeight.w800,
-                      color: textColor,
+                      color: textColor, // White
                     ),
                   ).animate().scale(
                     duration: 600.ms,
                     curve: Curves.easeOutBack,
                   ),
-                  const SizedBox(width: 8),
+                  const SizedBox(width: 10),
                   Text(
                     'Day Streak',
                     style: GoogleFonts.plusJakartaSans(
-                      fontSize: 20,
+                      fontSize: 22,
                       fontWeight: FontWeight.bold,
                       color: secondaryPurple, // Purple accent
                     ),
                   ),
                 ],
               ),
-              const SizedBox(height: 8),
+              const SizedBox(height: 12),
               Text(
                 'You are on fire! 🔥 Keep learning to maintain your streak.',
                 textAlign: TextAlign.center,
                 style: GoogleFonts.plusJakartaSans(
                   fontSize: 14,
                   fontWeight: FontWeight.w500,
-                  color: subtextColor, // Better contrast
+                  color: subtextColor, // Grey text
                 ),
               ),
               const SizedBox(height: 32),
@@ -171,10 +145,10 @@ class _DailyRewardSheetState extends State<DailyRewardSheet>
               Container(
                 padding: const EdgeInsets.symmetric(
                   horizontal: 20,
-                  vertical: 12,
+                  vertical: 14,
                 ),
                 decoration: BoxDecoration(
-                  color: accentColor.withOpacity(0.1),
+                  color: const Color(0xFF1A1A1A), // Dark container
                   borderRadius: BorderRadius.circular(16),
                   border: Border.all(color: accentColor.withOpacity(0.3)),
                 ),
@@ -186,7 +160,7 @@ class _DailyRewardSheetState extends State<DailyRewardSheet>
                       size: 24,
                       color: accentColor,
                     ),
-                    const SizedBox(width: 8),
+                    const SizedBox(width: 10),
                     Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
@@ -202,17 +176,17 @@ class _DailyRewardSheetState extends State<DailyRewardSheet>
                           'Daily Bonus',
                           style: GoogleFonts.plusJakartaSans(
                             fontWeight: FontWeight.w600,
-                            color: accentColor.withOpacity(0.8),
-                            fontSize: 10,
+                            color: accentColor.withOpacity(0.7),
+                            fontSize: 11,
                           ),
                         ),
                       ],
                     ),
                   ],
                 ),
-              ).animate().shimmer(duration: 2000.ms, color: Colors.white54),
+              ),
 
-              const SizedBox(height: 24),
+              const SizedBox(height: 28),
 
               // Claim Button
               SizedBox(
@@ -228,10 +202,9 @@ class _DailyRewardSheetState extends State<DailyRewardSheet>
                     foregroundColor: Colors.white,
                     padding: const EdgeInsets.symmetric(vertical: 18),
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(20),
+                      borderRadius: BorderRadius.circular(16),
                     ),
-                    elevation: 8,
-                    shadowColor: primaryColor.withOpacity(0.4),
+                    elevation: 0, // No shadow
                   ),
                   child: Text(
                     'Continue Learning',
@@ -250,10 +223,10 @@ class _DailyRewardSheetState extends State<DailyRewardSheet>
         ConfettiWidget(
           confettiController: _confettiController,
           blastDirection: pi / 2, // down
-          maxBlastForce: 20, // Increased force
+          maxBlastForce: 20,
           minBlastForce: 5,
           emissionFrequency: 0.05,
-          numberOfParticles: 50, // More particles
+          numberOfParticles: 50,
           gravity: 0.2,
           colors: const [
             Color(0xFF5B13EC),

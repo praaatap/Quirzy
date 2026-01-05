@@ -1251,8 +1251,8 @@ class _AnimatedErrorWidget extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final authState = ref.watch(authProvider);
-    final error = authState.error?.toString();
+    // Only watch error for better performance
+    final error = ref.watch(authProvider.select((s) => s.error?.toString()));
 
     return AnimatedSwitcher(
       duration: const Duration(milliseconds: 300),
