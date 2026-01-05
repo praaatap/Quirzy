@@ -5,6 +5,9 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:quirzy/features/quiz/services/quiz_service.dart';
 import 'package:quirzy/core/services/app_review_service.dart';
 import 'package:quirzy/core/services/game_effects_service.dart';
+import 'package:quirzy/core/services/offline_quiz_manager.dart';
+import 'package:quirzy/core/services/achievements_service.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class QuizCompleteScreen extends ConsumerStatefulWidget {
   final String quizId;
@@ -40,6 +43,9 @@ class _QuizCompleteScreenState extends ConsumerState<QuizCompleteScreen>
   late Animation<double> _fadeAnimation;
   bool _isSaving = false;
   bool _saved = false;
+  bool _savedForOffline = false;
+  bool _isSavingOffline = false;
+  List<Achievement> _unlockedAchievements = [];
 
   @override
   void initState() {
@@ -115,6 +121,13 @@ class _QuizCompleteScreenState extends ConsumerState<QuizCompleteScreen>
         questions: widget.questions,
         userSelectedAnswers: widget.userSelectedAnswers,
       );
+
+      // Add questions to practice pool for offline mode
+      await OfflineQuizManager().addToPracticePool(widget.questions);
+
+      // Check and unlock achievements
+      await _checkAchievements();
+
       if (mounted) {
         setState(() {
           _isSaving = false;
@@ -127,6 +140,134 @@ class _QuizCompleteScreenState extends ConsumerState<QuizCompleteScreen>
         debugPrint('Failed to save quiz result: $e');
       }
     }
+  }
+
+  /// Save quiz for offline play
+  Future<void> _saveForOffline() async {
+    if (_savedForOffline || _isSavingOffline) return;
+
+    setState(() => _isSavingOffline = true);
+    GameEffectsService().lightTap();
+
+    try {
+      await OfflineQuizManager().saveQuizForOffline(
+        quizId: widget.quizId,
+        title: widget.quizTitle,
+        questions: widget.questions,
+        difficulty: widget.difficulty,
+      );
+
+      if (mounted) {
+        setState(() {
+          _isSavingOffline = false;
+          _savedForOffline = true;
+        });
+        GameEffectsService().successVibration();
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Row(
+              children: [
+                const Icon(Icons.offline_pin, color: Colors.white),
+                const SizedBox(width: 12),
+                Text('Quiz saved for offline play!'),
+              ],
+            ),
+            backgroundColor: Colors.green,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => _isSavingOffline = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to save: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
+  /// Check and unlock achievements
+  Future<void> _checkAchievements() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+
+      // Get cumulative stats
+      final totalQuizzes = (prefs.getInt('total_quizzes_completed') ?? 0) + 1;
+      await prefs.setInt('total_quizzes_completed', totalQuizzes);
+
+      final isPerfect = widget.score == widget.totalQuestions;
+      int perfectScores = prefs.getInt('perfect_scores') ?? 0;
+      if (isPerfect) {
+        perfectScores++;
+        await prefs.setInt('perfect_scores', perfectScores);
+      }
+
+      final isHard = widget.difficulty?.toLowerCase() == 'hard';
+
+      // Check achievements
+      final unlocked = await AchievementsService().checkQuizAchievements(
+        totalQuizzes: totalQuizzes,
+        perfectScores: perfectScores,
+        isHardDifficulty: isHard,
+      );
+
+      if (unlocked.isNotEmpty && mounted) {
+        setState(() => _unlockedAchievements = unlocked);
+        // Show achievement notification
+        for (final achievement in unlocked) {
+          _showAchievementUnlocked(achievement);
+        }
+      }
+    } catch (e) {
+      debugPrint('Achievement check error: $e');
+    }
+  }
+
+  /// Show achievement unlocked toast
+  void _showAchievementUnlocked(Achievement achievement) {
+    GameEffectsService().rankUpCelebration();
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Row(
+          children: [
+            Text(achievement.icon, style: const TextStyle(fontSize: 24)),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    'Achievement Unlocked!',
+                    style: GoogleFonts.poppins(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 12,
+                    ),
+                  ),
+                  Text(
+                    achievement.name,
+                    style: GoogleFonts.poppins(fontSize: 14),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+        backgroundColor: const Color(0xFF5B13EC),
+        behavior: SnackBarBehavior.floating,
+        duration: const Duration(seconds: 3),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      ),
+    );
   }
 
   double get percentage => widget.totalQuestions > 0
@@ -431,20 +572,64 @@ class _QuizCompleteScreenState extends ConsumerState<QuizCompleteScreen>
                             ),
                           ),
                           const SizedBox(height: 12),
-                          TextButton(
-                            onPressed: () {
-                              HapticFeedback.lightImpact();
-                              // Show review answers bottom sheet
-                              _showAnswersReview(context);
-                            },
-                            child: Text(
-                              'Review Answers',
-                              style: GoogleFonts.poppins(
-                                fontSize: 14,
-                                fontWeight: FontWeight.w600,
-                                color: theme.colorScheme.primary,
+
+                          // Save for Offline & Review row
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              // Save for Offline button
+                              TextButton.icon(
+                                onPressed: _savedForOffline
+                                    ? null
+                                    : _saveForOffline,
+                                icon: Icon(
+                                  _savedForOffline
+                                      ? Icons.offline_pin
+                                      : Icons.download_for_offline_outlined,
+                                  size: 18,
+                                  color: _savedForOffline
+                                      ? Colors.green
+                                      : theme.colorScheme.primary,
+                                ),
+                                label: Text(
+                                  _savedForOffline ? 'Saved' : 'Save Offline',
+                                  style: GoogleFonts.poppins(
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.w600,
+                                    color: _savedForOffline
+                                        ? Colors.green
+                                        : theme.colorScheme.primary,
+                                  ),
+                                ),
                               ),
-                            ),
+                              Container(
+                                width: 1,
+                                height: 20,
+                                color: theme.colorScheme.outline.withOpacity(
+                                  0.3,
+                                ),
+                              ),
+                              // Review Answers button
+                              TextButton.icon(
+                                onPressed: () {
+                                  HapticFeedback.lightImpact();
+                                  _showAnswersReview(context);
+                                },
+                                icon: Icon(
+                                  Icons.fact_check_outlined,
+                                  size: 18,
+                                  color: theme.colorScheme.primary,
+                                ),
+                                label: Text(
+                                  'Review Answers',
+                                  style: GoogleFonts.poppins(
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.w600,
+                                    color: theme.colorScheme.primary,
+                                  ),
+                                ),
+                              ),
+                            ],
                           ),
                         ],
                       ),
