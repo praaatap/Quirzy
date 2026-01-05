@@ -12,7 +12,7 @@ class SmoothPageRoute<T> extends PageRouteBuilder<T> {
     this.duration = const Duration(milliseconds: 350),
     this.reverseDuration = const Duration(milliseconds: 280),
   }) : super(
-         pageBuilder: (_, __, ___) => page,
+         pageBuilder: (_, _, _) => page,
          transitionDuration: duration,
          reverseTransitionDuration: reverseDuration,
          transitionsBuilder: (context, animation, secondaryAnimation, child) {
@@ -42,7 +42,7 @@ class ScaleFadePageRoute<T> extends PageRouteBuilder<T> {
 
   ScaleFadePageRoute({required this.page})
     : super(
-        pageBuilder: (_, __, ___) => page,
+        pageBuilder: (_, _, _) => page,
         transitionDuration: const Duration(milliseconds: 400),
         reverseTransitionDuration: const Duration(milliseconds: 300),
         transitionsBuilder: (context, animation, secondaryAnimation, child) {

@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:quirzy/core/services/daily_streak_service.dart';
 
-class XPCalendarWidget extends StatelessWidget {
+class XPCalendarWidget extends StatefulWidget {
   final Map<DateTime, int> activityData;
   final bool isDark;
   final Color primaryColor;
@@ -14,14 +15,45 @@ class XPCalendarWidget extends StatelessWidget {
   });
 
   @override
+  State<XPCalendarWidget> createState() => _XPCalendarWidgetState();
+}
+
+class _XPCalendarWidgetState extends State<XPCalendarWidget> {
+  final DailyStreakService _streakService = DailyStreakService();
+  int _currentStreak = 0;
+  int _totalXP = 0;
+  Map<DateTime, int> _loginHeatmap = {};
+
+  @override
+  void initState() {
+    super.initState();
+    _loadStreakData();
+  }
+
+  Future<void> _loadStreakData() async {
+    await _streakService.initialize();
+    if (!mounted) return;
+
+    setState(() {
+      _currentStreak = _streakService.getCurrentStreak();
+      _totalXP = _streakService.getTotalXP();
+      _loginHeatmap = _streakService.getLoginHeatmap(days: 70);
+    });
+  }
+
+  @override
   Widget build(BuildContext context) {
-    // Generate dates for the last 60 days
+    // Merge activity data with login heatmap
+    final combinedData = <DateTime, int>{...widget.activityData};
+    for (final entry in _loginHeatmap.entries) {
+      final existing = combinedData[entry.key] ?? 0;
+      combinedData[entry.key] = existing + entry.value;
+    }
+
     final now = DateTime.now();
     final today = DateTime(now.year, now.month, now.day);
     final days = <DateTime>[];
 
-    // We want to show roughly 8-10 weeks.
-    // Let's show exactly 70 days (10 weeks) so it fits in a nice grid eventually
     for (int i = 69; i >= 0; i--) {
       days.add(today.subtract(Duration(days: i)));
     }
@@ -34,24 +66,67 @@ class XPCalendarWidget extends StatelessWidget {
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(
-                'Activity Log',
-                style: GoogleFonts.plusJakartaSans(
-                  fontSize: 14,
-                  fontWeight: FontWeight.bold,
-                  color: isDark
-                      ? const Color(0xFFA1A1AA)
-                      : const Color(0xFF64748B),
-                ),
+              Row(
+                children: [
+                  Icon(
+                    Icons.local_fire_department_rounded,
+                    size: 18,
+                    color: _currentStreak > 0
+                        ? Colors.orange
+                        : (widget.isDark ? Colors.grey : Colors.grey.shade400),
+                  ),
+                  const SizedBox(width: 6),
+                  Text(
+                    'Daily Streak',
+                    style: GoogleFonts.plusJakartaSans(
+                      fontSize: 14,
+                      fontWeight: FontWeight.bold,
+                      color: widget.isDark
+                          ? const Color(0xFFA1A1AA)
+                          : const Color(0xFF64748B),
+                    ),
+                  ),
+                ],
               ),
-              Text(
-                'Last 70 Days',
-                style: GoogleFonts.plusJakartaSans(
-                  fontSize: 10,
-                  fontWeight: FontWeight.w600,
-                  color: isDark
-                      ? const Color(0xFF52525B)
-                      : const Color(0xFF94A3B8),
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 4,
+                ),
+                decoration: BoxDecoration(
+                  color: _currentStreak > 0
+                      ? Colors.orange.withOpacity(0.15)
+                      : (widget.isDark
+                            ? Colors.grey.withOpacity(0.1)
+                            : Colors.grey.withOpacity(0.1)),
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      '$_currentStreak',
+                      style: GoogleFonts.plusJakartaSans(
+                        fontSize: 12,
+                        fontWeight: FontWeight.bold,
+                        color: _currentStreak > 0
+                            ? Colors.orange
+                            : (widget.isDark
+                                  ? Colors.grey
+                                  : Colors.grey.shade600),
+                      ),
+                    ),
+                    Text(
+                      ' days',
+                      style: GoogleFonts.plusJakartaSans(
+                        fontSize: 10,
+                        fontWeight: FontWeight.w500,
+                        color: widget.isDark
+                            ? const Color(0xFF52525B)
+                            : const Color(0xFF94A3B8),
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ],
@@ -61,52 +136,98 @@ class XPCalendarWidget extends StatelessWidget {
         Container(
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
-            color: isDark ? const Color(0xFF1E1E24) : Colors.white,
+            color: widget.isDark ? const Color(0xFF1E1E24) : Colors.white,
             borderRadius: BorderRadius.circular(16),
             border: Border.all(
-              color: isDark ? const Color(0xFF2D2D35) : const Color(0xFFE2E8F0),
+              color: widget.isDark
+                  ? const Color(0xFF2D2D35)
+                  : const Color(0xFFE2E8F0),
             ),
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // We render 7 rows (days of week) and ~10 columns
+              // XP Badge
+              Container(
+                margin: const EdgeInsets.only(bottom: 12),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 6,
+                ),
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [
+                      widget.primaryColor.withOpacity(0.2),
+                      widget.primaryColor.withOpacity(0.1),
+                    ],
+                  ),
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(Icons.bolt_rounded, size: 16, color: Colors.amber),
+                    const SizedBox(width: 4),
+                    Text(
+                      '$_totalXP XP Earned',
+                      style: GoogleFonts.plusJakartaSans(
+                        fontSize: 12,
+                        fontWeight: FontWeight.bold,
+                        color: widget.isDark
+                            ? Colors.white
+                            : widget.primaryColor,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              // Calendar Grid
               Wrap(
                 spacing: 6,
                 runSpacing: 6,
                 children: List.generate(days.length, (index) {
                   final date = days[index];
-                  final intensity = activityData[date] ?? 0;
-
+                  final intensity = combinedData[date] ?? 0;
                   return _buildDayBox(date, intensity, today);
                 }),
               ),
               const SizedBox(height: 12),
               Row(
-                mainAxisAlignment: MainAxisAlignment.end,
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Text(
-                    'Less',
+                    'Last 70 Days',
                     style: TextStyle(
                       fontSize: 10,
-                      color: isDark ? Colors.grey : Colors.black45,
+                      color: widget.isDark ? Colors.grey : Colors.black45,
                     ),
                   ),
-                  const SizedBox(width: 4),
-                  _legendBox(0),
-                  const SizedBox(width: 2),
-                  _legendBox(1),
-                  const SizedBox(width: 2),
-                  _legendBox(3),
-                  const SizedBox(width: 2),
-                  _legendBox(5),
-                  const SizedBox(width: 4),
-                  Text(
-                    'More',
-                    style: TextStyle(
-                      fontSize: 10,
-                      color: isDark ? Colors.grey : Colors.black45,
-                    ),
+                  Row(
+                    children: [
+                      Text(
+                        'Less',
+                        style: TextStyle(
+                          fontSize: 10,
+                          color: widget.isDark ? Colors.grey : Colors.black45,
+                        ),
+                      ),
+                      const SizedBox(width: 4),
+                      _legendBox(0),
+                      const SizedBox(width: 2),
+                      _legendBox(1),
+                      const SizedBox(width: 2),
+                      _legendBox(3),
+                      const SizedBox(width: 2),
+                      _legendBox(5),
+                      const SizedBox(width: 4),
+                      Text(
+                        'More',
+                        style: TextStyle(
+                          fontSize: 10,
+                          color: widget.isDark ? Colors.grey : Colors.black45,
+                        ),
+                      ),
+                    ],
                   ),
                 ],
               ),
@@ -118,16 +239,15 @@ class XPCalendarWidget extends StatelessWidget {
   }
 
   Widget _buildDayBox(DateTime date, int count, DateTime today) {
-    // Intensity: 0 (none), 1-2 (low), 3-4 (med), 5+ (high)
     Color color;
     if (count == 0) {
-      color = isDark ? const Color(0xFF2A2A30) : const Color(0xFFF1F5F9);
+      color = widget.isDark ? const Color(0xFF2A2A30) : const Color(0xFFF1F5F9);
     } else if (count <= 2) {
-      color = primaryColor.withOpacity(0.3);
+      color = widget.primaryColor.withOpacity(0.3);
     } else if (count <= 4) {
-      color = primaryColor.withOpacity(0.6);
+      color = widget.primaryColor.withOpacity(0.6);
     } else {
-      color = primaryColor;
+      color = widget.primaryColor;
     }
 
     final isToday =
@@ -136,7 +256,7 @@ class XPCalendarWidget extends StatelessWidget {
         date.day == today.day;
 
     return Tooltip(
-      message: '${_formatDate(date)}: $count quizzes',
+      message: '${_formatDate(date)}: $count activities',
       child: Container(
         width: 12,
         height: 12,
@@ -145,7 +265,7 @@ class XPCalendarWidget extends StatelessWidget {
           borderRadius: BorderRadius.circular(3),
           border: isToday
               ? Border.all(
-                  color: isDark ? Colors.white : Colors.black,
+                  color: widget.isDark ? Colors.white : Colors.black,
                   width: 1.5,
                 )
               : null,
@@ -157,13 +277,13 @@ class XPCalendarWidget extends StatelessWidget {
   Widget _legendBox(int count) {
     Color color;
     if (count == 0) {
-      color = isDark ? const Color(0xFF2A2A30) : const Color(0xFFF1F5F9);
+      color = widget.isDark ? const Color(0xFF2A2A30) : const Color(0xFFF1F5F9);
     } else if (count == 1) {
-      color = primaryColor.withOpacity(0.3);
+      color = widget.primaryColor.withOpacity(0.3);
     } else if (count == 3) {
-      color = primaryColor.withOpacity(0.6);
+      color = widget.primaryColor.withOpacity(0.6);
     } else {
-      color = primaryColor;
+      color = widget.primaryColor;
     }
 
     return Container(

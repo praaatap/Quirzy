@@ -29,9 +29,6 @@ class QuirzyApp extends ConsumerWidget {
       title: 'Quirzy',
       debugShowCheckedModeBanner: false,
 
-      // ===========================================
-      // 🎨 PURPLE THEME (Light & Dark)
-      // ===========================================
       theme: AppTheme.light(),
       darkTheme: AppTheme.dark(),
       themeMode: themeMode,

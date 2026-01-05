@@ -95,7 +95,6 @@ class _StartQuizScreenState extends ConsumerState<StartQuizScreen>
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
 
     return Scaffold(
       backgroundColor: theme.scaffoldBackgroundColor,
@@ -266,9 +265,19 @@ class _StartQuizScreenState extends ConsumerState<StartQuizScreen>
                     // Start button
                     Padding(
                       padding: const EdgeInsets.all(24),
-                      child: SizedBox(
+                      child: Container(
                         width: double.infinity,
                         height: 60,
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(18),
+                          boxShadow: [
+                            BoxShadow(
+                              color: theme.colorScheme.primary.withOpacity(0.4),
+                              blurRadius: 20,
+                              offset: const Offset(0, 8),
+                            ),
+                          ],
+                        ),
                         child: ElevatedButton(
                           onPressed: widget.questions.isNotEmpty
                               ? _startQuiz

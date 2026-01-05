@@ -88,20 +88,27 @@ class _FlashcardsScreenState extends ConsumerState<FlashcardsScreen>
     HapticFeedback.mediumImpact();
     _focusNode.unfocus();
 
-    // Always show ad before flashcard generation (no free flashcards)
-    AdService().showRewardedAd(
-      onRewardEarned: () {
-        if (mounted) {
-          _startFlashcardGeneration(topic);
-        }
-      },
-      onAdFailed: () {
-        // Fallback: Proceed even if ad fails
-        if (mounted) {
-          _startFlashcardGeneration(topic);
-        }
-      },
-    );
+    // Check daily limit (53 free flashcards per day)
+    if (!AdService().isFlashcardLimitReached()) {
+      // Still have free flashcards
+      AdService().incrementFlashcardCount();
+      _startFlashcardGeneration(topic);
+    } else {
+      // Limit reached - show ad
+      AdService().showRewardedAd(
+        onRewardEarned: () {
+          if (mounted) {
+            _startFlashcardGeneration(topic);
+          }
+        },
+        onAdFailed: () {
+          // Fallback: Proceed even if ad fails
+          if (mounted) {
+            _startFlashcardGeneration(topic);
+          }
+        },
+      );
+    }
   }
 
   Future<void> _startFlashcardGeneration(String topic) async {

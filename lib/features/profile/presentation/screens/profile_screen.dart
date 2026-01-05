@@ -8,7 +8,7 @@ import 'package:flutter_animate/flutter_animate.dart';
 import 'package:quirzy/routes/app_routes.dart';
 import 'package:quirzy/features/auth/presentation/providers/auth_provider.dart';
 import 'package:quirzy/features/settings/providers/settings_provider.dart';
-import 'package:in_app_review/in_app_review.dart';
+import 'package:quirzy/core/services/app_review_service.dart';
 
 import 'package:quirzy/providers/user_stats_provider.dart'; // Added
 
@@ -507,25 +507,29 @@ class _ProfileSettingsScreenState extends ConsumerState<ProfileSettingsScreen>
           textSub: textSub,
           onTap: () async {
             try {
-              // Use in_app_review package to request rating
-              // This will show Google Play in-app review dialog
-              final InAppReview inAppReview = InAppReview.instance;
-              if (await inAppReview.isAvailable()) {
-                await inAppReview.requestReview();
-              } else {
-                // Fallback to opening Play Store
-                await inAppReview.openStoreListing(
-                  appStoreId: 'com.ps9labs.quirzy',
-                );
-              }
+              // Show custom review dialog
+              await AppReviewService.showReviewDialog(context);
             } catch (e) {
-              if (mounted) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text('Unable to open rating: $e'),
-                    backgroundColor: Colors.red,
-                  ),
-                );
+              // Fallback to direct store opening
+              try {
+                final success = await AppReviewService().openStoreListing();
+                if (!success && mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('Unable to open Play Store'),
+                      backgroundColor: Colors.red,
+                    ),
+                  );
+                }
+              } catch (e2) {
+                if (mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('Error: $e2'),
+                      backgroundColor: Colors.red,
+                    ),
+                  );
+                }
               }
             }
           },

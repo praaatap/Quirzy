@@ -32,7 +32,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
   final TextEditingController _topicController = TextEditingController();
   final FocusNode _inputFocusNode = FocusNode();
   bool _isGenerating = false;
-  int _remainingFree = 5;
   static const FlutterSecureStorage _storage = FlutterSecureStorage();
   String _userName = 'Quiz Master';
 
@@ -49,7 +48,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
 
   // Static colors
   static const primaryColor = Color(0xFF5B13EC);
-  static const primaryLight = Color(0xFFEFE9FD);
 
   @override
   void initState() {
@@ -135,6 +133,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
       );
 
       if (available) {
+        if (!mounted) return;
         setState(() => _isListening = true);
 
         // Show Google-style listening DIALOG (Centered)

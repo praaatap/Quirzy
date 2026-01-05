@@ -1,12 +1,14 @@
 import 'dart:async';
 import 'dart:math';
-import 'dart:ui';
+// import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:quirzy/features/quiz/screens/quiz_complete_screen.dart';
+// import 'package:quirzy/core/widgets/micro_animations.dart';
+// import 'package:quirzy/core/widgets/quiz_timer_widget.dart';
 
 class QuizQuestionScreen extends ConsumerStatefulWidget {
   final String quizTitle;

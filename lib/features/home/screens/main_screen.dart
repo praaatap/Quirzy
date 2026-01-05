@@ -1,4 +1,4 @@
-import 'dart:ui';
+// import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -72,36 +72,48 @@ class _MainScreenState extends ConsumerState<MainScreen> {
         }),
         elevation: 0,
       ),
-      child: NavigationBar(
-        selectedIndex: selectedIndex,
-        onDestinationSelected: (index) {
-          HapticFeedback.lightImpact();
-          ref.read(tabIndexProvider.notifier).state = index;
-        },
-        labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
-        height: 80,
-        destinations: const [
-          NavigationDestination(
-            icon: Icon(Icons.home_outlined),
-            selectedIcon: Icon(Icons.home_rounded),
-            label: 'Home',
-          ),
-          NavigationDestination(
-            icon: Icon(Icons.style_outlined),
-            selectedIcon: Icon(Icons.style_rounded),
-            label: 'Cards',
-          ),
-          NavigationDestination(
-            icon: Icon(Icons.history_outlined),
-            selectedIcon: Icon(Icons.history_rounded),
-            label: 'History',
-          ),
-          NavigationDestination(
-            icon: Icon(Icons.person_outline_rounded),
-            selectedIcon: Icon(Icons.person_rounded),
-            label: 'Account',
-          ),
-        ],
+      child: Container(
+        decoration: BoxDecoration(
+          color: isDark ? const Color(0xFF0F0F0F) : Colors.white,
+          boxShadow: [
+            BoxShadow(
+              color: primaryColor.withOpacity(0.15),
+              blurRadius: 20,
+              offset: const Offset(0, -5),
+            ),
+          ],
+        ),
+        child: NavigationBar(
+          selectedIndex: selectedIndex,
+          onDestinationSelected: (index) {
+            HapticFeedback.lightImpact();
+            ref.read(tabIndexProvider.notifier).state = index;
+          },
+          labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
+          height: 80,
+          destinations: const [
+            NavigationDestination(
+              icon: Icon(Icons.home_outlined),
+              selectedIcon: Icon(Icons.home_rounded),
+              label: 'Home',
+            ),
+            NavigationDestination(
+              icon: Icon(Icons.style_outlined),
+              selectedIcon: Icon(Icons.style_rounded),
+              label: 'Cards',
+            ),
+            NavigationDestination(
+              icon: Icon(Icons.history_outlined),
+              selectedIcon: Icon(Icons.history_rounded),
+              label: 'History',
+            ),
+            NavigationDestination(
+              icon: Icon(Icons.person_outline_rounded),
+              selectedIcon: Icon(Icons.person_rounded),
+              label: 'Account',
+            ),
+          ],
+        ),
       ),
     );
   }

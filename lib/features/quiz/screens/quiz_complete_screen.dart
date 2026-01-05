@@ -3,7 +3,8 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:quirzy/features/quiz/services/quiz_service.dart';
-import 'package:in_app_review/in_app_review.dart';
+import 'package:quirzy/core/services/app_review_service.dart';
+import 'package:quirzy/core/services/game_effects_service.dart';
 
 class QuizCompleteScreen extends ConsumerStatefulWidget {
   final String quizId;
@@ -80,16 +81,24 @@ class _QuizCompleteScreenState extends ConsumerState<QuizCompleteScreen>
 
   Future<void> _requestReview() async {
     try {
-      final InAppReview inAppReview = InAppReview.instance;
-      if (await inAppReview.isAvailable()) {
-        // Wait a small moment to not interrupt the score reveal
-        await Future.delayed(const Duration(seconds: 2));
+      // Record quiz completion for review service
+      final reviewService = AppReviewService();
+      await reviewService.initialize();
+      await reviewService.recordQuizCompleted();
+
+      // Add game effect for completion
+      GameEffectsService().successVibration();
+
+      // Check if we should show review prompt
+      // This is based on: 3+ quizzes, 3+ days usage, not prompted recently
+      if (reviewService.shouldShowReviewPrompt()) {
+        await Future.delayed(const Duration(seconds: 3));
         if (mounted) {
-          inAppReview.requestReview();
+          await AppReviewService.showReviewDialog(context);
         }
       }
     } catch (e) {
-      debugPrint('Error requesting review: $e');
+      debugPrint('Error with review service: $e');
     }
   }
 
@@ -383,26 +392,40 @@ class _QuizCompleteScreenState extends ConsumerState<QuizCompleteScreen>
                           SizedBox(
                             width: double.infinity,
                             height: 56,
-                            child: ElevatedButton.icon(
-                              onPressed: () {
-                                HapticFeedback.mediumImpact();
-                                Navigator.of(
-                                  context,
-                                ).popUntil((route) => route.isFirst);
-                              },
-                              icon: const Icon(Icons.home_rounded),
-                              label: Text(
-                                'Back to Home',
-                                style: GoogleFonts.poppins(
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.w600,
-                                ),
+                            child: Container(
+                              decoration: BoxDecoration(
+                                borderRadius: BorderRadius.circular(16),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: theme.colorScheme.primary
+                                        .withOpacity(0.4),
+                                    blurRadius: 20,
+                                    offset: const Offset(0, 8),
+                                  ),
+                                ],
                               ),
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: theme.colorScheme.primary,
-                                foregroundColor: theme.colorScheme.onPrimary,
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(16),
+                              child: ElevatedButton.icon(
+                                onPressed: () {
+                                  HapticFeedback.mediumImpact();
+                                  Navigator.of(
+                                    context,
+                                  ).popUntil((route) => route.isFirst);
+                                },
+                                icon: const Icon(Icons.home_rounded),
+                                label: Text(
+                                  'Back to Home',
+                                  style: GoogleFonts.poppins(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: theme.colorScheme.primary,
+                                  foregroundColor: theme.colorScheme.onPrimary,
+                                  minimumSize: const Size(double.infinity, 56),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(16),
+                                  ),
                                 ),
                               ),
                             ),

@@ -1,6 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
-import 'package:hive_flutter/hive_flutter.dart';
+import 'package:quirzy/core/services/daily_limit_service.dart';
 
 class AdService {
   static final AdService _instance = AdService._internal();
@@ -9,44 +9,51 @@ class AdService {
 
   RewardedAd? _rewardedAd;
   bool _isLoadingAd = false;
-  int _quizCount = 0;
-  final int _freeLimit = 1;
 
-  // ✅ TEST AD UNIT ID (Android)
+  // ✅ PRODUCTION AD UNIT ID (Android)
   final String _adUnitId = "ca-app-pub-9548640268387299/3279512839";
 
-  Box? _box;
+  final DailyLimitService _dailyLimitService = DailyLimitService();
 
   // Initialize
   Future<void> initialize() async {
-    if (_box != null) return; // Already initialized
-    await MobileAds.instance.initialize(); // Ensure SDK is initialized first
-    _box = await Hive.openBox('ad_data');
-    _loadQuizCount();
+    await MobileAds.instance.initialize();
+    await _dailyLimitService.initialize();
     _loadRewardedAd();
   }
 
-  void _loadQuizCount() {
-    if (_box == null) return;
-    _quizCount = _box!.get('quiz_count', defaultValue: 0);
-    debugPrint('📊 Current Quiz Count: $_quizCount');
-  }
+  // ==========================================
+  // QUIZ LIMITS (2 per day)
+  // ==========================================
 
   int getRemainingFreeQuizzes() {
-    int remaining = _freeLimit - _quizCount;
-    return remaining < 0 ? 0 : remaining;
+    return _dailyLimitService.getRemainingFreeQuizzes();
   }
 
   Future<void> incrementQuizCount() async {
-    _quizCount++;
-    if (_box != null) {
-      await _box!.put('quiz_count', _quizCount);
-    }
-    debugPrint('📊 Quiz Count Incremented: $_quizCount');
+    await _dailyLimitService.incrementQuizCount();
+    debugPrint('📊 Quiz Count Incremented');
   }
 
   bool isLimitReached() {
-    return _quizCount >= _freeLimit;
+    return _dailyLimitService.isQuizLimitReached();
+  }
+
+  // ==========================================
+  // FLASHCARD LIMITS (53 per day)
+  // ==========================================
+
+  int getRemainingFreeFlashcards() {
+    return _dailyLimitService.getRemainingFreeFlashcards();
+  }
+
+  Future<void> incrementFlashcardCount() async {
+    await _dailyLimitService.incrementFlashcardCount();
+    debugPrint('📚 Flashcard Count Incremented');
+  }
+
+  bool isFlashcardLimitReached() {
+    return _dailyLimitService.isFlashcardLimitReached();
   }
 
   void _loadRewardedAd() {

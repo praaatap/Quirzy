@@ -174,12 +174,58 @@ Protects you from a wrong answer, allowing another attempt.
 </tr>
 </table>
 
-### Gamification
+### Gamification & Ranking System
 
-- **Daily Streaks**: Maintain consecutive learning days for bonus rewards
-- **XP System**: Earn experience points for completing quizzes
-- **Achievements**: Unlock badges for milestones
-- **Leaderboards**: Compare progress with other learners
+Quirzy features a comprehensive **PUBG/Free Fire-style ranking system** to keep users engaged:
+
+#### Rank Tiers
+
+| Tier | Icon | XP Required | Description |
+|------|------|-------------|-------------|
+| **Bronze I-III** | 🥉 | 0-499 | Entry level ranks |
+| **Silver I-III** | 🥈 | 500-1699 | Building foundations |
+| **Gold I-III** | 🥇 | 1700-3799 | Serious learner |
+| **Platinum I-III** | 💎 | 3800-6799 | Advanced student |
+| **Diamond I-III** | 💠 | 6800-11099 | Expert learner |
+| **Master I-III** | 👑 | 11100-17999 | Master of knowledge |
+| **Grandmaster** | 🏆 | 18000-24999 | Elite tier |
+| **Legend** | 🌟 | 25000+ | Maximum rank |
+
+#### XP Rewards
+
+| Activity | Base XP | Bonuses |
+|----------|---------|---------|
+| Quiz Completion | 10 XP | +50 (perfect score), +30 (hard difficulty), +20 (speed) |
+| Flashcard Creation | 2 XP/card | Min 10, Max 100 per session |
+| Daily Login | 10 XP | +5 XP per streak day |
+| Streak Bonus | Variable | Multiplied by consecutive days |
+
+#### Animated Rank-Up System
+
+- **Epic rank-up animations** with confetti explosions
+- **Glowing badges** with pulse effects
+- **Tier change celebrations** for major promotions
+
+### Smart Notifications System
+
+Quirzy uses **intelligent notifications** for user retention:
+
+- **2.5-hour intervals** between notifications
+- **Quiet hours respected** (12 AM - 6 AM)
+- **Peak time detection** based on user behavior
+- **Context-aware messages** (morning, afternoon, evening)
+- **Deep linking** - tap notifications to go directly to:
+  - Quiz generation screen
+  - Flashcard creation
+  - Profile/rank progress
+
+### Daily Limits (Free Users)
+
+| Feature | Daily Limit |
+|---------|------------|
+| Quiz Generations | 2 free per day |
+| Flashcard Generations | 53 free per day |
+| After Limit | Watch rewarded ad to continue |
 
 ### User Experience
 
@@ -190,6 +236,80 @@ Protects you from a wrong answer, allowing another attempt.
 | **Haptic Feedback** | Tactile responses for interactions |
 | **Smooth Animations** | 60fps animations throughout |
 | **Accessibility** | Screen reader compatible |
+| **Deep Linking** | Direct navigation from notifications |
+
+### Game Effects System
+
+Quirzy includes a comprehensive **game effects system** for a premium gaming experience:
+
+#### Haptic Feedback Patterns
+| Action | Feedback Type |
+|--------|---------------|
+| Button Press | Light tap |
+| Correct Answer | Success vibration (double tap) |
+| Wrong Answer | Heavy impact |
+| Rank Up | Celebration pattern (triple burst) |
+| XP Gain | Selection click |
+| Streak Maintained | Double medium tap |
+
+#### Micro-Animations
+- **PulsingWidget** - Attention-grabbing pulse effect
+- **ShakeWidget** - Error/wrong answer shake
+- **BounceInWidget** - Elastic entrance animation
+- **GlowingContainer** - Animated glow effects
+- **AnimatedProgressBar** - Smooth progress transitions
+- **AnimatedScoreCounter** - Counting number animation
+
+#### Score System
+- **Combo Multiplier** - Up to 2.5x for consecutive correct answers
+- **Time Bonus** - Extra points for quick answers
+- **Perfect Score Bonus** - 100 XP for 100% accuracy
+
+### Smart App Review
+
+Intelligently prompts for app rating based on:
+- Minimum 3 completed quizzes
+- At least 3 days of app usage
+- Maximum once every 30 days
+- Beautiful custom review dialog
+
+### Offline Features
+
+Quirzy works great even without internet! All these features work completely offline:
+
+#### Offline Quiz Manager
+| Feature | Description |
+|---------|-------------|
+| **Save for Offline** | Save any generated quiz to play later without internet |
+| **Daily Challenges** | Auto-generated daily quiz from your practice pool |
+| **Quick Quiz** | Instant 5-question quiz from cached content |
+| **Practice Mode** | Random questions from your completed quizzes |
+| **Up to 20 Saved Quizzes** | Keep your favorite quizzes offline |
+
+#### Spaced Repetition System (SM-2 Algorithm)
+| Feature | Description |
+|---------|-------------|
+| **Smart Scheduling** | Cards you struggle with appear more frequently |
+| **Mastery Tracking** | Learning → Reviewing → Mastered progression |
+| **Review Streaks** | Track your flashcard review consistency |
+| **Priority Queue** | Most due cards appear first |
+
+#### Motivational Content
+- **Quote of the Day** - Fresh learning quote every day
+- **Study Tips** - 20+ actionable study tips
+- **Streak Encouragements** - Personalized streak messages
+- **Performance Messages** - Dynamic feedback based on scores
+- **Time-based Greetings** - Morning/afternoon/evening welcomes
+
+#### Achievements System (30+ Badges)
+| Category | Examples |
+|----------|----------|
+| **Quiz** | First Steps, Quiz Master, Perfectionist, Challenge Accepted |
+| **Streak** | Week Warrior, Monthly Master, Century Club |
+| **Flashcard** | Memory Starter, Card Collector, Set Master |
+| **XP** | XP Starter, XP Hunter, XP Legend |
+| **Rank** | Rising Star, Golden Touch, Living Legend |
+| **Special** | Night Owl, Early Bird, Speed Demon, Offline Scholar |
 
 ---
 
@@ -350,14 +470,20 @@ quirzy/
 │   │   ├── constants/            # App-wide constants
 │   │   │   └── notification_messages.dart
 │   │   ├── services/             # Core services
-│   │   │   ├── ad_service.dart
-│   │   │   ├── local_notification_service.dart
+│   │   │   ├── ad_service.dart           # Ad management
+│   │   │   ├── daily_limit_service.dart  # Daily usage limits
+│   │   │   ├── daily_streak_service.dart # Login streaks & XP
+│   │   │   ├── deep_link_service.dart    # Notification deep links
+│   │   │   ├── rank_service.dart         # PUBG-style ranking
+│   │   │   ├── smart_notification_service.dart # Smart notifications
 │   │   │   └── notification_service.dart
 │   │   ├── theme/                # Theme definitions
 │   │   │   └── app_theme.dart
 │   │   └── widgets/              # Reusable widgets
 │   │       ├── app/
-│   │       └── loading/
+│   │       ├── loading/
+│   │       ├── rank_up_animation.dart    # Epic rank-up effects
+│   │       └── rank_widgets.dart         # Rank badges & cards
 │   │
 │   ├── features/                 # Feature modules
 │   │   ├── auth/                 # Authentication
@@ -388,7 +514,8 @@ quirzy/
 │   │       └── providers/
 │   │
 │   ├── providers/                # Global providers
-│   │   └── user_stats_provider.dart
+│   │   ├── user_stats_provider.dart
+│   │   └── gamification_provider.dart    # XP & rank management
 │   │
 │   └── routes/                   # Navigation
 │       ├── app_routes.dart
@@ -785,6 +912,7 @@ A: Locally on device with optional cloud backup via Appwrite.
 
 | Version | Date | Changes |
 |---------|------|---------|
+| 2.1.0 | 2026-01-05 | **Gamification Update**: PUBG-style ranking system (20 tiers), animated rank-up screen with confetti, daily limits (53 flashcards, 2 quizzes), smart notifications every 2.5 hours with quiet hours, deep linking for notifications, XP system with quiz/flashcard rewards |
 | 2.0.0 | 2026-01-01 | Ad integration, system theme, UI improvements, flashcard ads |
 | 1.0.0 | 2025-12-XX | Initial release |
 
