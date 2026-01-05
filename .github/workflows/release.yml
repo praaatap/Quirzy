@@ -1,4 +1,4 @@
-name: Multi-Platform Release Build
+name: Windows Release Build
 
 on:
   push:
@@ -6,51 +6,6 @@ on:
       - 'v*'
 
 jobs:
-  build-android:
-    name: Build Android
-    runs-on: ubuntu-latest
-    permissions:
-      contents: write
-    steps:
-      - name: Checkout Repository
-        uses: actions/checkout@v4
-
-      - name: Setup Java
-        uses: actions/setup-java@v4
-        with:
-          distribution: 'temurin'
-          java-version: '17'
-
-      - name: Setup Flutter
-        uses: subosito/flutter-action@v2
-        with:
-          flutter-version: '3.32.7'
-          channel: stable
-
-      - name: Flutter Doctor
-        run: flutter doctor
-
-      - name: Get Dependencies
-        run: flutter pub get
-
-      - name: Build APK (Release)
-        run: flutter build apk --release
-
-      - name: Build App Bundle (Release)
-        run: flutter build appbundle
-
-      - name: Upload APK Artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: android-apk
-          path: build/app/outputs/flutter-apk/app-release.apk
-
-      - name: Upload App Bundle Artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: android-bundle
-          path: build/app/outputs/bundle/release/app-release.aab
-
   build-windows:
     name: Build Windows
     runs-on: windows-latest
@@ -79,7 +34,10 @@ jobs:
       - name: Package Windows Build (Zip)
         shell: pwsh
         run: |
-          Compress-Archive -Path build\windows\x64\runner\Release\* -DestinationPath build\windows\quirzy-windows-x64.zip
+          # Copy only necessary files to a temporary folder for zipping
+          New-Item -ItemType Directory -Force -Path build\windows\release_pkg
+          Copy-Item -Path build\windows\x64\runner\Release\* -Destination build\windows\release_pkg -Recurve
+          Compress-Archive -Path build\windows\release_pkg\* -DestinationPath build\windows\quirzy-windows-x64.zip
 
       - name: Upload Windows Artifact
         uses: actions/upload-artifact@v4
@@ -89,30 +47,22 @@ jobs:
 
   create-release:
     name: Create GitHub Release
-    needs: [build-android, build-windows]
+    needs: build-windows
     runs-on: ubuntu-latest
     permissions:
       contents: write
     steps:
-      - name: Checkout Repository
-        uses: actions/checkout@v4
-
-      - name: Download All Artifacts
+      - name: Download Windows Artifact
         uses: actions/download-artifact@v4
         with:
-          path: artifacts
-
-      - name: Move Artifacts to Release Directory
-        run: |
-          mkdir -p release
-          cp artifacts/android-apk/app-release.apk release/quirzy-android-release.apk
-          cp artifacts/android-bundle/app-release.aab release/quirzy-android-release.aab
-          cp artifacts/windows-release/quirzy-windows-x64.zip release/quirzy-windows-x64.zip
+          name: windows-release
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v1
         with:
-          files: release/*
+          files: quirzy-windows-x64.zip
           generate_release_notes: true
+          name: "Quirzy Windows Release ${{ github.ref_name }}"
+          body: "Official Windows release for Quirzy."
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
