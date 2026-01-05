@@ -36,7 +36,7 @@ jobs:
         run: |
           # Copy only necessary files to a temporary folder for zipping
           New-Item -ItemType Directory -Force -Path build\windows\release_pkg
-          Copy-Item -Path build\windows\x64\runner\Release\* -Destination build\windows\release_pkg -Recurve
+          Copy-Item -Path build\windows\x64\runner\Release\* -Destination build\windows\release_pkg -Recurse
           Compress-Archive -Path build\windows\release_pkg\* -DestinationPath build\windows\quirzy-windows-x64.zip
 
       - name: Upload Windows Artifact
