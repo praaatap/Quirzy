@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:avatar_glow/avatar_glow.dart';
 import 'package:quirzy/features/quiz/screens/quiz_question_screen.dart';
+import '../../../../l10n/app_localizations.dart';
 
 class StartQuizScreen extends ConsumerStatefulWidget {
   final String quizTitle;
@@ -200,7 +201,10 @@ class _StartQuizScreenState extends ConsumerState<StartQuizScreen>
                               children: [
                                 _InfoChip(
                                   icon: Icons.help_outline_rounded,
-                                  label: '${widget.questions.length} Questions',
+                                  label: AppLocalizations.of(context)!
+                                      .questionsCountLabel(
+                                        widget.questions.length,
+                                      ),
                                   color: theme.colorScheme.primary,
                                 ),
                                 if (widget.difficulty != null)
@@ -213,7 +217,9 @@ class _StartQuizScreenState extends ConsumerState<StartQuizScreen>
                                   ),
                                 _InfoChip(
                                   icon: Icons.timer_outlined,
-                                  label: '30s per question',
+                                  label: AppLocalizations.of(
+                                    context,
+                                  )!.secondsPerQuestion,
                                   color: Colors.orange,
                                 ),
                               ],
@@ -238,20 +244,25 @@ class _StartQuizScreenState extends ConsumerState<StartQuizScreen>
                                 children: [
                                   _InstructionRow(
                                     icon: Icons.touch_app_rounded,
-                                    text: 'Tap an option to select your answer',
+                                    text: AppLocalizations.of(
+                                      context,
+                                    )!.tapToSelect,
                                     theme: theme,
                                   ),
                                   const SizedBox(height: 12),
                                   _InstructionRow(
                                     icon: Icons.timer_rounded,
-                                    text: 'Answer before the timer runs out',
+                                    text: AppLocalizations.of(
+                                      context,
+                                    )!.answerBeforeTimer,
                                     theme: theme,
                                   ),
                                   const SizedBox(height: 12),
                                   _InstructionRow(
                                     icon: Icons.navigate_next_rounded,
-                                    text:
-                                        'Tap Next to proceed to the next question',
+                                    text: AppLocalizations.of(
+                                      context,
+                                    )!.tapNextToProceed,
                                     theme: theme,
                                   ),
                                 ],
@@ -303,7 +314,7 @@ class _StartQuizScreenState extends ConsumerState<StartQuizScreen>
                                   mainAxisAlignment: MainAxisAlignment.center,
                                   children: [
                                     Text(
-                                      'Start Quiz',
+                                      "Start Quiz",
                                       style: GoogleFonts.poppins(
                                         fontSize: 18,
                                         fontWeight: FontWeight.w600,

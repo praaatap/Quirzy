@@ -11,9 +11,10 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:quirzy/features/quiz/screens/start_quiz_screen.dart';
 import 'package:quirzy/features/quiz/services/quiz_service.dart';
-import 'package:quirzy/features/flashcards/screens/flashcards_screen.dart';
+import 'package:quirzy/features/study/screens/study_input_screen.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:quirzy/core/services/ad_service.dart';
+import '../../../../l10n/app_localizations.dart';
 
 // ==========================================
 // REDESIGNED HOME SCREEN
@@ -34,6 +35,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
   bool _isGenerating = false;
   static const FlutterSecureStorage _storage = FlutterSecureStorage();
   String _userName = 'Quiz Master';
+  String? _photoUrl;
 
   // Cached instances for performance
   SharedPreferences? _prefs;
@@ -65,8 +67,12 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
 
   Future<void> _loadUserData() async {
     final name = await _storage.read(key: 'user_name');
-    if (mounted && name != null) {
-      setState(() => _userName = name);
+    final photoUrl = await _storage.read(key: 'user_photo_url');
+    if (mounted) {
+      setState(() {
+        if (name != null) _userName = name;
+        _photoUrl = photoUrl;
+      });
     }
   }
 
@@ -117,6 +123,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
   // --- SPEECH RECOGNITION ---
 
   Future<void> _listen() async {
+    final localizations = AppLocalizations.of(context)!;
     if (!_isListening) {
       bool available = await _speech.initialize(
         onStatus: (val) {
@@ -157,7 +164,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     Text(
-                      'Listening...',
+                      localizations.listening,
                       style: GoogleFonts.plusJakartaSans(
                         fontSize: 24,
                         fontWeight: FontWeight.bold,
@@ -166,7 +173,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                     ),
                     const SizedBox(height: 8),
                     Text(
-                      _lastWords.isEmpty ? 'Say your topic' : _lastWords,
+                      _lastWords.isEmpty
+                          ? localizations.sayYourTopic
+                          : _lastWords,
                       textAlign: TextAlign.center,
                       style: GoogleFonts.plusJakartaSans(
                         fontSize: 16,
@@ -248,7 +257,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
       } else {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Speech recognition not available')),
+            SnackBar(content: Text(localizations.speechNotAvailable)),
           );
         }
       }
@@ -263,13 +272,14 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
   // --- QUIZ GENERATION FLOW ---
 
   void _handleGenerate() {
+    final localizations = AppLocalizations.of(context)!;
     final topic = _topicController.text.trim();
     if (topic.isEmpty) {
       HapticFeedback.heavyImpact();
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
-            'Please enter a topic first',
+            localizations.pleaseEnterTopic,
             style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w600),
           ),
           backgroundColor: primaryColor,
@@ -399,7 +409,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
 
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Failed to generate quiz: $e'),
+            content: Text(
+              '${AppLocalizations.of(context)!.failedToGenerate}$e',
+            ),
             backgroundColor: Colors.red,
           ),
         );
@@ -477,6 +489,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
   }
 
   Widget _buildAppBar(bool isDark, Color textMain, Color textSub) {
+    final localizations = AppLocalizations.of(context)!;
     return Padding(
       padding: const EdgeInsets.fromLTRB(24, 16, 24, 8),
       child: Row(
@@ -502,23 +515,48 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                     ),
                   ],
                 ),
-                child: Center(
-                  child: Text(
-                    _userName.isNotEmpty ? _userName[0].toUpperCase() : 'Q',
-                    style: GoogleFonts.plusJakartaSans(
-                      fontSize: 22,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.white,
-                    ),
-                  ),
-                ),
+                child: _photoUrl != null
+                    ? ClipOval(
+                        child: Image.network(
+                          _photoUrl!,
+                          width: 46,
+                          height: 46,
+                          fit: BoxFit.cover,
+                          errorBuilder: (context, error, stackTrace) {
+                            return Center(
+                              child: Text(
+                                _userName.isNotEmpty
+                                    ? _userName[0].toUpperCase()
+                                    : 'Q',
+                                style: GoogleFonts.plusJakartaSans(
+                                  fontSize: 22,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.white,
+                                ),
+                              ),
+                            );
+                          },
+                        ),
+                      )
+                    : Center(
+                        child: Text(
+                          _userName.isNotEmpty
+                              ? _userName[0].toUpperCase()
+                              : 'Q',
+                          style: GoogleFonts.plusJakartaSans(
+                            fontSize: 22,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white,
+                          ),
+                        ),
+                      ),
               ),
               const SizedBox(width: 14),
               Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'Hello,',
+                    _getGreeting(),
                     style: GoogleFonts.plusJakartaSans(
                       fontSize: 13,
                       fontWeight: FontWeight.w500,
@@ -567,8 +605,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                 const SizedBox(width: 6),
                 Text(
                   AdService().isLimitReached()
-                      ? 'Ads'
-                      : '${AdService().getRemainingFreeQuizzes()} Free',
+                      ? localizations.adsLabel
+                      : '${AdService().getRemainingFreeQuizzes()} ${localizations.freeLabel}',
                   style: GoogleFonts.plusJakartaSans(
                     fontSize: 14,
                     fontWeight: FontWeight.bold,
@@ -589,6 +627,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
     Color textMain,
     Color textSub,
   ) {
+    final localizations = AppLocalizations.of(context)!;
     return Padding(
       padding: const EdgeInsets.fromLTRB(24, 24, 24, 24),
       child: Column(
@@ -649,9 +688,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                     letterSpacing: -0.5,
                   ),
                   children: [
-                    const TextSpan(text: 'What do you want to\n'),
+                    TextSpan(text: localizations.homeTitle1),
                     TextSpan(
-                      text: 'learn today?',
+                      text: localizations.homeTitle2,
                       style: TextStyle(
                         color: isDark ? Colors.white : primaryColor,
                       ),
@@ -669,9 +708,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
 
   String _getGreeting() {
     final hour = DateTime.now().hour;
-    if (hour < 12) return 'Good Morning 👋';
-    if (hour < 17) return 'Good Afternoon 👋';
-    return 'Good Evening 👋';
+    final localizations = AppLocalizations.of(context)!;
+    if (hour < 12) return localizations.greetingMorning;
+    if (hour < 17) return localizations.greetingAfternoon;
+    return localizations.greetingEvening;
   }
 
   void _handleQuickAction(String label) {
@@ -686,7 +726,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
       _inputFocusNode.requestFocus();
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Enter a topic for a deep dive!'),
+          content: Text(AppLocalizations.of(context)!.enterTopicDeepDive),
           backgroundColor: primaryColor,
           duration: const Duration(seconds: 1),
         ),
@@ -694,31 +734,36 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
     } else if (label == 'Study') {
       Navigator.push(
         context,
-        MaterialPageRoute(builder: (context) => const FlashcardsScreen()),
+        MaterialPageRoute(builder: (context) => const StudyInputScreen()),
       );
     }
   }
 
   Widget _buildQuickActions(bool isDark, Color surfaceColor, Color textSub) {
+    final localizations = AppLocalizations.of(context)!;
     final quickActions = [
       {
         'icon': Icons.auto_awesome_rounded,
-        'label': 'AI Gen',
+        'label': localizations.actionAIGen,
+        'key': 'AI Gen',
         'color': const Color(0xFFEC4899),
       },
       {
         'icon': Icons.bolt_rounded,
-        'label': 'Quick',
+        'label': localizations.actionQuick,
+        'key': 'Quick',
         'color': const Color(0xFFF59E0B),
       },
       {
         'icon': Icons.psychology_rounded,
-        'label': 'Deep',
+        'label': localizations.actionDeep,
+        'key': 'Deep',
         'color': primaryColor,
       },
       {
         'icon': Icons.school_rounded,
-        'label': 'Study',
+        'label': localizations.actionStudy,
+        'key': 'Study',
         'color': const Color(0xFF10B981),
       },
     ];
@@ -730,11 +775,12 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
         children: quickActions.asMap().entries.map((entry) {
           final delay = entry.key * 100;
           final label = entry.value['label'] as String;
+          final key = entry.value['key'] as String;
 
           return GestureDetector(
                 onTap: () {
                   HapticFeedback.lightImpact();
-                  _handleQuickAction(label);
+                  _handleQuickAction(key);
                 },
                 child: Column(
                   children: [
@@ -789,6 +835,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
     Color textMain,
     Color textSub,
   ) {
+    final localizations = AppLocalizations.of(context)!;
     return Padding(
       padding: const EdgeInsets.fromLTRB(24, 32, 24, 16),
       child: Column(
@@ -799,7 +846,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
               Icon(Icons.edit_note_rounded, color: primaryColor, size: 22),
               const SizedBox(width: 8),
               Text(
-                'Create from topic',
+                localizations.createFromTopic,
                 style: GoogleFonts.plusJakartaSans(
                   fontSize: 16,
                   fontWeight: FontWeight.bold,
@@ -822,7 +869,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
             decoration: InputDecoration(
               filled: true,
               fillColor: isDark ? surfaceColor : Colors.white,
-              hintText: "Enter a topic (e.g., 'Photosynthesis')",
+              hintText: localizations.enterTopicHint,
               hintStyle: GoogleFonts.plusJakartaSans(
                 fontSize: 15,
                 color: isDark ? Colors.white60 : textSub.withOpacity(0.6),
@@ -913,7 +960,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                         ),
                         const SizedBox(width: 10),
                         Text(
-                          'Generate Quiz',
+                          AppLocalizations.of(context)!.generateQuizButton,
                           style: GoogleFonts.plusJakartaSans(
                             fontSize: 16,
                             fontWeight: FontWeight.bold,
@@ -960,8 +1007,22 @@ class _QuizConfigSheetState extends State<_QuizConfigSheet> {
 
   static const primaryColor = Color(0xFF5B13EC);
 
+  String _getLocalizedDifficulty(BuildContext context, String difficulty) {
+    switch (difficulty) {
+      case 'Easy':
+        return AppLocalizations.of(context)!.difficultyEasy;
+      case 'Medium':
+        return AppLocalizations.of(context)!.difficultyMedium;
+      case 'Hard':
+        return AppLocalizations.of(context)!.difficultyHard;
+      default:
+        return difficulty;
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
+    final localizations = AppLocalizations.of(context)!;
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final bgColor = isDark ? const Color(0xFF0F0F0F) : Colors.white;
     final textColor = isDark ? Colors.white : const Color(0xFF1E293B);
@@ -988,7 +1049,7 @@ class _QuizConfigSheetState extends State<_QuizConfigSheet> {
           ),
           const SizedBox(height: 24),
           Text(
-            'Configure Quiz',
+            localizations.configureQuizTitle,
             style: GoogleFonts.plusJakartaSans(
               fontSize: 22,
               fontWeight: FontWeight.bold,
@@ -997,7 +1058,7 @@ class _QuizConfigSheetState extends State<_QuizConfigSheet> {
           ),
           const SizedBox(height: 8),
           Text(
-            'Topic: ${widget.topic}',
+            '${localizations.topicLabel}: ${widget.topic}',
             style: GoogleFonts.plusJakartaSans(
               fontSize: 14,
               color: isDark ? Colors.white60 : Colors.black54,
@@ -1008,7 +1069,7 @@ class _QuizConfigSheetState extends State<_QuizConfigSheet> {
 
           // Difficulty Selector
           Text(
-            'Difficulty',
+            localizations.difficultyLabel,
             style: GoogleFonts.plusJakartaSans(
               fontSize: 16,
               fontWeight: FontWeight.bold,
@@ -1016,44 +1077,54 @@ class _QuizConfigSheetState extends State<_QuizConfigSheet> {
             ),
           ),
           const SizedBox(height: 12),
-          Row(
-            children: _difficulties.map((diff) {
-              final isSelected = _difficulty == diff;
-              return Expanded(
-                child: GestureDetector(
-                  onTap: () => setState(() => _difficulty = diff),
-                  child: Container(
-                    margin: const EdgeInsets.only(right: 12),
-                    padding: const EdgeInsets.symmetric(vertical: 12),
-                    decoration: BoxDecoration(
-                      color: isSelected
-                          ? primaryColor
-                          : (isDark ? Colors.white10 : Colors.grey.shade100),
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(
-                        color: isSelected ? primaryColor : Colors.transparent,
-                      ),
-                    ),
-                    alignment: Alignment.center,
-                    child: Text(
-                      diff,
-                      style: GoogleFonts.plusJakartaSans(
-                        fontSize: 14,
-                        fontWeight: FontWeight.bold,
-                        color: isSelected ? Colors.white : textColor,
-                      ),
+          SizedBox(
+            width: double.infinity,
+            child: SegmentedButton<String>(
+              segments: _difficulties.map((diff) {
+                return ButtonSegment<String>(
+                  value: diff,
+                  label: Text(
+                    _getLocalizedDifficulty(context, diff),
+                    style: GoogleFonts.plusJakartaSans(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
                     ),
                   ),
-                ),
-              );
-            }).toList(),
+                );
+              }).toList(),
+              selected: {_difficulty},
+              onSelectionChanged: (Set<String> newSelection) {
+                setState(() {
+                  _difficulty = newSelection.first;
+                });
+              },
+              style: ButtonStyle(
+                backgroundColor: WidgetStateProperty.resolveWith<Color>((
+                  Set<WidgetState> states,
+                ) {
+                  if (states.contains(WidgetState.selected)) {
+                    return primaryColor;
+                  }
+                  return isDark ? Colors.white10 : Colors.grey.shade100;
+                }),
+                foregroundColor: WidgetStateProperty.resolveWith<Color>((
+                  Set<WidgetState> states,
+                ) {
+                  if (states.contains(WidgetState.selected)) {
+                    return Colors.white;
+                  }
+                  return textColor;
+                }),
+              ),
+              showSelectedIcon: false,
+            ),
           ),
 
           const SizedBox(height: 24),
 
           // Question Count Selector
           Text(
-            'Number of Questions',
+            localizations.questionCountLabel,
             style: GoogleFonts.plusJakartaSans(
               fontSize: 16,
               fontWeight: FontWeight.bold,
@@ -1061,36 +1132,47 @@ class _QuizConfigSheetState extends State<_QuizConfigSheet> {
             ),
           ),
           const SizedBox(height: 12),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: _counts.map((count) {
-              final isSelected = _questionCount == count;
-              return GestureDetector(
-                onTap: () => setState(() => _questionCount = count),
-                child: Container(
-                  width: 60,
-                  padding: const EdgeInsets.symmetric(vertical: 12),
-                  decoration: BoxDecoration(
-                    color: isSelected
-                        ? primaryColor
-                        : (isDark ? Colors.white10 : Colors.grey.shade100),
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(
-                      color: isSelected ? primaryColor : Colors.transparent,
-                    ),
-                  ),
-                  alignment: Alignment.center,
-                  child: Text(
+          SizedBox(
+            width: double.infinity,
+            child: SegmentedButton<int>(
+              segments: _counts.map((count) {
+                return ButtonSegment<int>(
+                  value: count,
+                  label: Text(
                     count.toString(),
                     style: GoogleFonts.plusJakartaSans(
-                      fontSize: 14,
-                      fontWeight: FontWeight.bold,
-                      color: isSelected ? Colors.white : textColor,
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
                     ),
                   ),
-                ),
-              );
-            }).toList(),
+                );
+              }).toList(),
+              selected: {_questionCount},
+              onSelectionChanged: (Set<int> newSelection) {
+                setState(() {
+                  _questionCount = newSelection.first;
+                });
+              },
+              style: ButtonStyle(
+                backgroundColor: WidgetStateProperty.resolveWith<Color>((
+                  Set<WidgetState> states,
+                ) {
+                  if (states.contains(WidgetState.selected)) {
+                    return primaryColor;
+                  }
+                  return isDark ? Colors.white10 : Colors.grey.shade100;
+                }),
+                foregroundColor: WidgetStateProperty.resolveWith<Color>((
+                  Set<WidgetState> states,
+                ) {
+                  if (states.contains(WidgetState.selected)) {
+                    return Colors.white;
+                  }
+                  return textColor;
+                }),
+              ),
+              showSelectedIcon: false,
+            ),
           ),
 
           const SizedBox(height: 40),
@@ -1109,7 +1191,7 @@ class _QuizConfigSheetState extends State<_QuizConfigSheet> {
                 elevation: 4,
               ),
               child: Text(
-                'Start Generating',
+                localizations.startGeneratingButton,
                 style: GoogleFonts.plusJakartaSans(
                   fontSize: 16,
                   fontWeight: FontWeight.bold,

@@ -56,23 +56,24 @@ class GamificationState {
 }
 
 /// Gamification Notifier - Manages XP, ranks, streaks, and achievements
-class GamificationNotifier extends StateNotifier<GamificationState> {
+class GamificationNotifier extends Notifier<GamificationState> {
   final RankService _rankService = RankService();
   final DailyStreakService _streakService = DailyStreakService();
 
-  GamificationNotifier()
-    : super(
-        GamificationState(
-          currentRank: RankService.allRanks.first,
-          totalXP: 0,
-          progressToNextRank: 0,
-          xpToNextRank: 100,
-          currentStreak: 0,
-          longestStreak: 0,
-          isLoading: true,
-        ),
-      ) {
+  @override
+  GamificationState build() {
+    // Initialize services automatically
     _init();
+
+    return GamificationState(
+      currentRank: RankService.allRanks.first,
+      totalXP: 0,
+      progressToNextRank: 0,
+      xpToNextRank: 100,
+      currentStreak: 0,
+      longestStreak: 0,
+      isLoading: true,
+    );
   }
 
   Future<void> _init() async {
@@ -194,6 +195,6 @@ class GamificationNotifier extends StateNotifier<GamificationState> {
 
 /// Provider for gamification
 final gamificationProvider =
-    StateNotifierProvider<GamificationNotifier, GamificationState>(
-      (ref) => GamificationNotifier(),
+    NotifierProvider<GamificationNotifier, GamificationState>(
+      GamificationNotifier.new,
     );

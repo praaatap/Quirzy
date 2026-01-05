@@ -18,6 +18,7 @@ class UserModel {
   final String? email;
   final String? username;
   final String? token;
+  final String? photoUrl;
   final XFile? profileImage;
 
   const UserModel({
@@ -25,6 +26,7 @@ class UserModel {
     this.email,
     this.username,
     this.token,
+    this.photoUrl,
     this.profileImage,
   });
 
@@ -35,12 +37,19 @@ class UserModel {
       email: json['email'] as String?,
       username: json['name'] as String? ?? json['username'] as String?,
       token: json['token'] as String?,
+      photoUrl: json['photoUrl'] as String?,
     );
   }
 
   /// Convert UserModel to JSON
   Map<String, dynamic> toJson() {
-    return {'id': id, 'email': email, 'username': username, 'token': token};
+    return {
+      'id': id,
+      'email': email,
+      'username': username,
+      'token': token,
+      'photoUrl': photoUrl,
+    };
   }
 
   /// Create a copy with updated fields
@@ -49,6 +58,7 @@ class UserModel {
     String? email,
     String? username,
     String? token,
+    String? photoUrl,
     XFile? profileImage,
   }) {
     return UserModel(
@@ -56,6 +66,7 @@ class UserModel {
       email: email ?? this.email,
       username: username ?? this.username,
       token: token ?? this.token,
+      photoUrl: photoUrl ?? this.photoUrl,
       profileImage: profileImage ?? this.profileImage,
     );
   }
@@ -65,6 +76,6 @@ class UserModel {
 
   @override
   String toString() {
-    return 'UserModel(id: $id, email: $email, username: $username, hasToken: ${token != null})';
+    return 'UserModel(id: $id, email: $email, username: $username, photoUrl: $photoUrl, hasToken: ${token != null})';
   }
 }

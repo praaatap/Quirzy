@@ -7,6 +7,9 @@ import 'package:quirzy/features/settings/providers/settings_provider.dart';
 import 'package:quirzy/core/widgets/app/app_widgets.dart';
 import 'package:quirzy/routes/router.dart';
 
+import 'package:flutter_localizations/flutter_localizations.dart';
+import 'l10n/app_localizations.dart';
+
 class QuirzyApp extends ConsumerWidget {
   const QuirzyApp({super.key});
 
@@ -20,6 +23,7 @@ class QuirzyApp extends ConsumerWidget {
       settingsProvider.select((s) => s.useSystemTheme),
     );
     final darkMode = ref.watch(settingsProvider.select((s) => s.darkMode));
+    final currentLocale = ref.watch(settingsProvider.select((s) => s.locale));
 
     final themeMode = useSystemTheme
         ? ThemeMode.system
@@ -28,6 +32,16 @@ class QuirzyApp extends ConsumerWidget {
     return MaterialApp.router(
       title: 'Quirzy',
       debugShowCheckedModeBanner: false,
+
+      // Localization
+      localizationsDelegates: [
+        AppLocalizations.delegate,
+        GlobalMaterialLocalizations.delegate,
+        GlobalWidgetsLocalizations.delegate,
+        GlobalCupertinoLocalizations.delegate,
+      ],
+      supportedLocales: AppLocalizations.supportedLocales,
+      locale: currentLocale,
 
       theme: AppTheme.light(),
       darkTheme: AppTheme.dark(),

@@ -7,6 +7,8 @@ import 'package:quirzy/providers/quiz_history_provider.dart';
 import 'package:quirzy/features/history/screens/quiz_stats_screen.dart';
 import 'package:quirzy/core/widgets/loading/shimmer_loading.dart';
 import 'package:flutter_animate/flutter_animate.dart';
+import 'package:intl/intl.dart';
+import '../../../../l10n/app_localizations.dart';
 
 // ==========================================
 // REDESIGNED HISTORY SCREEN
@@ -167,7 +169,9 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen>
                                         ),
                                     const SizedBox(height: 16),
                                     Text(
-                                      "Progress & Analytics\nComing Soon",
+                                      AppLocalizations.of(
+                                        context,
+                                      )!.progressSubtitle,
                                       textAlign: TextAlign.center,
                                       style: GoogleFonts.plusJakartaSans(
                                         color: textSub,
@@ -221,7 +225,7 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen>
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Text(
-            'History',
+            AppLocalizations.of(context)!.historyTitle,
             style: GoogleFonts.plusJakartaSans(
               fontSize: 18,
               fontWeight: FontWeight.bold,
@@ -240,6 +244,7 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen>
     Color primaryColor,
     bool isDark,
   ) {
+    final localizations = AppLocalizations.of(context)!;
     return Padding(
       padding: const EdgeInsets.fromLTRB(24, 8, 24, 24),
       child: Column(
@@ -255,9 +260,9 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen>
                     letterSpacing: -0.5,
                   ),
                   children: [
-                    const TextSpan(text: 'Your Learning\n'),
+                    TextSpan(text: localizations.yourLearningJourney1),
                     TextSpan(
-                      text: 'Journey',
+                      text: localizations.yourLearningJourney2,
                       style: TextStyle(
                         color: isDark ? Colors.white : primaryColor,
                       ),
@@ -270,7 +275,7 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen>
               .slideX(begin: -0.1, end: 0, curve: Curves.easeOut),
           const SizedBox(height: 8),
           Text(
-                'Review your past achievements and keep growing.',
+                localizations.reviewPastAchievements,
                 style: GoogleFonts.plusJakartaSans(
                   fontSize: 14,
                   fontWeight: FontWeight.w500,
@@ -286,7 +291,12 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen>
   }
 
   Widget _buildTabBar(bool isDark, Color primaryColor, Color textSub) {
-    final tabs = ['Quizzes', 'Progress', 'Stats'];
+    final localizations = AppLocalizations.of(context)!;
+    final tabs = [
+      localizations.tabQuizzes,
+      localizations.tabProgress,
+      localizations.tabStats,
+    ];
 
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 24),
@@ -359,6 +369,7 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen>
     Color textMain,
     Color textSub,
   ) {
+    final localizations = AppLocalizations.of(context)!;
     final quizzes = ref.watch(quizHistoryProvider.select((s) => s.quizzes));
     final totalQuizzes = quizzes.length;
 
@@ -424,7 +435,7 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen>
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       Text(
-                        'TOTAL QUIZZES',
+                        localizations.totalQuizzesLabel,
                         style: GoogleFonts.plusJakartaSans(
                           fontSize: 10,
                           fontWeight: FontWeight.bold,
@@ -447,7 +458,7 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen>
                           Padding(
                             padding: const EdgeInsets.only(bottom: 6),
                             child: Text(
-                              '+$thisWeekCount this week',
+                              '+$thisWeekCount ${localizations.thisWeekLabel}',
                               style: GoogleFonts.plusJakartaSans(
                                 fontSize: 10,
                                 fontWeight: FontWeight.w500,
@@ -494,7 +505,7 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen>
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Text(
-                    'AVG. SCORE',
+                    localizations.avgScoreLabel,
                     style: GoogleFonts.plusJakartaSans(
                       fontSize: 10,
                       fontWeight: FontWeight.bold,
@@ -542,7 +553,7 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen>
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           Text(
-            'Recent History',
+            AppLocalizations.of(context)!.recentHistoryLabel,
             style: GoogleFonts.plusJakartaSans(
               fontSize: 18,
               fontWeight: FontWeight.bold,
@@ -552,7 +563,7 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen>
           GestureDetector(
             onTap: () => HapticFeedback.lightImpact(),
             child: Text(
-              'View All',
+              AppLocalizations.of(context)!.viewAllLabel,
               style: GoogleFonts.plusJakartaSans(
                 fontSize: 14,
                 fontWeight: FontWeight.bold,
@@ -621,7 +632,9 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen>
     Color primaryColor,
     Color primaryLight,
   ) {
-    final title = quiz['quizTitle'] ?? quiz['title'] ?? 'Untitled Quiz';
+    final localizations = AppLocalizations.of(context)!;
+    final title =
+        quiz['quizTitle'] ?? quiz['title'] ?? localizations.untitledQuiz;
     final totalQuestions = quiz['totalQuestions'] ?? quiz['questionCount'] ?? 0;
     final score = quiz['score'] ?? 0;
     final createdAt = quiz['createdAt'] != null
@@ -637,11 +650,13 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen>
     final now = DateTime.now();
     String dateText;
     if (_isSameDay(createdAt, now)) {
-      dateText = 'Today';
+      dateText = localizations.dateToday;
     } else if (_isSameDay(createdAt, now.subtract(const Duration(days: 1)))) {
-      dateText = 'Yesterday';
+      dateText = localizations.dateYesterday;
     } else {
-      dateText = '${_getMonthName(createdAt.month)} ${createdAt.day}';
+      // Use DateFormat from intl
+      final locale = Localizations.localeOf(context).toString();
+      dateText = '${DateFormat.MMM(locale).format(createdAt)} ${createdAt.day}';
     }
 
     // Colors
@@ -740,7 +755,7 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen>
                                   ),
                                   child: Text(
                                     isIncomplete
-                                        ? 'Incomplete'
+                                        ? localizations.incompleteLabel
                                         : '$percentage%',
                                     style: GoogleFonts.plusJakartaSans(
                                       fontSize: 12,
@@ -781,8 +796,10 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen>
                               children: [
                                 Text(
                                   isIncomplete
-                                      ? 'Continue Quiz'
-                                      : '$totalQuestions Questions',
+                                      ? localizations.continueQuizLabel
+                                      : localizations.questionsCountLabel(
+                                          totalQuestions,
+                                        ),
                                   style: GoogleFonts.plusJakartaSans(
                                     fontSize: 12,
                                     fontWeight: FontWeight.w600,
@@ -791,7 +808,7 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen>
                                 ),
                                 const Spacer(),
                                 Text(
-                                  'View Stats',
+                                  localizations.viewStatsLabel,
                                   style: GoogleFonts.plusJakartaSans(
                                     fontSize: 12,
                                     fontWeight: FontWeight.w600,
@@ -823,23 +840,7 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen>
     return a.year == b.year && a.month == b.month && a.day == b.day;
   }
 
-  String _getMonthName(int month) {
-    const months = [
-      'Jan',
-      'Feb',
-      'Mar',
-      'Apr',
-      'May',
-      'Jun',
-      'Jul',
-      'Aug',
-      'Sep',
-      'Oct',
-      'Nov',
-      'Dec',
-    ];
-    return months[month - 1];
-  }
+  // _getMonthName was removed as it is replaced by DateFormat
 
   (Color, Color) _getScoreColors(
     int percentage,
@@ -886,6 +887,7 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen>
     Color primaryColor,
     Color primaryLight,
   ) {
+    final localizations = AppLocalizations.of(context)!;
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -900,7 +902,7 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen>
           ),
           const SizedBox(height: 24),
           Text(
-            'No Quizzes Yet',
+            localizations.noHistoryTitle,
             style: GoogleFonts.plusJakartaSans(
               fontSize: 20,
               fontWeight: FontWeight.bold,
@@ -911,7 +913,7 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen>
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 48),
             child: Text(
-              'It looks a bit quiet here. Create your first quiz from your notes to get started!',
+              localizations.noHistorySubtitle,
               textAlign: TextAlign.center,
               style: GoogleFonts.plusJakartaSans(
                 fontSize: 14,

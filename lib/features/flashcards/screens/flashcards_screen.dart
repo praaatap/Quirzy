@@ -10,6 +10,7 @@ import 'package:quirzy/features/quiz/screens/quiz_generation_loading_screen.dart
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:quirzy/core/services/ad_service.dart';
+import '../../../../l10n/app_localizations.dart';
 
 // ==========================================
 // REDESIGNED FLASHCARDS SCREEN
@@ -37,6 +38,7 @@ class _FlashcardsScreenState extends ConsumerState<FlashcardsScreen>
   int _selectedTab = 0;
   final FlutterSecureStorage _storage = const FlutterSecureStorage();
   String _userName = 'Quiz Master';
+  String? _photoUrl;
 
   // Static colors
   static const primaryColor = Color(0xFF5B13EC);
@@ -56,8 +58,12 @@ class _FlashcardsScreenState extends ConsumerState<FlashcardsScreen>
 
   Future<void> _loadUserData() async {
     final name = await _storage.read(key: 'user_name');
-    if (mounted && name != null) {
-      setState(() => _userName = name);
+    final photoUrl = await _storage.read(key: 'user_photo_url');
+    if (mounted) {
+      setState(() {
+        if (name != null) _userName = name;
+        _photoUrl = photoUrl;
+      });
     }
   }
 
@@ -688,23 +694,48 @@ class _FlashcardsScreenState extends ConsumerState<FlashcardsScreen>
                     ),
                   ],
                 ),
-                child: Center(
-                  child: Text(
-                    _userName.isNotEmpty ? _userName[0].toUpperCase() : 'Q',
-                    style: GoogleFonts.plusJakartaSans(
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.white,
-                    ),
-                  ),
-                ),
+                child: _photoUrl != null
+                    ? ClipOval(
+                        child: Image.network(
+                          _photoUrl!,
+                          width: 44,
+                          height: 44,
+                          fit: BoxFit.cover,
+                          errorBuilder: (context, error, stackTrace) {
+                            return Center(
+                              child: Text(
+                                _userName.isNotEmpty
+                                    ? _userName[0].toUpperCase()
+                                    : 'Q',
+                                style: GoogleFonts.plusJakartaSans(
+                                  fontSize: 20,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.white,
+                                ),
+                              ),
+                            );
+                          },
+                        ),
+                      )
+                    : Center(
+                        child: Text(
+                          _userName.isNotEmpty
+                              ? _userName[0].toUpperCase()
+                              : 'Q',
+                          style: GoogleFonts.plusJakartaSans(
+                            fontSize: 20,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white,
+                          ),
+                        ),
+                      ),
               ),
               const SizedBox(width: 12),
               Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'Flashcards',
+                    AppLocalizations.of(context)!.flashcardsTitle,
                     style: GoogleFonts.plusJakartaSans(
                       fontSize: 20,
                       fontWeight: FontWeight.bold,
@@ -713,7 +744,7 @@ class _FlashcardsScreenState extends ConsumerState<FlashcardsScreen>
                     ),
                   ),
                   Text(
-                    'Your Collection',
+                    AppLocalizations.of(context)!.yourCollection,
                     style: GoogleFonts.plusJakartaSans(
                       fontSize: 12,
                       fontWeight: FontWeight.w500,
@@ -745,9 +776,9 @@ class _FlashcardsScreenState extends ConsumerState<FlashcardsScreen>
                     letterSpacing: -0.5,
                   ),
                   children: [
-                    const TextSpan(text: 'Study Smarter\n'),
+                    TextSpan(text: AppLocalizations.of(context)!.studySmarter1),
                     TextSpan(
-                      text: 'With AI',
+                      text: AppLocalizations.of(context)!.studySmarter2,
                       style: TextStyle(
                         color: isDark ? Colors.white : primaryColor,
                       ),
@@ -760,7 +791,7 @@ class _FlashcardsScreenState extends ConsumerState<FlashcardsScreen>
               .slideY(begin: 0.2, end: 0, curve: Curves.easeOut),
           const SizedBox(height: 8),
           Text(
-            'Create and study flashcards powered by AI.',
+            AppLocalizations.of(context)!.studySmarterSubtitle,
             style: GoogleFonts.plusJakartaSans(
               fontSize: 14,
               fontWeight: FontWeight.w500,
@@ -788,7 +819,7 @@ class _FlashcardsScreenState extends ConsumerState<FlashcardsScreen>
               Icon(Icons.auto_awesome_rounded, color: primaryColor, size: 20),
               const SizedBox(width: 8),
               Text(
-                "What's the topic?",
+                AppLocalizations.of(context)!.whatsTheTopic,
                 style: GoogleFonts.plusJakartaSans(
                   fontSize: 16,
                   fontWeight: FontWeight.bold,

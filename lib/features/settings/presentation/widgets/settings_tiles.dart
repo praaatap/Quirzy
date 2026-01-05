@@ -133,6 +133,96 @@ class SettingsSwitchTile extends StatelessWidget {
 }
 
 // ==========================================
+// DROPDOWN TILE WIDGET (NEW)
+// ==========================================
+
+class SettingsDropdownTile extends StatelessWidget {
+  final ThemeData theme;
+  final IconData icon;
+  final String title;
+  final String subtitle;
+  final String value;
+  final List<String> items;
+  final ValueChanged<String?> onChanged;
+  final Color color;
+
+  const SettingsDropdownTile({
+    super.key,
+    required this.theme,
+    required this.icon,
+    required this.title,
+    required this.subtitle,
+    required this.value,
+    required this.items,
+    required this.onChanged,
+    required this.color,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.all(16),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(10),
+            decoration: BoxDecoration(
+              color: color.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Icon(icon, color: color, size: 24),
+          ),
+          const SizedBox(width: 16),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: GoogleFonts.poppins(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                    color: theme.colorScheme.onSurface,
+                  ),
+                ),
+                if (subtitle.isNotEmpty) ...[
+                  const SizedBox(height: 2),
+                  Text(
+                    subtitle,
+                    style: GoogleFonts.poppins(
+                      fontSize: 12,
+                      color: theme.colorScheme.onSurfaceVariant.withOpacity(
+                        0.7,
+                      ),
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ),
+          DropdownButton<String>(
+            value: value,
+            icon: Icon(
+              Icons.arrow_drop_down,
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
+            style: GoogleFonts.poppins(
+              color: theme.colorScheme.onSurface,
+              fontWeight: FontWeight.w600,
+            ),
+            underline: Container(height: 2, color: theme.colorScheme.primary),
+            onChanged: onChanged,
+            items: items.map<DropdownMenuItem<String>>((String value) {
+              return DropdownMenuItem<String>(value: value, child: Text(value));
+            }).toList(),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ==========================================
 // NAVIGATION TILE WIDGET
 // ==========================================
 

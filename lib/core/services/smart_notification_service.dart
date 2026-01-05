@@ -4,8 +4,6 @@ import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:timezone/data/latest_all.dart' as tz;
 import 'package:timezone/timezone.dart' as tz;
-import 'package:quirzy/core/services/offline_quiz_manager.dart';
-import 'package:quirzy/core/services/mistake_flashcard_service.dart';
 
 /// Smart Notification Service for User Retention
 ///
@@ -207,37 +205,43 @@ class SmartNotificationService {
             _engagementNotificationIdStart + notificationIndex;
         notificationIndex++;
 
-        await _notificationsPlugin.zonedSchedule(
-          notificationId,
-          content.title,
-          content.body,
-          scheduledDate,
-          NotificationDetails(
-            android: AndroidNotificationDetails(
-              'smart_reminders',
-              'Smart Study Reminders',
-              channelDescription:
-                  'Personalized study reminders based on your habits',
-              importance: Importance.high,
-              priority: Priority.high,
-              styleInformation: BigTextStyleInformation(content.body),
-              category: AndroidNotificationCategory.reminder,
-              color: const Color(0xFF5B13EC),
+        try {
+          await _notificationsPlugin.zonedSchedule(
+            notificationId,
+            content.title,
+            content.body,
+            scheduledDate,
+            NotificationDetails(
+              android: AndroidNotificationDetails(
+                'smart_reminders',
+                'Smart Study Reminders',
+                channelDescription:
+                    'Personalized study reminders based on your habits',
+                importance: Importance.high,
+                priority: Priority.high,
+                styleInformation: BigTextStyleInformation(content.body),
+                category: AndroidNotificationCategory.reminder,
+                color: const Color(0xFF5B13EC),
+              ),
+              iOS: const DarwinNotificationDetails(
+                presentAlert: true,
+                presentBadge: true,
+                presentSound: true,
+              ),
             ),
-            iOS: const DarwinNotificationDetails(
-              presentAlert: true,
-              presentBadge: true,
-              presentSound: true,
-            ),
-          ),
-          payload: content.payload,
-          matchDateTimeComponents: DateTimeComponents.dateAndTime,
-          androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
-        );
+            payload: content.payload,
+            matchDateTimeComponents: DateTimeComponents.dateAndTime,
+            androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
+          );
 
-        debugPrint(
-          '✅ Scheduled: ${content.title} at $scheduledDate (ID: $notificationId)',
-        );
+          debugPrint(
+            '✅ Scheduled: ${content.title} at $scheduledDate (ID: $notificationId)',
+          );
+        } catch (e) {
+          debugPrint(
+            '❌ Failed to schedule notification (likely exact alarm permission issue): $e',
+          );
+        }
       }
     }
   }
@@ -435,31 +439,35 @@ class SmartNotificationService {
       scheduledDate = scheduledDate.add(const Duration(days: 1));
     }
 
-    await _notificationsPlugin.zonedSchedule(
-      _streakReminderId,
-      '🔥 Don\'t Lose Your Streak!',
-      'You haven\'t studied today yet. Keep your streak alive before midnight!',
-      scheduledDate,
-      NotificationDetails(
-        android: AndroidNotificationDetails(
-          'streak_reminders',
-          'Streak Reminders',
-          channelDescription: 'Reminders to maintain your learning streak',
-          importance: Importance.max,
-          priority: Priority.max,
-          category: AndroidNotificationCategory.reminder,
-          color: const Color(0xFFFF6B00),
+    try {
+      await _notificationsPlugin.zonedSchedule(
+        _streakReminderId,
+        '🔥 Don\'t Lose Your Streak!',
+        'You haven\'t studied today yet. Keep your streak alive before midnight!',
+        scheduledDate,
+        NotificationDetails(
+          android: AndroidNotificationDetails(
+            'streak_reminders',
+            'Streak Reminders',
+            channelDescription: 'Reminders to maintain your learning streak',
+            importance: Importance.max,
+            priority: Priority.max,
+            category: AndroidNotificationCategory.reminder,
+            color: const Color(0xFFFF6B00),
+          ),
+          iOS: const DarwinNotificationDetails(
+            presentAlert: true,
+            presentBadge: true,
+            presentSound: true,
+          ),
         ),
-        iOS: const DarwinNotificationDetails(
-          presentAlert: true,
-          presentBadge: true,
-          presentSound: true,
-        ),
-      ),
-      payload: payloadStreak,
-      matchDateTimeComponents: DateTimeComponents.time,
-      androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
-    );
+        payload: payloadStreak,
+        matchDateTimeComponents: DateTimeComponents.time,
+        androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
+      );
+    } catch (e) {
+      debugPrint('❌ Failed to schedule streak reminder: $e');
+    }
 
     debugPrint('🔥 Streak reminder scheduled for $scheduledDate');
   }

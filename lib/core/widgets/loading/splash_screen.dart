@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:animated_text_kit/animated_text_kit.dart';
+
 import 'package:loading_animation_widget/loading_animation_widget.dart';
 
 class SplashScreen extends StatefulWidget {
@@ -91,30 +91,15 @@ class _SplashScreenState extends State<SplashScreen>
               ),
               const SizedBox(height: 48),
 
-              // Animated Text instead of static FadeTransition
-              SizedBox(
-                height: 30, // Fixed height to prevent layout jumps
-                child: DefaultTextStyle(
-                  style: const TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w500,
-                    color: Colors.white,
-                    letterSpacing: 0.5,
-                  ),
-                  child: AnimatedTextKit(
-                    animatedTexts: [
-                      TyperAnimatedText(
-                        'Please wait...',
-                        speed: const Duration(milliseconds: 100),
-                      ),
-                      TyperAnimatedText(
-                        'Getting things ready...',
-                        speed: const Duration(milliseconds: 80),
-                      ),
-                    ],
-                    repeatForever: true,
-                    pause: const Duration(milliseconds: 1000),
-                  ),
+              // Simple static text to prevent frame drops during initialization
+              Text(
+                'Warming up neurons...',
+                style: const TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w500,
+                  color: Colors.white,
+                  fontFamily: 'Poppins',
+                  letterSpacing: 0.5,
                 ),
               ),
 

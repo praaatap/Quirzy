@@ -31,7 +31,13 @@ class AuthRepository {
       if (isValid) {
         final email = await TokenStorage.getEmail() ?? '';
         final username = await TokenStorage.getName() ?? '';
-        return UserModel(email: email, username: username, token: token);
+        final photoUrl = await TokenStorage.getPhotoUrl();
+        return UserModel(
+          email: email,
+          username: username,
+          token: token,
+          photoUrl: photoUrl,
+        );
       } else {
         await logout();
         return null;
@@ -72,18 +78,27 @@ class AuthRepository {
         body: jsonEncode({'email': email, 'password': password}),
       );
 
+      final data = jsonDecode(response.body);
       if (response.statusCode == 200) {
-        final data = jsonDecode(response.body);
         final token = data['token'];
-        final username = data['name'] ?? email.split('@')[0];
+        final userData = data['user'];
+        final username =
+            userData['name'] ?? userData['username'] ?? email.split('@')[0];
+
+        // Retrieve photoUrl from local storage only
+        final photoUrl = await TokenStorage.getPhotoUrl();
 
         await TokenStorage.saveToken(token);
         await TokenStorage.saveEmail(email);
         await TokenStorage.saveName(username);
 
-        return UserModel(email: email, username: username, token: token);
+        return UserModel(
+          email: email,
+          username: username,
+          token: token,
+          photoUrl: photoUrl,
+        );
       } else {
-        final data = jsonDecode(response.body);
         throw Exception(data['error'] ?? 'Login failed');
       }
     } catch (e) {
@@ -107,17 +122,26 @@ class AuthRepository {
         }),
       );
 
+      final data = jsonDecode(response.body);
       if (response.statusCode == 200 || response.statusCode == 201) {
-        final data = jsonDecode(response.body);
         final token = data['token'];
+
+        // Generate a default avatar URL locally on the device
+        final photoUrl =
+            "https://api.dicebear.com/7.x/initials/svg?seed=$username&backgroundColor=5b13ec,9333ea&fontFamily=Arial,Sans-serif&fontWeight=700";
 
         await TokenStorage.saveToken(token);
         await TokenStorage.saveEmail(email);
         await TokenStorage.saveName(username);
+        await TokenStorage.savePhotoUrl(photoUrl); // Store in local storage
 
-        return UserModel(email: email, username: username, token: token);
+        return UserModel(
+          email: email,
+          username: username,
+          token: token,
+          photoUrl: photoUrl,
+        );
       } else {
-        final data = jsonDecode(response.body);
         throw Exception(data['error'] ?? 'Registration failed');
       }
     } catch (e) {
@@ -145,18 +169,30 @@ class AuthRepository {
         body: jsonEncode({'token': googleAuth.idToken}),
       );
 
+      final data = jsonDecode(response.body);
       if (response.statusCode == 200) {
-        final data = jsonDecode(response.body);
         final token = data['token'];
-        final username = user.displayName ?? user.email.split('@')[0];
+        final userData = data['user'];
+        final username =
+            userData['name'] ?? user.displayName ?? user.email.split('@')[0];
+
+        // Use Google's photoUrl and save it strictly in local storage
+        final photoUrl = user.photoUrl;
 
         await TokenStorage.saveToken(token);
         await TokenStorage.saveEmail(user.email);
         await TokenStorage.saveName(username);
+        if (photoUrl != null) {
+          await TokenStorage.savePhotoUrl(photoUrl);
+        }
 
-        return UserModel(email: user.email, username: username, token: token);
+        return UserModel(
+          email: user.email,
+          username: username,
+          token: token,
+          photoUrl: photoUrl,
+        );
       } else {
-        final data = jsonDecode(response.body);
         throw Exception(data['error'] ?? 'Google authenticate failed');
       }
     } catch (e) {

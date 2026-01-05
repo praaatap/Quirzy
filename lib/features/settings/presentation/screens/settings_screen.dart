@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:url_launcher/url_launcher.dart';
+import '../../../../l10n/app_localizations.dart';
 
 import 'package:quirzy/features/settings/services/user_data_service.dart';
 import '../../providers/settings_provider.dart';
@@ -221,7 +223,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 ),
                 const SizedBox(width: 14),
                 Text(
-                  'Settings',
+                  AppLocalizations.of(context)!.settingsTitle,
                   style: GoogleFonts.poppins(
                     fontWeight: FontWeight.bold,
                     fontSize: 26,
@@ -257,15 +259,15 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             Wrap(
               spacing: 8,
               runSpacing: 8,
-              children: const [
+              children: [
                 SettingsBadge(
                   icon: Icons.color_lens_rounded,
-                  label: 'Appearance',
+                  label: AppLocalizations.of(context)!.commonAppearance,
                   color: Colors.indigo,
                 ),
                 SettingsBadge(
                   icon: Icons.notifications_rounded,
-                  label: 'Alerts',
+                  label: AppLocalizations.of(context)!.commonNotifications,
                   color: Colors.orange,
                 ),
                 SettingsBadge(
@@ -296,12 +298,12 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
         child: SettingsSection(
           theme: theme,
           isDark: isDark,
-          title: 'Appearance',
+          title: AppLocalizations.of(context)!.commonAppearance,
           children: [
             SettingsSwitchTile(
               theme: theme,
               icon: Icons.dark_mode,
-              title: 'Dark Mode',
+              title: AppLocalizations.of(context)!.settingsDarkMode,
               subtitle: 'Use dark theme',
               value: settings.darkMode,
               color: Colors.indigo,
@@ -313,13 +315,19 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               height: 1,
               color: theme.colorScheme.outline.withOpacity(0.2),
             ),
-            SettingsNavigationTile(
+            SettingsDropdownTile(
               theme: theme,
               icon: Icons.language,
-              title: 'Language',
-              subtitle: settings.language,
+              title: AppLocalizations.of(context)!.commonLanguage,
+              subtitle: 'Select your preferred language',
+              value: settings.language,
+              items: const ['English', 'Hindi'],
               color: Colors.green,
-              onTap: () => showLanguageDialog(context, theme, ref),
+              onChanged: (String? newValue) {
+                if (newValue != null) {
+                  ref.read(settingsProvider.notifier).setLanguage(newValue);
+                }
+              },
             ),
           ],
         ),
@@ -332,7 +340,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
         child: SettingsSection(
           theme: theme,
           isDark: isDark,
-          title: 'Notifications',
+          title: AppLocalizations.of(context)!.commonNotifications,
           children: [
             SettingsSwitchTile(
               theme: theme,
@@ -422,6 +430,27 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                   ),
                 );
               },
+            ),
+          ],
+        ),
+      ),
+      const SizedBox(height: 20),
+
+      // Support Section
+      AnimatedSettingsWidget(
+        delay: 250,
+        child: SettingsSection(
+          theme: theme,
+          isDark: isDark,
+          title: AppLocalizations.of(context)!.commonSupport,
+          children: [
+            SettingsNavigationTile(
+              theme: theme,
+              icon: Icons.help_outline_rounded,
+              title: AppLocalizations.of(context)!.helpAndFeedback,
+              subtitle: 'Contact us for support',
+              color: Colors.pink,
+              onTap: () => _handleSupport(),
             ),
           ],
         ),
@@ -521,6 +550,23 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   // ==========================================
   // HANDLERS
   // ==========================================
+
+  Future<void> _handleSupport() async {
+    final Uri emailLaunchUri = Uri(
+      scheme: 'mailto',
+      path: 'ps9labs@gmail.com',
+      queryParameters: {'subject': 'Quirzy Help & Feedback'},
+    );
+    try {
+      await launchUrl(emailLaunchUri);
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Could not open email app: $e')));
+      }
+    }
+  }
 
   Future<void> _handleDownloadData() async {
     final handler = DataDownloadHandler(

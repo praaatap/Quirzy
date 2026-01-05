@@ -14,6 +14,8 @@ import 'package:quirzy/providers/tab_index_provider.dart';
 import 'package:quirzy/features/auth/presentation/screens/success_screen.dart';
 import 'package:quirzy/features/settings/presentation/screens/privacy_policy_screen.dart';
 import 'package:quirzy/core/services/notification_service.dart';
+import '../../../../l10n/app_localizations.dart';
+import 'package:quirzy/features/settings/providers/settings_provider.dart';
 
 class QuiryHome extends ConsumerStatefulWidget {
   const QuiryHome({super.key});
@@ -232,12 +234,16 @@ class _QuiryHomeState extends ConsumerState<QuiryHome>
     return ShowCaseWidget(
       builder: (showcaseContext) {
         // Trigger showcase on first build if policy not accepted
+        // Trigger showcase AFTER animation completes (1200ms + buffer)
+        // This prevents the showcase from highlighting the wrong position while the widget is sliding up
         if (!_hasShowcaseBeenShown && !_isPrivacyPolicyAccepted) {
           _hasShowcaseBeenShown = true;
           WidgetsBinding.instance.addPostFrameCallback((_) {
-            if (mounted) {
-              _triggerShowcase(showcaseContext);
-            }
+            Future.delayed(const Duration(milliseconds: 1500), () {
+              if (mounted && showcaseContext.mounted) {
+                _triggerShowcase(showcaseContext);
+              }
+            });
           });
         }
 
@@ -266,6 +272,11 @@ class _QuiryHomeState extends ConsumerState<QuiryHome>
                   padding: const EdgeInsets.symmetric(horizontal: 24.0),
                   child: Column(
                     children: [
+                      // Language Switcher
+                      Align(
+                        alignment: Alignment.topRight,
+                        child: _buildLanguageButton(isDark, ref),
+                      ),
                       const Spacer(flex: 1),
 
                       // --- HERO SECTION ---
@@ -287,7 +298,7 @@ class _QuiryHomeState extends ConsumerState<QuiryHome>
                           child: Column(
                             children: [
                               Text(
-                                "Unlock your potential\nwith Quirzy",
+                                AppLocalizations.of(context)!.welcomeTitle,
                                 textAlign: TextAlign.center,
                                 style: GoogleFonts.plusJakartaSans(
                                   fontSize: 32,
@@ -301,7 +312,7 @@ class _QuiryHomeState extends ConsumerState<QuiryHome>
                               ),
                               const SizedBox(height: 16),
                               Text(
-                                "Master any subject with smart, AI-generated quizzes tailored just for you.",
+                                AppLocalizations.of(context)!.welcomeSubtitle,
                                 textAlign: TextAlign.center,
                                 style: GoogleFonts.plusJakartaSans(
                                   fontSize: 16,
@@ -359,7 +370,9 @@ class _QuiryHomeState extends ConsumerState<QuiryHome>
                                           ),
                                           const SizedBox(width: 12),
                                           Text(
-                                            "Continue with Google",
+                                            AppLocalizations.of(
+                                              context,
+                                            )!.continueWithGoogle,
                                             style: GoogleFonts.plusJakartaSans(
                                               fontWeight: FontWeight.bold,
                                               fontSize: 16,
@@ -438,7 +451,7 @@ class _QuiryHomeState extends ConsumerState<QuiryHome>
                 child: Stack(
                   fit: StackFit.expand,
                   children: [
-                    Image.asset('assets/welcome.png', fit: BoxFit.cover),
+                    Image.asset('assets/welcome_brain.png', fit: BoxFit.cover),
                     Container(
                       decoration: BoxDecoration(
                         gradient: LinearGradient(
@@ -531,11 +544,36 @@ class _QuiryHomeState extends ConsumerState<QuiryHome>
     );
   }
 
+  Widget _buildLanguageButton(bool isDark, WidgetRef ref) {
+    final currentLang = ref.watch(settingsProvider.select((s) => s.language));
+    return Container(
+      decoration: BoxDecoration(
+        color: isDark
+            ? Colors.white.withOpacity(0.1)
+            : Colors.black.withOpacity(0.05),
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: IconButton(
+        icon: Text(
+          currentLang == 'English' ? 'EN' : 'HI',
+          style: GoogleFonts.plusJakartaSans(
+            fontWeight: FontWeight.bold,
+            color: isDark ? Colors.white : Colors.black,
+          ),
+        ),
+        onPressed: () {
+          final newLang = currentLang == 'English' ? 'Hindi' : 'English';
+          ref.read(settingsProvider.notifier).setLanguage(newLang);
+        },
+      ),
+    );
+  }
+
   Widget _buildPrivacyCheckbox(bool isDark) {
     return Showcase(
       key: _checkboxKey,
-      title: 'Required',
-      description: 'Please accept the Privacy Policy to continue',
+      title: AppLocalizations.of(context)!.required,
+      description: AppLocalizations.of(context)!.acceptPrivacy,
       targetBorderRadius: BorderRadius.circular(16),
       child: GestureDetector(
         onTap: () {
@@ -599,9 +637,11 @@ class _QuiryHomeState extends ConsumerState<QuiryHome>
                         height: 1.4,
                       ),
                       children: [
-                        const TextSpan(text: "I agree to the "),
                         TextSpan(
-                          text: "Privacy Policy",
+                          text: AppLocalizations.of(context)!.iAgreeToThe,
+                        ),
+                        TextSpan(
+                          text: AppLocalizations.of(context)!.privacyPolicy,
                           style: TextStyle(
                             fontWeight: FontWeight.bold,
                             color: isDark
@@ -609,9 +649,9 @@ class _QuiryHomeState extends ConsumerState<QuiryHome>
                                 : const Color(0xFF1E293B),
                           ),
                         ),
-                        const TextSpan(text: " & "),
+                        TextSpan(text: AppLocalizations.of(context)!.and),
                         TextSpan(
-                          text: "Terms",
+                          text: AppLocalizations.of(context)!.terms,
                           style: TextStyle(
                             fontWeight: FontWeight.bold,
                             color: isDark

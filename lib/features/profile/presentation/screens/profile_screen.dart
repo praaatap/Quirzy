@@ -10,7 +10,8 @@ import 'package:quirzy/features/auth/presentation/providers/auth_provider.dart';
 import 'package:quirzy/features/settings/providers/settings_provider.dart';
 import 'package:quirzy/core/services/app_review_service.dart';
 
-import 'package:quirzy/providers/user_stats_provider.dart'; // Added
+import 'package:quirzy/providers/user_stats_provider.dart';
+import 'package:quirzy/l10n/app_localizations.dart';
 
 // ==========================================
 // REDESIGNED PROFILE SCREEN
@@ -34,6 +35,7 @@ class _ProfileSettingsScreenState extends ConsumerState<ProfileSettingsScreen>
 
   String _userName = 'Quiz Master';
   String _userEmail = 'user@quirzy.com';
+  String? _photoUrl;
   bool _isLoading = true;
 
   // Static colors
@@ -50,11 +52,13 @@ class _ProfileSettingsScreenState extends ConsumerState<ProfileSettingsScreen>
     try {
       final name = await _storage.read(key: 'user_name');
       final email = await _storage.read(key: 'user_email');
+      final photoUrl = await _storage.read(key: 'user_photo_url');
 
       if (!mounted) return;
       setState(() {
         _userName = name?.isNotEmpty == true ? name! : 'Quiz Master';
         _userEmail = email?.isNotEmpty == true ? email! : 'user@quirzy.com';
+        _photoUrl = photoUrl;
         _isLoading = false;
       });
     } catch (_) {
@@ -207,16 +211,41 @@ class _ProfileSettingsScreenState extends ConsumerState<ProfileSettingsScreen>
                   ),
                   shape: BoxShape.circle,
                 ),
-                child: Center(
-                  child: Text(
-                    _userName.isNotEmpty ? _userName[0].toUpperCase() : 'Q',
-                    style: GoogleFonts.plusJakartaSans(
-                      fontSize: 40,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.white,
-                    ),
-                  ),
-                ),
+                child: _photoUrl != null
+                    ? ClipOval(
+                        child: Image.network(
+                          _photoUrl!,
+                          width: 100,
+                          height: 100,
+                          fit: BoxFit.cover,
+                          errorBuilder: (context, error, stackTrace) {
+                            return Center(
+                              child: Text(
+                                _userName.isNotEmpty
+                                    ? _userName[0].toUpperCase()
+                                    : 'Q',
+                                style: GoogleFonts.plusJakartaSans(
+                                  fontSize: 40,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.white,
+                                ),
+                              ),
+                            );
+                          },
+                        ),
+                      )
+                    : Center(
+                        child: Text(
+                          _userName.isNotEmpty
+                              ? _userName[0].toUpperCase()
+                              : 'Q',
+                          style: GoogleFonts.plusJakartaSans(
+                            fontSize: 40,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white,
+                          ),
+                        ),
+                      ),
               )
               .animate(delay: 100.ms)
               .scale(
@@ -383,16 +412,22 @@ class _ProfileSettingsScreenState extends ConsumerState<ProfileSettingsScreen>
               ref.read(settingsProvider.notifier).toggleDarkMode(val),
         ),
 
-        _buildSettingTile(
+        _buildLanguageDropdownTile(
           icon: Icons.language_rounded,
-          title: 'Language',
+          title: AppLocalizations.of(context)!.commonLanguage,
           subtitle: settingsState.language,
+          value: settingsState.language,
+          items: const ['English', 'Hindi'],
           iconColor: const Color(0xFF10B981),
           isDark: isDark,
           surfaceColor: surfaceColor,
           textMain: textMain,
           textSub: textSub,
-          onTap: () {},
+          onChanged: (String? newValue) {
+            if (newValue != null) {
+              ref.read(settingsProvider.notifier).setLanguage(newValue);
+            }
+          },
         ),
       ],
     );
@@ -733,6 +768,112 @@ class _ProfileSettingsScreenState extends ConsumerState<ProfileSettingsScreen>
             activeTrackColor: isDark
                 ? Colors.white.withOpacity(0.5)
                 : Colors.black.withOpacity(0.4),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildLanguageDropdownTile({
+    required IconData icon,
+    required String title,
+    required String subtitle,
+    required String value,
+    required List<String> items,
+    required Color iconColor,
+    required bool isDark,
+    required Color surfaceColor,
+    required Color textMain,
+    required Color textSub,
+    required ValueChanged<String?> onChanged,
+  }) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: surfaceColor,
+        borderRadius: BorderRadius.circular(16),
+        border: isDark ? Border.all(color: const Color(0xFF2D2540)) : null,
+        boxShadow: isDark
+            ? null
+            : [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.03),
+                  blurRadius: 10,
+                  offset: const Offset(0, 2),
+                ),
+              ],
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 44,
+            height: 44,
+            decoration: BoxDecoration(
+              color: isDark
+                  ? iconColor.withOpacity(0.2)
+                  : iconColor.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Icon(icon, color: iconColor, size: 22),
+          ),
+          const SizedBox(width: 14),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: GoogleFonts.plusJakartaSans(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w600,
+                    color: textMain,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  subtitle,
+                  style: GoogleFonts.plusJakartaSans(
+                    fontSize: 12,
+                    color: textSub,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+            decoration: BoxDecoration(
+              color: isDark
+                  ? Colors.white.withOpacity(0.05)
+                  : Colors.black.withOpacity(0.05),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: DropdownButtonHideUnderline(
+              child: DropdownButton<String>(
+                value: value,
+                icon: Icon(Icons.arrow_drop_down, color: textSub),
+                dropdownColor: surfaceColor,
+                style: GoogleFonts.plusJakartaSans(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                  color: textMain,
+                ),
+                onChanged: onChanged,
+                items: items.map<DropdownMenuItem<String>>((String value) {
+                  return DropdownMenuItem<String>(
+                    value: value,
+                    child: Text(
+                      value,
+                      style: GoogleFonts.plusJakartaSans(
+                        color: textMain,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  );
+                }).toList(),
+              ),
+            ),
           ),
         ],
       ),

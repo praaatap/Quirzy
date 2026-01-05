@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hive_flutter/hive_flutter.dart';
+import 'package:flutter_displaymode/flutter_displaymode.dart';
 import 'package:quirzy/features/auth/presentation/providers/auth_provider.dart';
 import 'package:quirzy/core/services/ad_service.dart';
 import 'package:quirzy/core/services/notification_service.dart';
@@ -37,14 +38,23 @@ Future<void> initializeCriticalServices(WidgetRef ref) async {
   };
 
   // Critical services - must complete before home screen
-  await Future.wait([Hive.initFlutter(), Firebase.initializeApp()]);
+  try {
+    // Add 8s timeout to prevent infinite splash screen
+    await Future.wait([
+      Hive.initFlutter(),
+      Firebase.initializeApp(),
+    ]).timeout(const Duration(seconds: 8));
 
-  await HiveCacheService.initialize();
+    await HiveCacheService.initialize();
+  } catch (e) {
+    debugPrint('⚠️ Critical init warning: $e');
+    // Continue anyway - allow app to load even if Firebase/Hive fails partially
+  }
 
   // Auth can run in parallel
   unawaited(ref.read(authProvider.future).catchError((_) => null));
 
-  debugPrint('✅ Critical services initialized');
+  debugPrint('✅ Critical services initialized (or bypassed)');
 }
 
 /// Deferred initialization - runs AFTER home screen is visible
@@ -52,8 +62,10 @@ Future<void> initializeCriticalServices(WidgetRef ref) async {
 Future<void> initializeDeferredServices(WidgetRef ref) async {
   debugPrint('🚀 Starting deferred services...');
 
-  // Schedule heavy work after frame completes
+  // Schedule heavy work after frame completes and give UI time to settle
   WidgetsBinding.instance.addPostFrameCallback((_) async {
+    // Delay initialization to allow splash transition to complete smoothly
+    await Future.delayed(const Duration(seconds: 1));
     // Initialize Deep Linking first (lightweight)
     DeepLinkService.init();
 
@@ -62,7 +74,29 @@ Future<void> initializeDeferredServices(WidgetRef ref) async {
 
     // These can run in background without blocking UI
     _initializeBackgroundServices(ref);
+
+    // Enable High Refresh Rate (120Hz) on Android
+    try {
+      if (defaultTargetPlatform == TargetPlatform.android) {
+        // Dynamic import workaround or just standard usage since package handles platform check?
+        // flutter_displaymode is android only but safely handles calls usually.
+        // But better to check platform.
+        // We need to import package first
+        await _setHighRefreshRate();
+      }
+    } catch (e) {
+      debugPrint('⚠️ Refresh rate error: $e');
+    }
   });
+}
+
+Future<void> _setHighRefreshRate() async {
+  try {
+    await FlutterDisplayMode.setHighRefreshRate();
+    debugPrint('🚀 High Refresh Rate Enabled (120Hz/90Hz)');
+  } catch (e) {
+    debugPrint('⚠️ High Refresh Rate failed: $e');
+  }
 }
 
 /// Background services - run completely in background

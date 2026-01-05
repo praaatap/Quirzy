@@ -1,3 +1,4 @@
+import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -13,6 +14,11 @@ class SettingsState {
   final String language;
   final bool autoSaveProgress;
   final bool useSystemTheme;
+
+  Locale get locale {
+    if (language == 'Hindi') return const Locale('hi');
+    return const Locale('en');
+  }
 
   SettingsState({
     this.notificationsEnabled = true,

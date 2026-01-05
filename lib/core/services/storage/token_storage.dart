@@ -8,6 +8,7 @@ class TokenStorage {
   static const keyToken = 'token';
   static const keyEmail = 'user_email';
   static const keyName = 'user_name';
+  static const keyPhotoUrl = 'user_photo_url';
 
   // --- Token Management ---
 
@@ -39,6 +40,18 @@ class TokenStorage {
 
   static Future<void> saveName(String name) async {
     await storage.write(key: keyName, value: name);
+  }
+
+  static Future<String?> getPhotoUrl() async {
+    return await storage.read(key: keyPhotoUrl);
+  }
+
+  static Future<void> savePhotoUrl(String? photoUrl) async {
+    if (photoUrl == null) {
+      await storage.delete(key: keyPhotoUrl);
+    } else {
+      await storage.write(key: keyPhotoUrl, value: photoUrl);
+    }
   }
 
   // --- Clear Data ---
