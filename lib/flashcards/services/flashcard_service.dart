@@ -1,0 +1,168 @@
+import 'dart:convert';
+import 'package:appwrite/appwrite.dart';
+import '../../quiz/services/quiz_service.dart'; // Reuse AppwriteClient and Config
+
+/// Flashcard Service using Appwrite
+class FlashcardService {
+  final Databases _db = AppwriteClient.instance.databases;
+  final Functions _fn = AppwriteClient.instance.functions;
+  final Account _account = AppwriteClient.instance.account;
+
+  static const String setsCollection = 'flashcard_sets';
+  static const String cardsCollection = 'flashcards';
+  static const String generateFunction = 'flashcard-generate';
+
+  // Generate Flashcards (calls Appwrite Function)
+  Future<Map<String, dynamic>> generateFlashcards({
+    required String topic,
+    int cardCount = 10,
+  }) async {
+    try {
+      final user = await _account.get();
+
+      final execution = await _fn.createExecution(
+        functionId: generateFunction,
+        body: jsonEncode({
+          'topic': topic,
+          'cardCount': cardCount,
+          'userId': user.$id,
+        }),
+      );
+
+      if (execution.status == 'completed') {
+        final response = jsonDecode(execution.responseBody);
+        if (response['error'] != null) throw Exception(response['error']);
+        return response;
+      }
+      throw Exception('Flashcard generation failed');
+    } on AppwriteException catch (e) {
+      throw Exception(e.message ?? 'Failed to generate flashcards');
+    }
+  }
+
+  // Get My Flashcard Sets
+  Future<List<Map<String, dynamic>>> getMyFlashcardSets() async {
+    try {
+      final user = await _account.get();
+      final response = await _db.listDocuments(
+        databaseId: AppwriteConfig.databaseId,
+        collectionId: setsCollection,
+        queries: [
+          Query.equal('userId', user.$id),
+          Query.orderDesc('createdAt'),
+        ],
+      );
+
+      final sets = <Map<String, dynamic>>[];
+      for (final doc in response.documents) {
+        final cardsResponse = await _db.listDocuments(
+          databaseId: AppwriteConfig.databaseId,
+          collectionId: cardsCollection,
+          queries: [Query.equal('setId', doc.$id)],
+        );
+
+        sets.add({
+          'id': doc.$id,
+          'title': doc.data['title'],
+          'topic': doc.data['topic'],
+          'cardCount': cardsResponse.total,
+          'createdAt': doc.data['createdAt'],
+        });
+      }
+      return sets;
+    } on AppwriteException catch (e) {
+      throw Exception(e.message ?? 'Failed to fetch flashcard sets');
+    }
+  }
+
+  // Get Flashcard Set by ID
+  Future<Map<String, dynamic>> getFlashcardSetById(String setId) async {
+    try {
+      final set = await _db.getDocument(
+        databaseId: AppwriteConfig.databaseId,
+        collectionId: setsCollection,
+        documentId: setId,
+      );
+
+      final cardsResponse = await _db.listDocuments(
+        databaseId: AppwriteConfig.databaseId,
+        collectionId: cardsCollection,
+        queries: [Query.equal('setId', setId), Query.orderAsc('cardNumber')],
+      );
+
+      return {
+        'id': set.$id,
+        'title': set.data['title'],
+        'topic': set.data['topic'],
+        'cards': cardsResponse.documents.map((doc) {
+          return {
+            'id': doc.$id,
+            'front': doc.data['front'],
+            'back': doc.data['back'],
+            'cardNumber': doc.data['cardNumber'],
+            'timesReviewed': doc.data['timesReviewed'] ?? 0,
+            'timesCorrect': doc.data['timesCorrect'] ?? 0,
+          };
+        }).toList(),
+      };
+    } on AppwriteException catch (e) {
+      throw Exception(e.message ?? 'Flashcard set not found');
+    }
+  }
+
+  // Delete Flashcard Set
+  Future<void> deleteFlashcardSet(String setId) async {
+    try {
+      final cards = await _db.listDocuments(
+        databaseId: AppwriteConfig.databaseId,
+        collectionId: cardsCollection,
+        queries: [Query.equal('setId', setId)],
+      );
+
+      for (final card in cards.documents) {
+        await _db.deleteDocument(
+          databaseId: AppwriteConfig.databaseId,
+          collectionId: cardsCollection,
+          documentId: card.$id,
+        );
+      }
+
+      await _db.deleteDocument(
+        databaseId: AppwriteConfig.databaseId,
+        collectionId: setsCollection,
+        documentId: setId,
+      );
+    } on AppwriteException catch (e) {
+      throw Exception(e.message ?? 'Failed to delete flashcard set');
+    }
+  }
+
+  // Update Card Progress
+  Future<void> updateCardProgress({
+    required String cardId,
+    required bool known,
+  }) async {
+    try {
+      final card = await _db.getDocument(
+        databaseId: AppwriteConfig.databaseId,
+        collectionId: cardsCollection,
+        documentId: cardId,
+      );
+
+      await _db.updateDocument(
+        databaseId: AppwriteConfig.databaseId,
+        collectionId: cardsCollection,
+        documentId: cardId,
+        data: {
+          'timesReviewed': (card.data['timesReviewed'] ?? 0) + 1,
+          'timesCorrect': known
+              ? (card.data['timesCorrect'] ?? 0) + 1
+              : card.data['timesCorrect'] ?? 0,
+          'lastReviewed': DateTime.now().toIso8601String(),
+        },
+      );
+    } on AppwriteException catch (e) {
+      throw Exception(e.message ?? 'Failed to update progress');
+    }
+  }
+}

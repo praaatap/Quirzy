@@ -1,75 +1,66 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:showcaseview/showcaseview.dart';
-
-import 'package:quirzy/core/theme/app_theme.dart';
-import 'package:quirzy/features/settings/providers/settings_provider.dart';
-import 'package:quirzy/core/widgets/app/app_widgets.dart';
-import 'package:quirzy/routes/router.dart';
-
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'l10n/app_localizations.dart';
+import 'routes/router.dart';
+import 'shared/theme/app_theme.dart';
+import 'shared/services/settings_service.dart';
+import 'shared/services/deep_link_service.dart';
 
-class QuirzyApp extends ConsumerWidget {
+class QuirzyApp extends ConsumerStatefulWidget {
   const QuirzyApp({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<QuirzyApp> createState() => _QuirzyAppState();
+}
+
+class _QuirzyAppState extends ConsumerState<QuirzyApp> {
+  @override
+  void initState() {
+    super.initState();
+    // Initialize deep link service after first frame
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _initDeepLinks();
+    });
+  }
+
+  Future<void> _initDeepLinks() async {
+    try {
+      await DeepLinkService.instance.init(ref);
+      debugPrint('DeepLink: Service initialized');
+    } catch (e) {
+      debugPrint('DeepLink: Initialization error: $e');
+    }
+  }
+
+  @override
+  void dispose() {
+    DeepLinkService.instance.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final router = ref.watch(routerProvider);
+    final settings = SettingsService();
 
-    // Use select() to only rebuild when theme-related settings change
-    // This prevents unnecessary rebuilds when other settings change
-    final useSystemTheme = ref.watch(
-      settingsProvider.select((s) => s.useSystemTheme),
-    );
-    final darkMode = ref.watch(settingsProvider.select((s) => s.darkMode));
-    final currentLocale = ref.watch(settingsProvider.select((s) => s.locale));
-
-    final themeMode = useSystemTheme
-        ? ThemeMode.system
-        : (darkMode ? ThemeMode.dark : ThemeMode.light);
-
-    return MaterialApp.router(
-      title: 'Quirzy',
-      debugShowCheckedModeBanner: false,
-
-      // Localization
-      localizationsDelegates: [
-        AppLocalizations.delegate,
-        GlobalMaterialLocalizations.delegate,
-        GlobalWidgetsLocalizations.delegate,
-        GlobalCupertinoLocalizations.delegate,
-      ],
-      supportedLocales: AppLocalizations.supportedLocales,
-      locale: currentLocale,
-
-      theme: AppTheme.light(),
-      darkTheme: AppTheme.dark(),
-      themeMode: themeMode,
-
-      routerConfig: router,
-
-      // ===========================================
-      // 🛠 GLOBAL BUILDER
-      // ===========================================
+    return AnimatedBuilder(
+      animation: settings,
       builder: (context, child) {
-        // Production-safe error widget
-        ErrorWidget.builder = (details) =>
-            ProductionErrorWidget(details: details);
-
-        return MediaQuery(
-          data: MediaQuery.of(context).copyWith(
-            textScaler: TextScaler.linear(
-              MediaQuery.of(context).textScaler.scale(1.0).clamp(0.85, 1.15),
-            ),
-          ),
-          child: Stack(
-            children: [
-              if (child != null) ShowCaseWidget(builder: (context) => child),
-
-              const ConnectivityOverlay(),
-            ],
-          ),
+        return MaterialApp.router(
+          title: 'Quirzy',
+          theme: AppTheme.lightTheme,
+          darkTheme: AppTheme.darkTheme,
+          themeMode: settings.themeMode,
+          routerConfig: router,
+          debugShowCheckedModeBanner: false,
+          localizationsDelegates: const [
+            AppLocalizations.delegate,
+            GlobalMaterialLocalizations.delegate,
+            GlobalWidgetsLocalizations.delegate,
+            GlobalCupertinoLocalizations.delegate,
+          ],
+          supportedLocales: const [Locale('en')],
         );
       },
     );

@@ -1,23 +1,34 @@
-import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:quirzy/routes/app_routes.dart';
-import 'package:quirzy/features/auth/presentation/providers/auth_provider.dart';
-import 'package:quirzy/routes/auth_listenator.dart';
+import 'app_routes.dart';
+import '../auth/providers/auth_provider.dart';
+import '../shared/widgets/splash_screen.dart';
 
 // Screens
-import 'package:quirzy/core/widgets/loading/loading_screen.dart';
-import 'package:quirzy/features/auth/presentation/screens/welcome_screen.dart';
-import 'package:quirzy/features/auth/presentation/screens/login_screen.dart';
-import 'package:quirzy/features/auth/presentation/screens/signup_screen.dart';
-import 'package:quirzy/features/auth/presentation/screens/success_screen.dart';
-import 'package:quirzy/features/home/screens/main_screen.dart';
-import 'package:quirzy/features/quiz/screens/start_quiz_screen.dart';
-import 'package:quirzy/features/flashcards/screens/flashcards_screen.dart';
-import 'package:quirzy/features/history/screens/history_screen.dart';
-import 'package:quirzy/features/settings/presentation/screens/settings_screen.dart';
-import 'package:quirzy/features/profile/presentation/screens/profile_screen.dart';
+import '../auth/screens/welcome_screen.dart';
+import '../auth/screens/login_screen.dart';
+import '../auth/screens/signup_screen.dart';
+import '../auth/screens/success_screen.dart';
+import '../home/screens/main_screen.dart';
+import '../quiz/screens/start_quiz_screen.dart';
+import '../flashcards/screens/flashcards_screen.dart';
+import '../profile/screens/history_screen.dart'; // Placeholder created
+import '../profile/screens/settings_screen.dart'; // Placeholder created
+import '../profile/screens/profile_screen.dart';
+import '../profile/screens/api_key_settings_screen.dart';
+import '../quiz/screens/model_download_screen.dart';
+import '../quiz/screens/voice_quiz_screen.dart';
+
+class AuthListenator extends ChangeNotifier {
+  AuthListenator(this.ref) {
+    ref.listen<AsyncValue<dynamic>>(
+      authStateProvider,
+      (_, __) => notifyListeners(),
+    );
+  }
+  final Ref ref;
+}
 
 final routerProvider = Provider<GoRouter>((ref) {
   return GoRouter(
@@ -25,44 +36,21 @@ final routerProvider = Provider<GoRouter>((ref) {
     debugLogDiagnostics: true,
     refreshListenable: AuthListenator(ref),
     redirect: (context, state) {
-      final authState = ref.read(authProvider);
-
-      if (authState.isLoading) {
-        return null;
-      }
+      final authState = ref.watch(authStateProvider);
 
       final isLoggedIn = authState.value != null;
       final isLoggingIn =
           state.matchedLocation == AppRoutes.auth ||
           state.matchedLocation == AppRoutes.login ||
           state.matchedLocation == AppRoutes.signup ||
-          state.matchedLocation ==
-              AppRoutes.success; // Success is part of auth flow typically
+          state.matchedLocation == AppRoutes.success;
 
-      // 1. Not logged in -> Redirect to Auth (Welcome)
-      if (!isLoggedIn && !isLoggingIn) {
-        return AppRoutes.auth;
-      }
+      if (authState.isLoading) return null;
 
-      // 2. Logged in -> Redirect to Home if trying to access Auth pages
-      // Exception: Success page might be shown after login, so don't redirect away from it immediately if we just got there.
-      // But typically success page redirects to home itself.
-      if (isLoggedIn &&
-          (state.matchedLocation == AppRoutes.auth ||
-              state.matchedLocation == AppRoutes.login ||
-              state.matchedLocation == AppRoutes.signup)) {
+      if (!isLoggedIn && !isLoggingIn) return AppRoutes.auth;
+      if (isLoggedIn && isLoggingIn) return AppRoutes.home;
+      if (isLoggedIn && state.matchedLocation == AppRoutes.initial)
         return AppRoutes.home;
-      }
-
-      // 3. Logged in and on Splash (initial) -> Home
-      if (isLoggedIn && state.matchedLocation == AppRoutes.initial) {
-        return AppRoutes.home;
-      }
-
-      // 4. Not logged in and on Splash -> Auth
-      if (!isLoggedIn && state.matchedLocation == AppRoutes.initial) {
-        return AppRoutes.auth;
-      }
 
       return null;
     },
@@ -73,15 +61,15 @@ final routerProvider = Provider<GoRouter>((ref) {
       ),
       GoRoute(
         path: AppRoutes.auth,
-        builder: (context, state) => const QuiryHome(),
+        builder: (context, state) => const WelcomeScreen(),
       ),
       GoRoute(
         path: AppRoutes.login,
-        builder: (context, state) => const SignInPage(),
+        builder: (context, state) => const LoginScreen(),
       ),
       GoRoute(
         path: AppRoutes.signup,
-        builder: (context, state) => const SignUpPage(),
+        builder: (context, state) => const SignupScreen(),
       ),
       GoRoute(
         path: AppRoutes.success,
@@ -130,23 +118,18 @@ final routerProvider = Provider<GoRouter>((ref) {
         path: AppRoutes.profile,
         builder: (context, state) => const ProfileSettingsScreen(),
       ),
+      GoRoute(
+        path: AppRoutes.apiKeySettings,
+        builder: (context, state) => const ApiKeySettingsScreen(),
+      ),
+      GoRoute(
+        path: AppRoutes.voiceQuizSetup,
+        builder: (context, state) => const ModelDownloadScreen(),
+      ),
+      GoRoute(
+        path: AppRoutes.voiceQuiz,
+        builder: (context, state) => const VoiceQuizScreen(),
+      ),
     ],
   );
 });
-
-class GoRouterRefreshStream extends ChangeNotifier {
-  GoRouterRefreshStream(Stream<dynamic> stream) {
-    notifyListeners();
-    _subscription = stream.asBroadcastStream().listen(
-      (dynamic _) => notifyListeners(),
-    );
-  }
-
-  late final StreamSubscription<dynamic> _subscription;
-
-  @override
-  void dispose() {
-    _subscription.cancel();
-    super.dispose();
-  }
-}

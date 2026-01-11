@@ -3,14 +3,15 @@
 #
 
 list(APPEND FLUTTER_PLUGIN_LIST
+  app_links
   connectivity_plus
   desktop_webview_window
   file_selector_windows
-  firebase_auth
   firebase_core
   flutter_secure_storage_windows
   flutter_tts
   permission_handler_windows
+  record_windows
   share_plus
   speech_to_text_windows
   url_launcher_windows

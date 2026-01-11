@@ -176,30 +176,6 @@ abstract class AppLocalizations {
   /// **'Notifications'**
   String get commonNotifications;
 
-  /// No description provided for @navHome.
-  ///
-  /// In en, this message translates to:
-  /// **'Home'**
-  String get navHome;
-
-  /// No description provided for @navCards.
-  ///
-  /// In en, this message translates to:
-  /// **'Cards'**
-  String get navCards;
-
-  /// No description provided for @navHistory.
-  ///
-  /// In en, this message translates to:
-  /// **'History'**
-  String get navHistory;
-
-  /// No description provided for @navProfile.
-  ///
-  /// In en, this message translates to:
-  /// **'Profile'**
-  String get navProfile;
-
   /// No description provided for @commonSupport.
   ///
   /// In en, this message translates to:
@@ -223,6 +199,30 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'System Theme'**
   String get settingsSystemTheme;
+
+  /// No description provided for @navHome.
+  ///
+  /// In en, this message translates to:
+  /// **'Home'**
+  String get navHome;
+
+  /// No description provided for @navCards.
+  ///
+  /// In en, this message translates to:
+  /// **'Cards'**
+  String get navCards;
+
+  /// No description provided for @navHistory.
+  ///
+  /// In en, this message translates to:
+  /// **'History'**
+  String get navHistory;
+
+  /// No description provided for @navProfile.
+  ///
+  /// In en, this message translates to:
+  /// **'Profile'**
+  String get navProfile;
 
   /// No description provided for @greetingMorning.
   ///

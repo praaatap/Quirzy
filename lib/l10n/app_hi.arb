@@ -68,6 +68,13 @@
   "incompleteLabel": "अपूर्ण",
   "continueQuizLabel": "क्विज़ जारी रखें",
   "questionsCountLabel": "{count} प्रश्न",
+  "@questionsCountLabel": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "viewStatsLabel": "आंकड़े देखें",
   "noHistoryTitle": "अभी कोई क्विज़ नहीं",
   "noHistorySubtitle": "यहाँ थोड़ा सन्नाटा है। शुरू करने के लिए अपने नोट्स से अपनी पहली क्विज़ बनाएं!",
@@ -80,5 +87,41 @@
   "studySmarter1": "स्मार्ट तरीके से पढ़ें\n",
   "studySmarter2": "AI के साथ",
   "studySmarterSubtitle": "AI द्वारा संचालित फ्लैशकार्ड बनाएं और अध्ययन करें।",
-  "whatsTheTopic": "विषय क्या है?"
+  "whatsTheTopic": "विषय क्या है?",
+  "apiKeySettings": "API कुंजी सेटिंग्स",
+  "geminiApiKey": "Gemini API कुंजी",
+  "enterApiKey": "अपनी API कुंजी दर्ज करें",
+  "saveApiKey": "API कुंजी सहेजें",
+  "apiKeySaved": "API कुंजी सहेजी गई!",
+  "apiKeyRequired": "कृपया API कुंजी दर्ज करें",
+  "getApiKey": "API कुंजी प्राप्त करें",
+  "apiKeyHint": "अपनी निजी Gemini API कुंजी का उपयोग करें",
+  "streak": "स्ट्रीक",
+  "days": "दिन",
+  "xpPoints": "XP पॉइंट्स",
+  "level": "लेवल",
+  "achievements": "उपलब्धियां",
+  "dailyGoal": "दैनिक लक्ष्य",
+  "complete": "पूर्ण",
+  "quizComplete": "क्विज़ पूर्ण!",
+  "score": "स्कोर",
+  "correct": "सही",
+  "incorrect": "गलत",
+  "timeSpent": "समय",
+  "tryAgain": "फिर से कोशिश करें",
+  "backToHome": "होम पर वापस जाएं",
+  "next": "अगला",
+  "previous": "पिछला",
+  "submit": "सबमिट करें",
+  "cancel": "रद्द करें",
+  "delete": "हटाएं",
+  "edit": "संपादित करें",
+  "save": "सहेजें",
+  "loading": "लोड हो रहा है...",
+  "error": "त्रुटि",
+  "success": "सफलता",
+  "retry": "पुनः प्रयास करें",
+  "noInternet": "इंटरनेट कनेक्शन नहीं है",
+  "offlineMode": "ऑफ़लाइन मोड",
+  "syncNow": "अभी सिंक करें"
 }

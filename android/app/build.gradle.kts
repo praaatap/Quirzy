@@ -81,12 +81,8 @@ dependencies {
     // add Multidex runtime if you enabled multiDexEnabled and need it at runtime
     implementation("androidx.multidex:multidex:2.0.1")
     implementation("com.google.android.material:material:1.9.0")
+    implementation("androidx.browser:browser:1.8.0")
 }
 
 
 
-configurations.all {
-    resolutionStrategy {
-        force("androidx.browser:browser:1.8.0")
-    }
-}

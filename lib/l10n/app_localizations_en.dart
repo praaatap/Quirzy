@@ -49,18 +49,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get commonNotifications => 'Notifications';
 
   @override
-  String get navHome => 'Home';
-
-  @override
-  String get navCards => 'Cards';
-
-  @override
-  String get navHistory => 'History';
-
-  @override
-  String get navProfile => 'Profile';
-
-  @override
   String get commonSupport => 'Support';
 
   @override
@@ -71,6 +59,18 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get settingsSystemTheme => 'System Theme';
+
+  @override
+  String get navHome => 'Home';
+
+  @override
+  String get navCards => 'Cards';
+
+  @override
+  String get navHistory => 'History';
+
+  @override
+  String get navProfile => 'Profile';
 
   @override
   String get greetingMorning => 'Good Morning 👋';

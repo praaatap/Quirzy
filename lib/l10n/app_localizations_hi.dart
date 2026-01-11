@@ -50,18 +50,6 @@ class AppLocalizationsHi extends AppLocalizations {
   String get commonNotifications => 'सूचनाएं';
 
   @override
-  String get navHome => 'होम';
-
-  @override
-  String get navCards => 'फ्लैशकार्ड';
-
-  @override
-  String get navHistory => 'इतिहास';
-
-  @override
-  String get navProfile => 'प्रोफ़ाइल';
-
-  @override
   String get commonSupport => 'सहायता';
 
   @override
@@ -72,6 +60,18 @@ class AppLocalizationsHi extends AppLocalizations {
 
   @override
   String get settingsSystemTheme => 'सिस्टम थीम';
+
+  @override
+  String get navHome => 'होम';
+
+  @override
+  String get navCards => 'फ्लैशकार्ड';
+
+  @override
+  String get navHistory => 'इतिहास';
+
+  @override
+  String get navProfile => 'प्रोफ़ाइल';
 
   @override
   String get greetingMorning => 'सुप्रभात 👋';
