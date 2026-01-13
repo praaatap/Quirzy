@@ -1,12 +1,12 @@
 flutter_native_splash:
-  color: "#5015E9"
+  color: "#FFFFFF"
   color_dark: "#5015E9"
   fullscreen: true
-  image: assets/icon/icon.png
+  image: assets/icon/quirzy_translucent_morph.png
   android_gravity: center
   branding_bottom_padding: 24
 
   android_12:
-    color: "#5015E9"
+    color: "#FFFFFF"
     color_dark: "#5015E9"
-    image: assets/icon/icon.png
+    image: assets/icon/quirzy_translucent_morph.png

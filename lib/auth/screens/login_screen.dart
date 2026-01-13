@@ -894,10 +894,13 @@ class _AnimatedLogoState extends State<_AnimatedLogo>
                   ),
                 ],
               ),
-              child: const Icon(
-                Icons.bolt_rounded,
-                color: Colors.white,
-                size: 18,
+              child: ClipOval(
+                child: Image.asset(
+                  'assets/logo.png',
+                  height: 24,
+                  width: 24,
+                  fit: BoxFit.cover,
+                ),
               ),
             ),
           ),

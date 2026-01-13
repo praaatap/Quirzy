@@ -61,24 +61,23 @@ class DeepLinkService {
     }
   }
 
-  /// Handle OAuth callback from Appwrite
+  /// Handle OAuth callback from Appwrite (legacy - kept for backwards compatibility)
+  /// Note: We now use native Google Sign-In, so OAuth callbacks are mostly ignored
   Future<void> _handleOAuthCallback(Uri uri) async {
-    try {
-      debugPrint('DeepLink: OAuth callback received, waiting for session...');
+    debugPrint('DeepLink: OAuth callback received (legacy handler)');
+    debugPrint(
+      'DeepLink: Note - Using native Google Sign-In, OAuth callbacks are handled differently',
+    );
 
-      // Give Appwrite a moment to establish the session
-      await Future.delayed(const Duration(milliseconds: 500));
-
-      // After OAuth redirect, refresh the auth state
-      if (_ref != null) {
-        debugPrint('DeepLink: Refreshing auth state after OAuth...');
+    // If somehow we receive an OAuth callback, try to refresh auth state
+    if (_ref != null) {
+      try {
+        await Future.delayed(const Duration(milliseconds: 500));
         await _ref!.read(authProvider.notifier).refresh();
-        debugPrint('DeepLink: Auth state refreshed successfully');
+        debugPrint('DeepLink: Auth state refreshed');
+      } catch (e) {
+        debugPrint('DeepLink: Refresh failed: $e');
       }
-    } catch (e) {
-      debugPrint('DeepLink: Error handling OAuth callback: $e');
-      // The refresh() method in AuthNotifier will handle setting error state
-      // if getCurrentUser() fails
     }
   }
 

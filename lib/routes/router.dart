@@ -17,15 +17,10 @@ import '../profile/screens/history_screen.dart'; // Placeholder created
 import '../profile/screens/settings_screen.dart'; // Placeholder created
 import '../profile/screens/profile_screen.dart';
 import '../profile/screens/api_key_settings_screen.dart';
-import '../quiz/screens/model_download_screen.dart';
-import '../quiz/screens/voice_quiz_screen.dart';
 
 class AuthListenator extends ChangeNotifier {
   AuthListenator(this.ref) {
-    ref.listen<AsyncValue<dynamic>>(
-      authStateProvider,
-      (_, __) => notifyListeners(),
-    );
+    ref.listen<AsyncValue<dynamic>>(authProvider, (_, __) => notifyListeners());
   }
   final Ref ref;
 }
@@ -36,7 +31,7 @@ final routerProvider = Provider<GoRouter>((ref) {
     debugLogDiagnostics: true,
     refreshListenable: AuthListenator(ref),
     redirect: (context, state) {
-      final authState = ref.watch(authStateProvider);
+      final authState = ref.watch(authProvider);
 
       final isLoggedIn = authState.value != null;
       final isLoggingIn =
@@ -121,14 +116,6 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: AppRoutes.apiKeySettings,
         builder: (context, state) => const ApiKeySettingsScreen(),
-      ),
-      GoRoute(
-        path: AppRoutes.voiceQuizSetup,
-        builder: (context, state) => const ModelDownloadScreen(),
-      ),
-      GoRoute(
-        path: AppRoutes.voiceQuiz,
-        builder: (context, state) => const VoiceQuizScreen(),
       ),
     ],
   );

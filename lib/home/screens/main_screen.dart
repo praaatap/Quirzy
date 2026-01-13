@@ -6,6 +6,9 @@ import 'home_screen.dart';
 import '../../flashcards/screens/flashcards_screen.dart';
 import '../../profile/screens/profile_screen.dart';
 import '../../profile/screens/history_screen.dart';
+import '../../explore/screens/explore_screen.dart';
+import '../../onboarding/screens/exam_selection_screen.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class MainScreen extends ConsumerStatefulWidget {
   const MainScreen({super.key});
@@ -15,9 +18,29 @@ class MainScreen extends ConsumerStatefulWidget {
 }
 
 class _MainScreenState extends ConsumerState<MainScreen> {
-  // Cache screens for performance - prevents unnecessary rebuilds
-  static const List<Widget> _screens = [
+  @override
+  void initState() {
+    super.initState();
+    _checkExamSelection();
+  }
+
+  Future<void> _checkExamSelection() async {
+    // Check if user has selected an exam preference
+    final prefs = await SharedPreferences.getInstance();
+    if (prefs.getString('selected_exam') == null) {
+      if (mounted) {
+        Navigator.of(
+          context,
+        ).push(MaterialPageRoute(builder: (_) => const ExamSelectionScreen()));
+      }
+    }
+  }
+
+  // Screens list
+  // Screens list
+  List<Widget> get _screens => const [
     RepaintBoundary(child: HomeScreen()),
+    RepaintBoundary(child: ExploreScreen()),
     RepaintBoundary(child: FlashcardsScreen()),
     RepaintBoundary(child: HistoryScreen()),
     RepaintBoundary(child: ProfileSettingsScreen()),
@@ -82,6 +105,11 @@ class _MainScreenState extends ConsumerState<MainScreen> {
             icon: Icon(Icons.home_outlined),
             selectedIcon: Icon(Icons.home_rounded),
             label: 'Home',
+          ),
+          NavigationDestination(
+            icon: Icon(Icons.explore_outlined),
+            selectedIcon: Icon(Icons.explore_rounded),
+            label: 'Explore',
           ),
           NavigationDestination(
             icon: Icon(Icons.style_outlined),

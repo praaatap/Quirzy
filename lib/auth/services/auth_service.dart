@@ -1,6 +1,9 @@
+import 'dart:async';
+
 import 'package:appwrite/appwrite.dart';
-import 'package:appwrite/enums.dart';
 import 'package:appwrite/models.dart';
+import 'package:flutter/foundation.dart';
+import 'package:google_sign_in/google_sign_in.dart';
 import '../../quiz/services/quiz_service.dart'; // Reuse AppwriteClient and Config
 
 /// Auth Service using Appwrite
@@ -61,86 +64,222 @@ class AuthService {
     }
   }
 
-  // Google Sign In
-  Future<void> signInWithGoogle() async {
+  // Google Sign In using Native Google Sign-In + Appwrite email/password
+  Future<User> signInWithGoogle() async {
     try {
-      // This will open a browser - it won't wait for user to complete auth
-      // The actual session will be created when user completes OAuth in browser
-      // and the deep link redirects back to the app
-      await _account.createOAuth2Session(
-        provider: OAuthProvider.google,
-        success: 'appwrite-callback-695be801003d58b523fc://auth',
-        failure: 'appwrite-callback-695be801003d58b523fc://auth',
+      debugPrint('AuthService: Starting Native Google Sign-In...');
+
+      // 1. Get GoogleSignIn instance (singleton)
+      final GoogleSignIn googleSignIn = GoogleSignIn.instance;
+
+      // 2. Initialize GoogleSignIn
+      await googleSignIn.initialize();
+
+      // 3. Sign out first to ensure fresh state
+      await googleSignIn.disconnect();
+
+      // 4. Create a completer to wait for auth event
+      final completer = Completer<GoogleSignInAccount>();
+      late StreamSubscription<GoogleSignInAuthenticationEvent> subscription;
+
+      subscription = googleSignIn.authenticationEvents.listen(
+        (event) {
+          if (event is GoogleSignInAuthenticationEventSignIn) {
+            if (!completer.isCompleted) {
+              completer.complete(event.user);
+            }
+            subscription.cancel();
+          } else if (event is GoogleSignInAuthenticationEventSignOut) {
+            if (!completer.isCompleted) {
+              completer.completeError(Exception('User signed out'));
+            }
+            subscription.cancel();
+          }
+        },
+        onError: (error) {
+          if (!completer.isCompleted) {
+            completer.completeError(error);
+          }
+          subscription.cancel();
+        },
       );
-      // Note: This method returns immediately after launching browser
-      // The actual auth completion is handled by DeepLinkService
-    } on AppwriteException catch (e) {
-      // Handle specific OAuth errors
-      if (e.code == 401) {
-        throw Exception('OAuth session failed. Please try again.');
+
+      // 5. Trigger authentication
+      if (googleSignIn.supportsAuthenticate()) {
+        await googleSignIn.authenticate();
+      } else {
+        throw Exception('Google Sign-In not supported on this platform');
       }
+
+      // 6. Wait for the auth event (with timeout)
+      final GoogleSignInAccount googleUser = await completer.future.timeout(
+        const Duration(seconds: 60),
+        onTimeout: () => throw Exception('Google Sign-In timed out'),
+      );
+
+      debugPrint('AuthService: Google Sign-In successful: ${googleUser.email}');
+
+      final String email = googleUser.email;
+      final String name = googleUser.displayName ?? email.split('@').first;
+      final String? photoUrl = googleUser.photoUrl;
+
+      // 7. Create a secure password derived from Google ID
+      final String derivedPassword =
+          'google_${googleUser.id}_quirzy_secure_2024';
+
+      // 8. Try to login first (existing user)
+      try {
+        debugPrint('AuthService: Trying to login existing user...');
+        await _account.createEmailPasswordSession(
+          email: email,
+          password: derivedPassword,
+        );
+        debugPrint('AuthService: Login successful!');
+
+        // Update photo URL if changed
+        final user = await _account.get();
+        if (photoUrl != null) {
+          try {
+            await _account.updatePrefs(prefs: {'photoUrl': photoUrl});
+          } catch (_) {}
+        }
+        return user;
+      } on AppwriteException catch (e) {
+        // User doesn't exist or wrong password - try to create account
+        debugPrint(
+          'AuthService: Login failed (${e.code}), creating new account...',
+        );
+
+        if (e.code == 401 ||
+            e.code == 404 ||
+            e.message?.contains('Invalid credentials') == true) {
+          // 9. Create new Appwrite account
+          try {
+            final user = await _account.create(
+              userId: ID.unique(),
+              email: email,
+              password: derivedPassword,
+              name: name,
+            );
+
+            debugPrint('AuthService: Account created: ${user.email}');
+
+            // 10. Login to the new account
+            await _account.createEmailPasswordSession(
+              email: email,
+              password: derivedPassword,
+            );
+
+            // 11. Set photo URL in preferences
+            if (photoUrl != null) {
+              try {
+                await _account.updatePrefs(prefs: {'photoUrl': photoUrl});
+              } catch (_) {}
+            }
+
+            // 12. Create user document in database
+            try {
+              await _db.createDocument(
+                databaseId: AppwriteConfig.databaseId,
+                collectionId: usersCollection,
+                documentId: user.$id,
+                data: {
+                  'name': name,
+                  'email': email,
+                  'password': 'google-auth', // Don't store actual password
+                  'quizCount': 0,
+                  'createdAt': DateTime.now().toIso8601String(),
+                },
+              );
+              debugPrint('AuthService: User document created');
+            } catch (dbError) {
+              debugPrint(
+                'AuthService: User document creation failed (non-critical): $dbError',
+              );
+            }
+
+            return user;
+          } on AppwriteException catch (createError) {
+            // Account might already exist with different password (edge case)
+            if (createError.code == 409) {
+              debugPrint('AuthService: Account exists but password mismatch');
+              throw Exception(
+                'Account already exists. Please use email/password login.',
+              );
+            }
+            rethrow;
+          }
+        }
+        rethrow;
+      }
+    } on AppwriteException catch (e) {
+      debugPrint('AuthService: Appwrite error: ${e.code} - ${e.message}');
       throw Exception(e.message ?? 'Google sign in failed');
     } catch (e) {
-      // Catch any other errors (like browser not opening)
-      throw Exception(
-        'Failed to open Google sign-in. Please check your internet connection.',
-      );
+      debugPrint('AuthService: Google Sign-In error: $e');
+      throw Exception('Google sign-in failed: $e');
     }
   }
 
   // Sync Google User with Database
   Future<User> syncGoogleUser() async {
+    // 1. Get current account
+    final user = await _account.get();
+    debugPrint('AuthService: syncGoogleUser - got account: ${user.email}');
+
+    // Extract photoUrl from prefs if available (requires server-side sync or OAuth scope)
+    // For now, checks if it's there.
+    final String? photoUrl = user.prefs.data['photoUrl'];
+
+    // 2. Try to sync with database, but don't fail if it doesn't work
     try {
-      // 1. Get current account
-      final user = await _account.get();
-
-      // Extract photoUrl from prefs if available (requires server-side sync or OAuth scope)
-      // For now, checks if it's there.
-      final String? photoUrl = user.prefs.data['photoUrl'];
-
-      // 2. Check if user document exists
+      // Check if user document exists
       try {
         await _db.getDocument(
           databaseId: AppwriteConfig.databaseId,
           collectionId: usersCollection,
           documentId: user.$id,
         );
+        debugPrint('AuthService: User document already exists');
         // User exists. Optional: Update login time or photo if changed
-        return user;
-      } on AppwriteException catch (_) {
-        // Document not found (or other error), proceed to create
+      } on AppwriteException catch (e) {
+        // Document not found, proceed to create
+        debugPrint(
+          'AuthService: User document not found (${e.code}), creating...',
+        );
+        await _db.createDocument(
+          databaseId: AppwriteConfig.databaseId,
+          collectionId: usersCollection,
+          documentId: user.$id,
+          data: {
+            'name': user.name,
+            'email': user.email,
+            'password': 'google-auth',
+            'quizCount': 0,
+            'createdAt': DateTime.now().toIso8601String(),
+          },
+        );
+        debugPrint('AuthService: User document created');
       }
-
-      // 3. Create user document if it doesn't exist
-      await _db.createDocument(
-        databaseId: AppwriteConfig.databaseId,
-        collectionId: usersCollection,
-        documentId: user.$id,
-        data: {
-          'name': user.name,
-          'email': user.email,
-          'password': 'google-auth',
-          'photoUrl': photoUrl, // Store Google photo if available
-          'quizCount': 0,
-          'createdAt': DateTime.now().toIso8601String(),
-        },
-      );
-
-      return user;
     } catch (e) {
-      print('Sync Error: $e');
-      throw Exception('Failed to sync user profile');
+      // Database sync failed, but user is still authenticated
+      debugPrint('AuthService: Database sync failed (non-critical): $e');
     }
+
+    // Always return the user - auth succeeded even if profile sync failed
+    return user;
   }
 
   // Get Current User (wraps sync for safety)
   Future<User?> getCurrentUser() async {
     try {
       // Verify session exists first
-      await _account.get();
+      final account = await _account.get();
+      debugPrint('AuthService: Session verified for ${account.email}');
       // Then sync/get full user
       return await syncGoogleUser();
-    } catch (_) {
+    } catch (e) {
+      debugPrint('AuthService: getCurrentUser error: $e');
       return null;
     }
   }

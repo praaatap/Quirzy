@@ -63,7 +63,36 @@ class ProfileService {
     }
   }
 
-  // Get Statistics
+  // Get Quiz History
+  Future<List<Map<String, dynamic>>> getQuizHistory() async {
+    try {
+      final user = await _account.get();
+
+      final results = await _db.listDocuments(
+        databaseId: AppwriteConfig.databaseId,
+        collectionId: quizResultsCollection,
+        queries: [
+          Query.equal('userId', user.$id),
+          Query.orderDesc('createdAt'),
+          Query.limit(50),
+        ],
+      );
+
+      return results.documents.map((doc) {
+        return {
+          'id': doc.$id,
+          'title': doc.data['title'] ?? doc.data['quizTitle'] ?? 'Quiz',
+          'score': doc.data['score'] ?? 0,
+          'totalQuestions': doc.data['totalQuestions'] ?? 10,
+          'percentage': doc.data['percentage'] ?? 0,
+          'createdAt': doc.data['createdAt'],
+        };
+      }).toList();
+    } on AppwriteException catch (e) {
+      throw Exception(e.message ?? 'Failed to fetch quiz history');
+    }
+  }
+
   Future<Map<String, dynamic>> getStatistics() async {
     try {
       final user = await _account.get();

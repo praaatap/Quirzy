@@ -4,7 +4,7 @@ import 'package:flutter/foundation.dart';
 
 /// Appwrite Configuration
 class AppwriteConfig {
-  static const String endpoint = 'https://cloud.appwrite.io/v1';
+  static const String endpoint = 'https://sgp.cloud.appwrite.io/v1';
   static const String projectId = '695be801003d58b523fc';
   static const String databaseId = '695d45fe000f2d83ddee';
 

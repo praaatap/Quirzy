@@ -10,9 +10,9 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import '../../l10n/app_localizations.dart';
 import '../../quiz/providers/quiz_providers.dart';
 import '../../quiz/screens/start_quiz_screen.dart';
-import '../../routes/app_routes.dart';
+import '../../shared/widgets/quirzy_mascot.dart';
 import '../widgets/home_widgets.dart';
-import 'package:go_router/go_router.dart';
+import '../../explore/screens/explore_screen.dart';
 
 // ==========================================
 // REDESIGNED HOME SCREEN
@@ -454,22 +454,112 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                             textSub,
                           ),
                         ),
-                        SliverToBoxAdapter(
-                          child: _buildQuickActions(
-                            isDark,
-                            surfaceColor,
-                            textSub,
+                        SliverPadding(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 24,
+                            vertical: 24,
+                          ),
+                          sliver: SliverGrid.count(
+                            crossAxisCount: 2,
+                            mainAxisSpacing: 16,
+                            crossAxisSpacing: 16,
+                            childAspectRatio: 1.1,
+                            children: [
+                              _buildCategoryCard(
+                                'Custom Quiz',
+                                Icons.auto_awesome_rounded,
+                                const Color(0xFF5B13EC),
+                                'AI Generated',
+                                isDark,
+                                onTap: _showTopicInputDialog,
+                              ),
+                              _buildCategoryCard(
+                                'Coding',
+                                Icons.code_rounded,
+                                const Color(0xFF3B82F6),
+                                'Python, JS & more',
+                                isDark,
+                              ),
+                              _buildCategoryCard(
+                                'Aptitude',
+                                Icons.calculate_rounded,
+                                const Color(0xFFF59E0B),
+                                'Math & Logic',
+                                isDark,
+                              ),
+                              _buildCategoryCard(
+                                'Logical',
+                                Icons.psychology_rounded,
+                                const Color(0xFF8B5CF6),
+                                'Puzzle & Reason',
+                                isDark,
+                              ),
+                              _buildCategoryCard(
+                                'Vocabulary',
+                                Icons.auto_stories_rounded,
+                                const Color(0xFF10B981),
+                                'English Mastery',
+                                isDark,
+                              ),
+                              _buildCategoryCard(
+                                'View All',
+                                Icons.category_rounded,
+                                const Color(0xFF64748B),
+                                'Browse Categories',
+                                isDark,
+                                onTap: () {
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (_) => const ExploreScreen(),
+                                    ),
+                                  );
+                                },
+                              ),
+                            ],
                           ),
                         ),
                         SliverToBoxAdapter(
-                          child: _buildCreateSection(
-                            isDark,
-                            surfaceColor,
-                            textMain,
-                            textSub,
+                          child: Padding(
+                            padding: const EdgeInsets.fromLTRB(24, 8, 24, 16),
+                            child: Text(
+                              'Featured Quizzes',
+                              style: GoogleFonts.plusJakartaSans(
+                                fontSize: 20,
+                                fontWeight: FontWeight.bold,
+                                color: textMain,
+                              ),
+                            ),
                           ),
                         ),
-                        SliverToBoxAdapter(child: _buildGenerateButton()),
+                        SliverToBoxAdapter(
+                          child: SizedBox(
+                            height: 180,
+                            child: ListView(
+                              scrollDirection: Axis.horizontal,
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 24,
+                              ),
+                              children: [
+                                _buildFeaturedCard(
+                                  'Daily Coding Challenge',
+                                  '5 Qs',
+                                  Colors.blue,
+                                ),
+                                _buildFeaturedCard(
+                                  'Verbal Ability Test',
+                                  '10 Qs',
+                                  Colors.purple,
+                                ),
+                                _buildFeaturedCard(
+                                  'Speed Math',
+                                  '20 Qs',
+                                  Colors.orange,
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
                         const SliverToBoxAdapter(child: SizedBox(height: 100)),
                       ],
                     )
@@ -481,6 +571,15 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                       duration: 600.ms,
                       curve: Curves.easeOut,
                     ),
+          ),
+          // Quirzy Mascot - Floating companion in bottom right corner
+          SafeArea(
+            child: FloatingCompanion(
+              alignment: Alignment.bottomRight,
+              onTap: () {
+                HapticFeedback.lightImpact();
+              },
+            ),
           ),
         ],
       ),
@@ -735,21 +834,12 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
         context,
         MaterialPageRoute(builder: (context) => const StudyInputScreen()),
       );
-    } else if (label == 'Voice') {
-      // Navigate to Voice Quiz
-      context.push(AppRoutes.voiceQuizSetup);
     }
   }
 
   Widget _buildQuickActions(bool isDark, Color surfaceColor, Color textSub) {
     final localizations = AppLocalizations.of(context)!;
     final quickActions = [
-      {
-        'icon': Icons.mic_rounded,
-        'label': 'Voice',
-        'key': 'Voice',
-        'color': const Color(0xFF06B6D4),
-      },
       {
         'icon': Icons.auto_awesome_rounded,
         'label': localizations.actionAIGen,
@@ -983,6 +1073,191 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                 curve: Curves.easeInOut,
               )
               .shimmer(delay: 500.ms, duration: 2000.ms, color: Colors.white12),
+    );
+  }
+
+  void _showTopicInputDialog() {
+    final controller = TextEditingController();
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(
+          'Create Custom Quiz ✨',
+          style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.bold),
+        ),
+        content: TextField(
+          controller: controller,
+          decoration: InputDecoration(
+            hintText: 'Enter topic (e.g. "Photosynthesis")',
+            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+          ),
+          autofocus: true,
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text(
+              'Cancel',
+              style: GoogleFonts.plusJakartaSans(color: Colors.grey),
+            ),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.pop(context);
+              if (controller.text.isNotEmpty) {
+                _showQuizConfigurationDialog(controller.text.trim());
+              }
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFF5B13EC),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
+            ),
+            child: Text(
+              'Next',
+              style: GoogleFonts.plusJakartaSans(color: Colors.white),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildCategoryCard(
+    String title,
+    IconData icon,
+    Color color,
+    String subtitle,
+    bool isDark, {
+    VoidCallback? onTap,
+  }) {
+    return GestureDetector(
+      onTap: () {
+        HapticFeedback.lightImpact();
+        if (onTap != null) {
+          onTap();
+        } else {
+          // Default action
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (_) => const ExploreScreen()),
+          );
+        }
+      },
+      child: Container(
+        decoration: BoxDecoration(
+          color: isDark ? const Color(0xFF1E1E1E) : Colors.white,
+          borderRadius: BorderRadius.circular(24),
+          boxShadow: [
+            BoxShadow(
+              color: color.withOpacity(0.15),
+              blurRadius: 12,
+              offset: const Offset(0, 4),
+            ),
+          ],
+          border: Border.all(color: color.withOpacity(0.1), width: 1),
+        ),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: color.withOpacity(0.1),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(icon, color: color, size: 32),
+            ),
+            const SizedBox(height: 12),
+            Text(
+              title,
+              style: GoogleFonts.plusJakartaSans(
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+                color: isDark ? Colors.white : const Color(0xFF1E293B),
+              ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              subtitle,
+              style: GoogleFonts.plusJakartaSans(
+                fontSize: 12,
+                color: isDark ? Colors.white60 : const Color(0xFF64748B),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildFeaturedCard(String title, String count, Color color) {
+    return Container(
+      width: 250,
+      margin: const EdgeInsets.only(right: 16, bottom: 8),
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: color,
+        borderRadius: BorderRadius.circular(24),
+        gradient: LinearGradient(
+          colors: [color, color.withOpacity(0.8)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: color.withOpacity(0.3),
+            blurRadius: 12,
+            offset: const Offset(0, 6),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+            decoration: BoxDecoration(
+              color: Colors.white24,
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Text(
+              count,
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 12,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ),
+          Text(
+            title,
+            style: GoogleFonts.plusJakartaSans(
+              fontSize: 20,
+              fontWeight: FontWeight.bold,
+              color: Colors.white,
+            ),
+            maxLines: 2,
+          ),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Text(
+              'Start Now',
+              style: GoogleFonts.plusJakartaSans(
+                fontSize: 12,
+                fontWeight: FontWeight.bold,
+                color: color,
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

@@ -12,6 +12,4 @@ class AppRoutes {
   static const String flashcards = '/flashcards';
   static const String history = '/history';
   static const String apiKeySettings = '/api-key-settings';
-  static const String voiceQuizSetup = '/voice-quiz-setup';
-  static const String voiceQuiz = '/voice-quiz';
 }

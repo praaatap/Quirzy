@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/legacy.dart';
 import 'package:appwrite/models.dart' as models;
@@ -51,21 +52,18 @@ class AuthNotifier extends AsyncNotifier<models.User?> {
     });
   }
 
-  /// Google Sign In
+  /// Google Sign In (Native flow - no deep links needed)
   Future<void> googleSignIn() async {
     state = const AsyncValue.loading();
-    try {
+    state = await AsyncValue.guard(() async {
       final authService = ref.read(authServiceProvider);
-      // This launches the OAuth browser and returns immediately
-      // Don't try to get user here - wait for deep link callback
-      await authService.signInWithGoogle();
-
-      // Keep loading state - the deep link handler will update with user data
-      // when OAuth completes and redirects back to the app
-      // state remains as AsyncValue.loading() until deep link callback
-    } catch (e, st) {
-      state = AsyncValue.error(e, st);
-    }
+      debugPrint('AuthProvider: Starting native Google Sign-In...');
+      // Native Google Sign-In now returns User directly
+      final user = await authService.signInWithGoogle();
+      debugPrint('AuthProvider: Google Sign-In successful: ${user.email}');
+      await _saveUserToStorage(user);
+      return user;
+    });
   }
 
   /// Logout
@@ -79,11 +77,17 @@ class AuthNotifier extends AsyncNotifier<models.User?> {
     });
   }
 
-
   Future<void> refresh() async {
-    final authService = ref.read(authServiceProvider);
-    final user = await authService.getCurrentUser();
-    state = AsyncValue.data(user);
+    try {
+      final authService = ref.read(authServiceProvider);
+      debugPrint('AuthProvider: Refreshing auth state...');
+      final user = await authService.getCurrentUser();
+      debugPrint('AuthProvider: Got user: ${user?.email ?? 'null'}');
+      state = AsyncValue.data(user);
+    } catch (e, st) {
+      debugPrint('AuthProvider: Refresh error: $e');
+      state = AsyncValue.error(e, st);
+    }
   }
 
   /// Save user details to secure storage for quick access

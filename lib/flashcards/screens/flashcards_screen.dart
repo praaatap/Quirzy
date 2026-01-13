@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'dart:math';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -8,6 +9,8 @@ import '../../l10n/app_localizations.dart';
 import '../../home/widgets/home_widgets.dart';
 import '../providers/flashcard_providers.dart';
 import '../widgets/flashcard_widgets.dart';
+import '../../shared/providers/exam_provider.dart';
+import '../../onboarding/screens/exam_selection_screen.dart';
 
 // ==========================================
 // REDESIGNED FLASHCARDS SCREEN
@@ -201,6 +204,12 @@ class _FlashcardsScreenState extends ConsumerState<FlashcardsScreen>
     HapticFeedback.lightImpact();
     if (!mounted) return;
 
+    // Check for Premium Sets (Mock ID usage)
+    if (set['isPremium'] == true) {
+      _showPremiumDialog(set['title']);
+      return;
+    }
+
     showDialog(
       context: context,
       barrierDismissible: false,
@@ -348,7 +357,7 @@ class _FlashcardsScreenState extends ConsumerState<FlashcardsScreen>
   }
 
   Widget _buildTabBar(bool isDark, Color surfaceColor, Color textSub) {
-    final tabs = ['All', 'Favorites', 'Recent'];
+    final tabs = ['Recommended', 'My Library', 'Recent'];
 
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
@@ -431,15 +440,117 @@ class _FlashcardsScreenState extends ConsumerState<FlashcardsScreen>
     }
 
     // Filter Logic
-    List<Map<String, dynamic>> filteredSets = List.from(_flashcardSets);
-    if (_selectedTab == 2) {
-      // Recent
-      filteredSets = filteredSets.take(5).toList();
-    } else if (_selectedTab == 1) {
-      // Favorites
-      filteredSets = filteredSets
-          .where((s) => s.containsKey('isFavorite') && s['isFavorite'] == true)
-          .toList();
+    // Filter Logic
+    List<Map<String, dynamic>> filteredSets = [];
+    final selectedExam = ref.watch(examProvider);
+
+    if (_selectedTab == 0) {
+      // Recommended / Exam Specific
+      if (selectedExam == null) {
+        // Show prompts to select exam
+        return SliverToBoxAdapter(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
+            child: GestureDetector(
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => const ExamSelectionScreen(),
+                  ),
+                );
+              },
+              child: Container(
+                padding: const EdgeInsets.all(24),
+                decoration: BoxDecoration(
+                  color: primaryColor,
+                  borderRadius: BorderRadius.circular(24),
+                ),
+                child: Column(
+                  children: [
+                    const Icon(Icons.school, color: Colors.white, size: 48),
+                    const SizedBox(height: 12),
+                    Text(
+                      'Select Your Goal',
+                      style: GoogleFonts.plusJakartaSans(
+                        color: Colors.white,
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    Text(
+                      'Choose an exam to get tailored flashcards.',
+                      textAlign: TextAlign.center,
+                      style: GoogleFonts.plusJakartaSans(color: Colors.white70),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        );
+      } else {
+        // Return categorized content
+        final sections = _getExamData(selectedExam);
+        return SliverList(
+          delegate: SliverChildBuilderDelegate((context, index) {
+            final subject = sections.keys.elementAt(index);
+            final sets = sections[subject]!;
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(24, 24, 24, 12),
+                  child: Row(
+                    children: [
+                      Container(
+                        width: 4,
+                        height: 24,
+                        decoration: BoxDecoration(
+                          color: primaryColor,
+                          borderRadius: BorderRadius.circular(2),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Text(
+                        subject,
+                        style: GoogleFonts.plusJakartaSans(
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                          color: textMain,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                ...sets.map(
+                  (set) => Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 24),
+                    child: _buildFlashcardSetCard(
+                      set,
+                      isDark,
+                      surfaceColor,
+                      textMain,
+                      textSub,
+                    ),
+                  ),
+                ),
+              ],
+            );
+          }, childCount: sections.length),
+        );
+      }
+    } else {
+      filteredSets = List.from(_flashcardSets);
+      if (_selectedTab == 2) {
+        // Recent (Tab index 2 in new list: Rec, MyLib, Fav? No. Tabs: Rec, My, Fav?)
+        // Tabs: ['Recommended', 'My Library', 'Recent'] -> Indices: 0, 1, 2.
+        // Wait, 'Recent' is index 2.
+        filteredSets = filteredSets.take(5).toList();
+      } else if (_selectedTab == 1) {
+        // My Library (All user sets)
+        // No filter needed.
+      }
     }
 
     if (filteredSets.isEmpty) {
@@ -1051,6 +1162,102 @@ class _FlashcardsScreenState extends ConsumerState<FlashcardsScreen>
                     ),
                   ],
                 ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Map<String, List<Map<String, dynamic>>> _getExamData(String exam) {
+    final subjects = _getSubjectsForExam(exam);
+    final data = <String, List<Map<String, dynamic>>>{};
+
+    for (final subject in subjects) {
+      data[subject] = [
+        {
+          'id': '${exam}_${subject}_1',
+          'title': '$subject - Key Concepts',
+          'cardCount': 20 + Random().nextInt(30),
+          'isPremium': true,
+        },
+        {
+          'id': '${exam}_${subject}_2',
+          'title': '$subject - Practice Set',
+          'cardCount': 40 + Random().nextInt(20),
+          'isPremium': true,
+        },
+        {
+          'id': '${exam}_${subject}_3',
+          'title': 'Advanced $subject',
+          'cardCount': 50,
+          'isPremium': true,
+        },
+      ];
+    }
+    return data;
+  }
+
+  List<String> _getSubjectsForExam(String exam) {
+    switch (exam.toLowerCase()) {
+      case 'jee':
+        return ['Physics', 'Chemistry', 'Mathematics'];
+      case 'neet':
+        return ['Biology', 'Physics', 'Chemistry'];
+      case 'mba':
+      case 'cat':
+      case 'gmat':
+      case 'gre':
+        return ['Quantitative', 'Verbal Ability', 'Logical Reasoning'];
+      case '10th':
+      case '12th':
+        return ['Science', 'Mathematics', 'English', 'Social Studies'];
+      case 'ielts':
+        return ['Reading', 'Writing', 'Listening', 'Speaking'];
+      default:
+        return ['General Knowledge', 'Aptitude'];
+    }
+  }
+
+  void _showPremiumDialog(String itemName) {
+    if (!mounted) return;
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(
+          'Premium Content 💎',
+          style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.bold),
+        ),
+        content: Text(
+          'Unlock "$itemName" and thousands of other expert-curated materials with Quirzy Pro.',
+          style: GoogleFonts.plusJakartaSans(fontSize: 14),
+        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text(
+              'Maybe Later',
+              style: GoogleFonts.plusJakartaSans(color: Colors.grey),
+            ),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.pop(context);
+              _showSnackBar('Subscription feature coming soon! 🚀');
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFF5B13EC),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+            ),
+            child: Text(
+              'Get Premium',
+              style: GoogleFonts.plusJakartaSans(
+                color: Colors.white,
+                fontWeight: FontWeight.bold,
               ),
             ),
           ),
