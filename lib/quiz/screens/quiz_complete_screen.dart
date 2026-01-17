@@ -6,6 +6,9 @@ import '../../shared/services/app_review_service.dart';
 import '../../shared/services/services_stubs.dart';
 import '../providers/quiz_providers.dart';
 import '../../shared/providers/user_stats_provider.dart';
+import '../../ai/services/performance_analyzer.dart';
+import '../../ai/models/quiz_session_data.dart';
+import '../../shared/widgets/mascot_celebration.dart';
 
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -81,6 +84,16 @@ class _QuizCompleteScreenState extends ConsumerState<QuizCompleteScreen>
     await Future.delayed(const Duration(milliseconds: 300));
     _fadeController.forward();
 
+    // Show mascot celebration
+    await Future.delayed(const Duration(milliseconds: 500));
+    if (mounted) {
+      await MascotCelebration.show(
+        context,
+        score: widget.score,
+        totalQuestions: widget.totalQuestions,
+      );
+    }
+
     // Trigger in-app review after animations
     _requestReview();
   }
@@ -154,6 +167,9 @@ class _QuizCompleteScreenState extends ConsumerState<QuizCompleteScreen>
         totalQuestions: widget.totalQuestions,
         difficulty: widget.difficulty,
       );
+
+      // Record session for AI Performance Analyzer
+      await _recordAISession();
 
       if (mounted) {
         setState(() {
@@ -320,6 +336,48 @@ class _QuizCompleteScreenState extends ConsumerState<QuizCompleteScreen>
     if (percentage >= 80) return Icons.emoji_events_rounded;
     if (percentage >= 60) return Icons.thumb_up_rounded;
     return Icons.refresh_rounded;
+  }
+
+  /// Record session data for AI Performance Analyzer
+  Future<void> _recordAISession() async {
+    try {
+      final analyzer = PerformanceAnalyzer();
+      await analyzer.initialize();
+
+      // Create question performances (simplified - could track actual time per question)
+      final questionPerformances = <QuestionPerformance>[];
+      for (int i = 0; i < widget.questions.length; i++) {
+        questionPerformances.add(
+          QuestionPerformance(
+            questionIndex: i,
+            isCorrect: widget.userAnswers[i],
+            timeSpentSeconds:
+                15, // Default estimate - can be enhanced to track actual time
+            category: null,
+            usedPowerUp: false,
+          ),
+        );
+      }
+
+      final session = QuizSessionData(
+        sessionId: '${widget.quizId}_${DateTime.now().millisecondsSinceEpoch}',
+        quizId: widget.quizId,
+        topic: widget.quizTitle,
+        difficulty: widget.difficulty,
+        timestamp: DateTime.now(),
+        totalQuestions: widget.totalQuestions,
+        correctAnswers: widget.score,
+        questionPerformances: questionPerformances,
+        totalTimeSeconds: widget.totalQuestions * 15, // Estimate
+      );
+
+      await analyzer.recordSession(session);
+      debugPrint(
+        'AI Session recorded: ${session.accuracy.toStringAsFixed(1)}% accuracy',
+      );
+    } catch (e) {
+      debugPrint('AI Session recording error: $e');
+    }
   }
 
   @override

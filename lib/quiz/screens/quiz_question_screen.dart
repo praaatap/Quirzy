@@ -381,6 +381,19 @@ class _QuizQuestionScreenState extends ConsumerState<QuizQuestionScreen>
     );
   }
 
+  Color _getDifficultyColor(String difficulty) {
+    switch (difficulty.toLowerCase()) {
+      case 'easy':
+        return const Color(0xFF10B981); // Green
+      case 'medium':
+        return const Color(0xFFF59E0B); // Amber
+      case 'hard':
+        return const Color(0xFFEF4444); // Red
+      default:
+        return QuizTheme.primary;
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -448,6 +461,35 @@ class _QuizQuestionScreenState extends ConsumerState<QuizQuestionScreen>
                         ),
                       ),
 
+                      // Difficulty Badge
+                      if (widget.difficulty != null)
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 10,
+                            vertical: 4,
+                          ),
+                          decoration: BoxDecoration(
+                            color: _getDifficultyColor(
+                              widget.difficulty!,
+                            ).withOpacity(0.15),
+                            borderRadius: BorderRadius.circular(20),
+                            border: Border.all(
+                              color: _getDifficultyColor(
+                                widget.difficulty!,
+                              ).withOpacity(0.4),
+                            ),
+                          ),
+                          child: Text(
+                            widget.difficulty!.toUpperCase(),
+                            style: GoogleFonts.plusJakartaSans(
+                              fontSize: 10,
+                              fontWeight: FontWeight.bold,
+                              color: _getDifficultyColor(widget.difficulty!),
+                              letterSpacing: 0.5,
+                            ),
+                          ),
+                        ),
+                      const SizedBox(width: 8),
                       // Streak Counter
                       if (currentStreak > 1)
                         Container(
@@ -595,6 +637,57 @@ class _QuizQuestionScreenState extends ConsumerState<QuizQuestionScreen>
                                           : const Color(0xFF2D3436),
                                     ),
                                   ),
+                                  // Explanation after answer
+                                  if (_isAnswerSubmitted &&
+                                      question['explanation'] != null)
+                                    Container(
+                                          margin: const EdgeInsets.only(
+                                            top: 16,
+                                          ),
+                                          padding: const EdgeInsets.all(12),
+                                          decoration: BoxDecoration(
+                                            color: QuizTheme.primary
+                                                .withOpacity(0.1),
+                                            borderRadius: BorderRadius.circular(
+                                              12,
+                                            ),
+                                            border: Border.all(
+                                              color: QuizTheme.primary
+                                                  .withOpacity(0.3),
+                                            ),
+                                          ),
+                                          child: Row(
+                                            crossAxisAlignment:
+                                                CrossAxisAlignment.start,
+                                            children: [
+                                              Icon(
+                                                Icons.lightbulb_rounded,
+                                                color: QuizTheme.primary,
+                                                size: 18,
+                                              ),
+                                              const SizedBox(width: 10),
+                                              Expanded(
+                                                child: Text(
+                                                  question['explanation']
+                                                      as String,
+                                                  style:
+                                                      GoogleFonts.plusJakartaSans(
+                                                        fontSize: 13,
+                                                        color: isDark
+                                                            ? Colors.white70
+                                                            : const Color(
+                                                                0xFF374151,
+                                                              ),
+                                                        height: 1.4,
+                                                      ),
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        )
+                                        .animate()
+                                        .fade(duration: 300.ms)
+                                        .slideY(begin: 0.1, end: 0),
                                 ],
                               ),
                             ),

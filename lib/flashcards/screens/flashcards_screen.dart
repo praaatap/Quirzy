@@ -311,6 +311,16 @@ class _FlashcardsScreenState extends ConsumerState<FlashcardsScreen>
                       ),
                       SliverToBoxAdapter(child: _buildGenerateButton()),
 
+                      // Categories Section - Premium Redesign
+                      SliverToBoxAdapter(
+                        child: _buildCategoriesSection(
+                          isDark,
+                          textMain,
+                          textSub,
+                        ),
+                      ),
+                      const SliverToBoxAdapter(child: SizedBox(height: 24)),
+
                       // Stats Cards
                       SliverToBoxAdapter(
                         child: Padding(
@@ -1043,6 +1053,203 @@ class _FlashcardsScreenState extends ConsumerState<FlashcardsScreen>
                 curve: Curves.easeInOut,
               )
               .shimmer(delay: 500.ms, duration: 2000.ms, color: Colors.white12),
+    );
+  }
+
+  Widget _buildCategoriesSection(bool isDark, Color textMain, Color textSub) {
+    final categories = [
+      {
+        'title': 'Science',
+        'subtitle': 'Biology, Physics, Chemistry',
+        'icon': Icons.science_rounded,
+        'gradient': [const Color(0xFF10B981), const Color(0xFF059669)],
+        'count': '150+ Cards',
+      },
+      {
+        'title': 'Languages',
+        'subtitle': 'Vocabulary & Grammar',
+        'icon': Icons.translate_rounded,
+        'gradient': [const Color(0xFF3B82F6), const Color(0xFF2563EB)],
+        'count': '200+ Cards',
+      },
+      {
+        'title': 'Mathematics',
+        'subtitle': 'Formulas & Theorems',
+        'icon': Icons.functions_rounded,
+        'gradient': [const Color(0xFF8B5CF6), const Color(0xFF7C3AED)],
+        'count': '120+ Cards',
+      },
+      {
+        'title': 'History',
+        'subtitle': 'Dates & Events',
+        'icon': Icons.history_edu_rounded,
+        'gradient': [const Color(0xFFF59E0B), const Color(0xFFD97706)],
+        'count': '180+ Cards',
+      },
+      {
+        'title': 'Coding',
+        'subtitle': 'Syntax & Algorithms',
+        'icon': Icons.code_rounded,
+        'gradient': [const Color(0xFF6366F1), const Color(0xFF4F46E5)],
+        'count': '250+ Cards',
+      },
+      {
+        'title': 'Aptitude',
+        'subtitle': 'Logic & Reasoning',
+        'icon': Icons.psychology_rounded,
+        'gradient': [const Color(0xFFEC4899), const Color(0xFFDB2777)],
+        'count': '100+ Cards',
+      },
+      {
+        'title': 'Geography',
+        'subtitle': 'Maps & Countries',
+        'icon': Icons.public_rounded,
+        'gradient': [const Color(0xFF14B8A6), const Color(0xFF0D9488)],
+        'count': '90+ Cards',
+      },
+      {
+        'title': 'Economics',
+        'subtitle': 'Markets & Finance',
+        'icon': Icons.trending_up_rounded,
+        'gradient': [const Color(0xFF64748B), const Color(0xFF475569)],
+        'count': '80+ Cards',
+      },
+    ];
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(24, 8, 24, 4),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                'Explore Categories',
+                style: GoogleFonts.plusJakartaSans(
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                  color: textMain,
+                ),
+              ),
+              TextButton(
+                onPressed: () {},
+                child: Text(
+                  'See All',
+                  style: GoogleFonts.plusJakartaSans(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                    color: primaryColor,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+        Padding(
+          padding: const EdgeInsets.only(left: 24, bottom: 16),
+          child: Text(
+            'Tap to explore or generate flashcards',
+            style: GoogleFonts.plusJakartaSans(fontSize: 13, color: textSub),
+          ),
+        ),
+        SizedBox(
+          height: 160,
+          child: ListView.builder(
+            scrollDirection: Axis.horizontal,
+            padding: const EdgeInsets.symmetric(horizontal: 20),
+            itemCount: categories.length,
+            itemBuilder: (context, index) {
+              final cat = categories[index];
+              final gradientColors = cat['gradient'] as List<Color>;
+
+              return GestureDetector(
+                onTap: () {
+                  HapticFeedback.lightImpact();
+                  _topicController.text = cat['title'] as String;
+                  _focusNode.requestFocus();
+                },
+                child:
+                    Container(
+                          width: 150,
+                          margin: const EdgeInsets.only(right: 16, bottom: 8),
+                          decoration: BoxDecoration(
+                            gradient: LinearGradient(
+                              colors: gradientColors,
+                              begin: Alignment.topLeft,
+                              end: Alignment.bottomRight,
+                            ),
+                            borderRadius: BorderRadius.circular(20),
+                            boxShadow: [
+                              BoxShadow(
+                                color: gradientColors[0].withOpacity(0.4),
+                                blurRadius: 12,
+                                offset: const Offset(0, 6),
+                              ),
+                            ],
+                          ),
+                          child: Stack(
+                            children: [
+                              // Background Icon
+                              Positioned(
+                                right: -15,
+                                bottom: -15,
+                                child: Icon(
+                                  cat['icon'] as IconData,
+                                  size: 80,
+                                  color: Colors.white.withOpacity(0.15),
+                                ),
+                              ),
+                              // Content
+                              Padding(
+                                padding: const EdgeInsets.all(16),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Container(
+                                      padding: const EdgeInsets.all(10),
+                                      decoration: BoxDecoration(
+                                        color: Colors.white.withOpacity(0.2),
+                                        borderRadius: BorderRadius.circular(12),
+                                      ),
+                                      child: Icon(
+                                        cat['icon'] as IconData,
+                                        color: Colors.white,
+                                        size: 24,
+                                      ),
+                                    ),
+                                    const Spacer(),
+                                    Text(
+                                      cat['title'] as String,
+                                      style: GoogleFonts.plusJakartaSans(
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.bold,
+                                        color: Colors.white,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 2),
+                                    Text(
+                                      cat['count'] as String,
+                                      style: GoogleFonts.plusJakartaSans(
+                                        fontSize: 11,
+                                        fontWeight: FontWeight.w600,
+                                        color: Colors.white.withOpacity(0.8),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+                        )
+                        .animate(delay: (100 * index).ms)
+                        .fade(duration: 400.ms)
+                        .slideX(begin: 0.2, end: 0, curve: Curves.easeOut),
+              );
+            },
+          ),
+        ),
+      ],
     );
   }
 

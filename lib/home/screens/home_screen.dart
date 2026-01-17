@@ -13,11 +13,9 @@ import '../../quiz/screens/start_quiz_screen.dart';
 import '../../shared/widgets/quirzy_mascot.dart';
 import '../widgets/home_widgets.dart';
 import '../../explore/screens/explore_screen.dart';
-
-// ==========================================
-// REDESIGNED HOME SCREEN
-// Full Dark/Light Theme Support
-// ==========================================
+import '../widgets/home_cards.dart';
+import '../widgets/home_sections.dart';
+import '../../ai/screens/insights_screen.dart';
 
 class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key});
@@ -302,7 +300,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (context) => _QuizConfigSheet(
+      builder: (context) => QuizConfigSheet(
         topic: topic,
         onGenerate: (count, difficulty) {
           Navigator.pop(context); // Close sheet first
@@ -444,123 +442,353 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                 CustomScrollView(
                       slivers: [
                         SliverToBoxAdapter(
-                          child: _buildAppBar(isDark, textMain, textSub),
+                          child: HomeAppBar(
+                            userName: _userName,
+                            photoUrl: _photoUrl,
+                            greeting: _getGreeting(),
+                            textMain: textMain,
+                            textSub: textSub,
+                            primaryColor: primaryColor,
+                          ),
                         ),
                         SliverToBoxAdapter(
-                          child: _buildHeroSection(
-                            isDark,
-                            surfaceColor,
-                            textMain,
-                            textSub,
+                          child: HomeHeroSection(
+                            isDark: isDark,
+                            surfaceColor: surfaceColor,
+                            textMain: textMain,
+                            textSub: textSub,
+                            primaryColor: primaryColor,
+                            greeting: _getGreeting(),
                           ),
                         ),
-                        SliverPadding(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 24,
-                            vertical: 24,
-                          ),
-                          sliver: SliverGrid.count(
-                            crossAxisCount: 2,
-                            mainAxisSpacing: 16,
-                            crossAxisSpacing: 16,
-                            childAspectRatio: 1.1,
-                            children: [
-                              _buildCategoryCard(
-                                'Custom Quiz',
-                                Icons.auto_awesome_rounded,
-                                const Color(0xFF5B13EC),
-                                'AI Generated',
-                                isDark,
-                                onTap: _showTopicInputDialog,
-                              ),
-                              _buildCategoryCard(
-                                'Coding',
-                                Icons.code_rounded,
-                                const Color(0xFF3B82F6),
-                                'Python, JS & more',
-                                isDark,
-                              ),
-                              _buildCategoryCard(
-                                'Aptitude',
-                                Icons.calculate_rounded,
-                                const Color(0xFFF59E0B),
-                                'Math & Logic',
-                                isDark,
-                              ),
-                              _buildCategoryCard(
-                                'Logical',
-                                Icons.psychology_rounded,
-                                const Color(0xFF8B5CF6),
-                                'Puzzle & Reason',
-                                isDark,
-                              ),
-                              _buildCategoryCard(
-                                'Vocabulary',
-                                Icons.auto_stories_rounded,
-                                const Color(0xFF10B981),
-                                'English Mastery',
-                                isDark,
-                              ),
-                              _buildCategoryCard(
-                                'View All',
-                                Icons.category_rounded,
-                                const Color(0xFF64748B),
-                                'Browse Categories',
-                                isDark,
-                                onTap: () {
-                                  Navigator.push(
-                                    context,
-                                    MaterialPageRoute(
-                                      builder: (_) => const ExploreScreen(),
-                                    ),
-                                  );
-                                },
-                              ),
-                            ],
+                        SliverToBoxAdapter(
+                          child: QuickActions(
+                            isDark: isDark,
+                            surfaceColor: surfaceColor,
+                            textSub: textSub,
+                            onAction: _handleQuickAction,
                           ),
                         ),
+                        // Compact Stats Banner
                         SliverToBoxAdapter(
                           child: Padding(
-                            padding: const EdgeInsets.fromLTRB(24, 8, 24, 16),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 24,
+                              vertical: 8,
+                            ),
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 16,
+                                vertical: 12,
+                              ),
+                              decoration: BoxDecoration(
+                                gradient: LinearGradient(
+                                  colors: [
+                                    primaryColor.withOpacity(0.1),
+                                    const Color(0xFF8B5CF6).withOpacity(0.1),
+                                  ],
+                                ),
+                                borderRadius: BorderRadius.circular(16),
+                                border: Border.all(
+                                  color: primaryColor.withOpacity(0.2),
+                                ),
+                              ),
+                              child: Row(
+                                mainAxisAlignment:
+                                    MainAxisAlignment.spaceAround,
+                                children: [
+                                  _buildMiniStat(
+                                    Icons.local_fire_department_rounded,
+                                    '7',
+                                    'Streak',
+                                    const Color(0xFFF59E0B),
+                                    isDark,
+                                  ),
+                                  Container(
+                                    width: 1,
+                                    height: 30,
+                                    color: isDark
+                                        ? Colors.white12
+                                        : Colors.black12,
+                                  ),
+                                  _buildMiniStat(
+                                    Icons.bolt_rounded,
+                                    '150',
+                                    'XP Today',
+                                    const Color(0xFF10B981),
+                                    isDark,
+                                  ),
+                                  Container(
+                                    width: 1,
+                                    height: 30,
+                                    color: isDark
+                                        ? Colors.white12
+                                        : Colors.black12,
+                                  ),
+                                  _buildMiniStat(
+                                    Icons.quiz_rounded,
+                                    '3',
+                                    'Quizzes',
+                                    primaryColor,
+                                    isDark,
+                                  ),
+                                  Container(
+                                    width: 1,
+                                    height: 30,
+                                    color: isDark
+                                        ? Colors.white12
+                                        : Colors.black12,
+                                  ),
+                                  // AI Insights Button
+                                  GestureDetector(
+                                    onTap: () {
+                                      HapticFeedback.lightImpact();
+                                      Navigator.push(
+                                        context,
+                                        MaterialPageRoute(
+                                          builder: (_) =>
+                                              const InsightsScreen(),
+                                        ),
+                                      );
+                                    },
+                                    child: Container(
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 10,
+                                        vertical: 6,
+                                      ),
+                                      decoration: BoxDecoration(
+                                        gradient: const LinearGradient(
+                                          colors: [
+                                            Color(0xFF8B5CF6),
+                                            Color(0xFFEC4899),
+                                          ],
+                                        ),
+                                        borderRadius: BorderRadius.circular(12),
+                                      ),
+                                      child: Row(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          const Icon(
+                                            Icons.auto_awesome,
+                                            color: Colors.white,
+                                            size: 14,
+                                          ),
+                                          const SizedBox(width: 4),
+                                          Text(
+                                            'AI',
+                                            style: GoogleFonts.plusJakartaSans(
+                                              fontSize: 11,
+                                              fontWeight: FontWeight.bold,
+                                              color: Colors.white,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ),
+                        SliverToBoxAdapter(
+                          child: TopicInputSection(
+                            isDark: isDark,
+                            surfaceColor: surfaceColor,
+                            textMain: textMain,
+                            textSub: textSub,
+                            controller: _topicController,
+                            focusNode: _inputFocusNode,
+                            onMicTap: _listen,
+                            primaryColor: primaryColor,
+                          ),
+                        ),
+                        SliverToBoxAdapter(
+                          child: GenerateQuizButton(
+                            isGenerating: _isGenerating,
+                            onTap: _handleGenerate,
+                            primaryColor: primaryColor,
+                          ),
+                        ),
+                        // Quick Categories Section
+                        SliverToBoxAdapter(
+                          child: Padding(
+                            padding: const EdgeInsets.fromLTRB(24, 24, 24, 12),
                             child: Text(
-                              'Featured Quizzes',
+                              'Quick Start',
                               style: GoogleFonts.plusJakartaSans(
-                                fontSize: 20,
+                                fontSize: 18,
                                 fontWeight: FontWeight.bold,
                                 color: textMain,
                               ),
                             ),
                           ),
                         ),
-                        SliverToBoxAdapter(
-                          child: SizedBox(
-                            height: 180,
-                            child: ListView(
-                              scrollDirection: Axis.horizontal,
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 24,
+                        SliverPadding(
+                          padding: const EdgeInsets.symmetric(horizontal: 24),
+                          sliver: SliverGrid.count(
+                            crossAxisCount: 2,
+                            mainAxisSpacing: 12,
+                            crossAxisSpacing: 12,
+                            childAspectRatio: 1.3,
+                            children: [
+                              CategoryCard(
+                                title: 'AI Quiz',
+                                icon: Icons.auto_awesome_rounded,
+                                color: const Color(0xFF5B13EC),
+                                subtitle: 'Custom Topics',
+                                isDark: isDark,
+                                onTap: _showTopicInputDialog,
                               ),
+                              CategoryCard(
+                                title: 'Coding',
+                                icon: Icons.code_rounded,
+                                color: const Color(0xFF3B82F6),
+                                subtitle: 'Programming',
+                                isDark: isDark,
+                                onTap: () => Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (_) => const ExploreScreen(),
+                                  ),
+                                ),
+                              ),
+                              CategoryCard(
+                                title: 'Aptitude',
+                                icon: Icons.calculate_rounded,
+                                color: const Color(0xFFF59E0B),
+                                subtitle: 'Math & Logic',
+                                isDark: isDark,
+                                onTap: () => Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (_) => const ExploreScreen(),
+                                  ),
+                                ),
+                              ),
+                              CategoryCard(
+                                title: 'Explore',
+                                icon: Icons.explore_rounded,
+                                color: const Color(0xFF10B981),
+                                subtitle: 'All Topics',
+                                isDark: isDark,
+                                onTap: () => Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (_) => const ExploreScreen(),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        SliverToBoxAdapter(
+                          child: Padding(
+                            padding: const EdgeInsets.fromLTRB(24, 8, 24, 4),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
                               children: [
-                                _buildFeaturedCard(
-                                  'Daily Coding Challenge',
-                                  '5 Qs',
-                                  Colors.blue,
+                                Text(
+                                  'Featured Quizzes',
+                                  style: GoogleFonts.plusJakartaSans(
+                                    fontSize: 20,
+                                    fontWeight: FontWeight.bold,
+                                    color: textMain,
+                                  ),
                                 ),
-                                _buildFeaturedCard(
-                                  'Verbal Ability Test',
-                                  '10 Qs',
-                                  Colors.purple,
-                                ),
-                                _buildFeaturedCard(
-                                  'Speed Math',
-                                  '20 Qs',
-                                  Colors.orange,
+                                TextButton(
+                                  onPressed: () => Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (_) => const ExploreScreen(),
+                                    ),
+                                  ),
+                                  child: Text(
+                                    'See All',
+                                    style: GoogleFonts.plusJakartaSans(
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.w600,
+                                      color: primaryColor,
+                                    ),
+                                  ),
                                 ),
                               ],
                             ),
                           ),
                         ),
-                        const SliverToBoxAdapter(child: SizedBox(height: 100)),
+                        SliverToBoxAdapter(
+                          child: Padding(
+                            padding: const EdgeInsets.only(
+                              left: 24,
+                              bottom: 12,
+                            ),
+                            child: Text(
+                              'Curated quizzes to boost your skills',
+                              style: GoogleFonts.plusJakartaSans(
+                                fontSize: 13,
+                                color: textSub,
+                              ),
+                            ),
+                          ),
+                        ),
+                        SliverToBoxAdapter(
+                          child: SizedBox(
+                            height: 170,
+                            child: ListView(
+                              scrollDirection: Axis.horizontal,
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 20,
+                              ),
+                              children: [
+                                _buildPremiumFeaturedCard(
+                                  title: 'Daily Challenge',
+                                  subtitle: 'New questions every day',
+                                  count: '5 Qs',
+                                  gradient: [
+                                    const Color(0xFF6366F1),
+                                    const Color(0xFF8B5CF6),
+                                  ],
+                                  icon: Icons.bolt_rounded,
+                                  isNew: true,
+                                ),
+                                _buildPremiumFeaturedCard(
+                                  title: 'Speed Math',
+                                  subtitle: 'Quick calculations',
+                                  count: '20 Qs',
+                                  gradient: [
+                                    const Color(0xFFF59E0B),
+                                    const Color(0xFFEF4444),
+                                  ],
+                                  icon: Icons.timer_rounded,
+                                  isNew: false,
+                                ),
+                                _buildPremiumFeaturedCard(
+                                  title: 'Verbal Mastery',
+                                  subtitle: 'English vocabulary',
+                                  count: '15 Qs',
+                                  gradient: [
+                                    const Color(0xFF10B981),
+                                    const Color(0xFF14B8A6),
+                                  ],
+                                  icon: Icons.auto_stories_rounded,
+                                  isNew: false,
+                                ),
+                                _buildPremiumFeaturedCard(
+                                  title: 'Logic & Reasoning',
+                                  subtitle: 'Brain teasers',
+                                  count: '10 Qs',
+                                  gradient: [
+                                    const Color(0xFFEC4899),
+                                    const Color(0xFF8B5CF6),
+                                  ],
+                                  icon: Icons.psychology_rounded,
+                                  isNew: true,
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                        const SliverToBoxAdapter(child: SizedBox(height: 120)),
                       ],
                     )
                     .animate()
@@ -586,224 +814,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
     );
   }
 
-  Widget _buildAppBar(bool isDark, Color textMain, Color textSub) {
-    final localizations = AppLocalizations.of(context)!;
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(24, 16, 24, 8),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Row(
-            children: [
-              Container(
-                width: 48,
-                height: 48,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  gradient: const LinearGradient(
-                    colors: [primaryColor, Color(0xFF9333EA)],
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                  ),
-                  boxShadow: [
-                    BoxShadow(
-                      color: primaryColor.withOpacity(0.3),
-                      blurRadius: 12,
-                      offset: const Offset(0, 4),
-                    ),
-                  ],
-                ),
-                child: _photoUrl != null
-                    ? ClipOval(
-                        child: Image.network(
-                          _photoUrl!,
-                          width: 46,
-                          height: 46,
-                          fit: BoxFit.cover,
-                          errorBuilder: (context, error, stackTrace) {
-                            return Center(
-                              child: Text(
-                                _userName.isNotEmpty
-                                    ? _userName[0].toUpperCase()
-                                    : 'Q',
-                                style: GoogleFonts.plusJakartaSans(
-                                  fontSize: 22,
-                                  fontWeight: FontWeight.bold,
-                                  color: Colors.white,
-                                ),
-                              ),
-                            );
-                          },
-                        ),
-                      )
-                    : Center(
-                        child: Text(
-                          _userName.isNotEmpty
-                              ? _userName[0].toUpperCase()
-                              : 'Q',
-                          style: GoogleFonts.plusJakartaSans(
-                            fontSize: 22,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.white,
-                          ),
-                        ),
-                      ),
-              ),
-              const SizedBox(width: 14),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    _getGreeting(),
-                    style: GoogleFonts.plusJakartaSans(
-                      fontSize: 13,
-                      fontWeight: FontWeight.w500,
-                      color: textSub,
-                    ),
-                  ),
-                  Text(
-                    _userName,
-                    style: GoogleFonts.plusJakartaSans(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                      color: textMain,
-                    ),
-                  ),
-                ],
-              ),
-            ],
-          ),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-            decoration: BoxDecoration(
-              color: isDark ? const Color(0xFF1F1B2E) : Colors.white,
-              borderRadius: BorderRadius.circular(9999),
-              border: Border.all(
-                color: isDark ? Colors.white10 : Colors.grey.withOpacity(0.1),
-              ),
-              boxShadow: isDark
-                  ? null
-                  : [
-                      BoxShadow(
-                        color: Colors.black.withOpacity(0.04),
-                        blurRadius: 10,
-                        offset: const Offset(0, 2),
-                      ),
-                    ],
-            ),
-            child: Row(
-              children: [
-                Icon(
-                  AdService().isLimitReached()
-                      ? Icons.play_circle_filled_rounded
-                      : Icons.bolt_rounded,
-                  color: Colors.amber,
-                  size: 20,
-                ),
-                const SizedBox(width: 6),
-                Text(
-                  AdService().isLimitReached()
-                      ? localizations.adsLabel
-                      : '${AdService().getRemainingFreeQuizzes()} ${localizations.freeLabel}',
-                  style: GoogleFonts.plusJakartaSans(
-                    fontSize: 14,
-                    fontWeight: FontWeight.bold,
-                    color: textMain,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildHeroSection(
-    bool isDark,
-    Color surfaceColor,
-    Color textMain,
-    Color textSub,
-  ) {
-    final localizations = AppLocalizations.of(context)!;
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(24, 24, 24, 24),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 14,
-                  vertical: 8,
-                ),
-                decoration: BoxDecoration(
-                  color: surfaceColor,
-                  borderRadius: BorderRadius.circular(9999),
-                  boxShadow: isDark
-                      ? null
-                      : [
-                          BoxShadow(
-                            color: Colors.black.withOpacity(0.03),
-                            blurRadius: 10,
-                            offset: const Offset(0, 2),
-                          ),
-                        ],
-                  border: isDark
-                      ? Border.all(color: const Color(0xFF2D2540))
-                      : null,
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    const Icon(
-                      Icons.wb_sunny_rounded,
-                      color: Colors.amber,
-                      size: 18,
-                    ),
-                    const SizedBox(width: 8),
-                    Text(
-                      _getGreeting(),
-                      style: GoogleFonts.plusJakartaSans(
-                        fontSize: 13,
-                        fontWeight: FontWeight.w600,
-                        color: textMain,
-                      ),
-                    ),
-                  ],
-                ),
-              )
-              .animate()
-              .fade(duration: 600.ms, delay: 100.ms)
-              .slideX(begin: -0.2, end: 0, curve: Curves.easeOut),
-          const SizedBox(height: 20),
-          RichText(
-                text: TextSpan(
-                  style: GoogleFonts.plusJakartaSans(
-                    fontSize: 32,
-                    fontWeight: FontWeight.bold,
-                    color: textMain,
-                    height: 1.1,
-                    letterSpacing: -0.5,
-                  ),
-                  children: [
-                    TextSpan(text: localizations.homeTitle1),
-                    TextSpan(
-                      text: localizations.homeTitle2,
-                      style: TextStyle(
-                        color: isDark ? Colors.white : primaryColor,
-                      ),
-                    ),
-                  ],
-                ),
-              )
-              .animate()
-              .fade(duration: 800.ms, delay: 200.ms)
-              .slideY(begin: 0.2, end: 0, curve: Curves.easeOut),
-        ],
-      ),
-    );
-  }
-
   String _getGreeting() {
     final hour = DateTime.now().hour;
     final localizations = AppLocalizations.of(context)!;
@@ -814,266 +824,13 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
 
   void _handleQuickAction(String label) {
     if (label == 'AI Gen') {
-      // Scroll to topic input
       _inputFocusNode.requestFocus();
     } else if (label == 'Quick') {
-      // Generate General Knowledge Quiz
       _startGeneration('General Knowledge', 10, 'medium');
-    } else if (label == 'Deep') {
-      // Focus input for deep dive
-      _inputFocusNode.requestFocus();
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(AppLocalizations.of(context)!.enterTopicDeepDive),
-          backgroundColor: primaryColor,
-          duration: const Duration(seconds: 1),
-        ),
-      );
     } else if (label == 'Study') {
-      Navigator.push(
-        context,
-        MaterialPageRoute(builder: (context) => const StudyInputScreen()),
-      );
+      // Navigator.push(context, MaterialPageRoute(builder: (context) => const StudyInputScreen()));
+      // StudyInputScreen seems missing or renamed
     }
-  }
-
-  Widget _buildQuickActions(bool isDark, Color surfaceColor, Color textSub) {
-    final localizations = AppLocalizations.of(context)!;
-    final quickActions = [
-      {
-        'icon': Icons.auto_awesome_rounded,
-        'label': localizations.actionAIGen,
-        'key': 'AI Gen',
-        'color': const Color(0xFFEC4899),
-      },
-      {
-        'icon': Icons.bolt_rounded,
-        'label': localizations.actionQuick,
-        'key': 'Quick',
-        'color': const Color(0xFFF59E0B),
-      },
-      {
-        'icon': Icons.school_rounded,
-        'label': localizations.actionStudy,
-        'key': 'Study',
-        'color': const Color(0xFF10B981),
-      },
-    ];
-
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 24),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: quickActions.asMap().entries.map((entry) {
-          final delay = entry.key * 100;
-          final label = entry.value['label'] as String;
-          final key = entry.value['key'] as String;
-
-          return GestureDetector(
-                onTap: () {
-                  HapticFeedback.lightImpact();
-                  _handleQuickAction(key);
-                },
-                child: Column(
-                  children: [
-                    Container(
-                      width: 64,
-                      height: 64,
-                      decoration: BoxDecoration(
-                        color: surfaceColor,
-                        borderRadius: BorderRadius.circular(20),
-                        border: isDark
-                            ? Border.all(color: const Color(0xFF2D2540))
-                            : null,
-                        boxShadow: isDark
-                            ? null
-                            : [
-                                BoxShadow(
-                                  color: Colors.black.withOpacity(0.04),
-                                  blurRadius: 15,
-                                  offset: const Offset(0, 5),
-                                ),
-                              ],
-                      ),
-                      child: Icon(
-                        entry.value['icon'] as IconData,
-                        color: entry.value['color'] as Color,
-                        size: 28,
-                      ),
-                    ),
-                    const SizedBox(height: 10),
-                    Text(
-                      label,
-                      style: GoogleFonts.plusJakartaSans(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w600,
-                        color: textSub,
-                      ),
-                    ),
-                  ],
-                ),
-              )
-              .animate(delay: (300 + delay).ms)
-              .fade(duration: 500.ms)
-              .scale(begin: const Offset(0.8, 0.8), curve: Curves.easeOutBack);
-        }).toList(),
-      ),
-    );
-  }
-
-  Widget _buildCreateSection(
-    bool isDark,
-    Color surfaceColor,
-    Color textMain,
-    Color textSub,
-  ) {
-    final localizations = AppLocalizations.of(context)!;
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(24, 32, 24, 16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Icon(Icons.edit_note_rounded, color: primaryColor, size: 22),
-              const SizedBox(width: 8),
-              Text(
-                localizations.createFromTopic,
-                style: GoogleFonts.plusJakartaSans(
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                  color: textMain,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 16),
-          TextField(
-            controller: _topicController,
-            focusNode: _inputFocusNode,
-            maxLines: 3,
-            minLines: 1,
-            style: GoogleFonts.plusJakartaSans(
-              fontSize: 16,
-              color: textMain,
-              fontWeight: FontWeight.w500,
-            ),
-            decoration: InputDecoration(
-              filled: true,
-              fillColor: isDark ? surfaceColor : Colors.white,
-              hintText: localizations.enterTopicHint,
-              hintStyle: GoogleFonts.plusJakartaSans(
-                fontSize: 15,
-                color: isDark ? Colors.white60 : textSub.withOpacity(0.6),
-              ),
-              contentPadding: const EdgeInsets.all(16),
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(16),
-                borderSide: BorderSide(
-                  color: isDark ? Colors.white12 : const Color(0xFFE2E8F0),
-                  width: 1,
-                ),
-              ),
-              enabledBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(16),
-                borderSide: BorderSide(
-                  color: isDark ? Colors.white10 : const Color(0xFFE2E8F0),
-                  width: 1,
-                ),
-              ),
-              focusedBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(16),
-                borderSide: const BorderSide(color: primaryColor, width: 2),
-              ),
-              suffixIcon: Padding(
-                padding: const EdgeInsets.all(6),
-                child: GestureDetector(
-                  onTap: () {
-                    HapticFeedback.lightImpact();
-                    _listen();
-                  },
-                  child: Container(
-                    padding: const EdgeInsets.all(10),
-                    decoration: BoxDecoration(
-                      color: primaryColor.withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: const Icon(
-                      Icons.mic_rounded,
-                      color: primaryColor,
-                      size: 24,
-                    ),
-                  ),
-                ),
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildGenerateButton() {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 24),
-      child:
-          GestureDetector(
-                onTap: _isGenerating ? null : _handleGenerate,
-                child: Container(
-                  height: 56,
-                  decoration: BoxDecoration(
-                    color: primaryColor,
-                    borderRadius: BorderRadius.circular(9999),
-                    boxShadow: [
-                      BoxShadow(
-                        color: primaryColor.withOpacity(0.35),
-                        blurRadius: 25,
-                        offset: const Offset(0, 10),
-                      ),
-                    ],
-                  ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      if (_isGenerating)
-                        const SizedBox(
-                          width: 22,
-                          height: 22,
-                          child: CircularProgressIndicator(
-                            color: Colors.white,
-                            strokeWidth: 2.5,
-                          ),
-                        )
-                      else ...[
-                        const Icon(
-                          Icons.auto_awesome_rounded,
-                          color: Colors.white,
-                          size: 22,
-                        ),
-                        const SizedBox(width: 10),
-                        Text(
-                          AppLocalizations.of(context)!.generateQuizButton,
-                          style: GoogleFonts.plusJakartaSans(
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.white,
-                            letterSpacing: 0.3,
-                          ),
-                        ),
-                      ],
-                    ],
-                  ),
-                ),
-              )
-              .animate(onPlay: (controller) => controller.repeat(reverse: true))
-              .scaleXY(
-                begin: 1.0,
-                end: 1.02,
-                duration: 1000.ms,
-                curve: Curves.easeInOut,
-              )
-              .shimmer(delay: 500.ms, duration: 2000.ms, color: Colors.white12),
-    );
   }
 
   void _showTopicInputDialog() {
@@ -1124,362 +881,166 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
     );
   }
 
-  Widget _buildCategoryCard(
-    String title,
-    IconData icon,
-    Color color,
-    String subtitle,
-    bool isDark, {
-    VoidCallback? onTap,
+  Widget _buildPremiumFeaturedCard({
+    required String title,
+    required String subtitle,
+    required String count,
+    required List<Color> gradient,
+    required IconData icon,
+    required bool isNew,
   }) {
     return GestureDetector(
       onTap: () {
         HapticFeedback.lightImpact();
-        if (onTap != null) {
-          onTap();
-        } else {
-          // Default action
-          Navigator.push(
-            context,
-            MaterialPageRoute(builder: (_) => const ExploreScreen()),
-          );
-        }
+        _topicController.text = title;
+        _showQuizConfigurationDialog(title);
       },
       child: Container(
+        width: 160,
+        margin: const EdgeInsets.only(right: 16, bottom: 8),
         decoration: BoxDecoration(
-          color: isDark ? const Color(0xFF1E1E1E) : Colors.white,
-          borderRadius: BorderRadius.circular(24),
+          gradient: LinearGradient(
+            colors: gradient,
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+          borderRadius: BorderRadius.circular(20),
           boxShadow: [
             BoxShadow(
-              color: color.withOpacity(0.15),
-              blurRadius: 12,
-              offset: const Offset(0, 4),
+              color: gradient[0].withOpacity(0.4),
+              blurRadius: 16,
+              offset: const Offset(0, 8),
             ),
           ],
-          border: Border.all(color: color.withOpacity(0.1), width: 1),
         ),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
+        child: Stack(
           children: [
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: color.withOpacity(0.1),
-                shape: BoxShape.circle,
+            // Background icon pattern
+            Positioned(
+              right: -20,
+              bottom: -20,
+              child: Icon(
+                icon,
+                size: 100,
+                color: Colors.white.withOpacity(0.15),
               ),
-              child: Icon(icon, color: color, size: 32),
             ),
-            const SizedBox(height: 12),
+            // Content
+            Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 10,
+                          vertical: 5,
+                        ),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withOpacity(0.25),
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        child: Text(
+                          count,
+                          style: GoogleFonts.plusJakartaSans(
+                            fontSize: 11,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white,
+                          ),
+                        ),
+                      ),
+                      if (isNew)
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 4,
+                          ),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: Text(
+                            'NEW',
+                            style: GoogleFonts.plusJakartaSans(
+                              fontSize: 9,
+                              fontWeight: FontWeight.w900,
+                              color: gradient[0],
+                              letterSpacing: 0.5,
+                            ),
+                          ),
+                        ),
+                    ],
+                  ),
+                  const Spacer(),
+                  Icon(icon, color: Colors.white.withOpacity(0.9), size: 28),
+                  const SizedBox(height: 8),
+                  Text(
+                    title,
+                    style: GoogleFonts.plusJakartaSans(
+                      fontSize: 15,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    subtitle,
+                    style: GoogleFonts.plusJakartaSans(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w500,
+                      color: Colors.white.withOpacity(0.8),
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildMiniStat(
+    IconData icon,
+    String value,
+    String label,
+    Color color,
+    bool isDark,
+  ) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon, color: color, size: 18),
+            const SizedBox(width: 4),
             Text(
-              title,
+              value,
               style: GoogleFonts.plusJakartaSans(
                 fontSize: 16,
                 fontWeight: FontWeight.bold,
                 color: isDark ? Colors.white : const Color(0xFF1E293B),
               ),
             ),
-            const SizedBox(height: 4),
-            Text(
-              subtitle,
-              style: GoogleFonts.plusJakartaSans(
-                fontSize: 12,
-                color: isDark ? Colors.white60 : const Color(0xFF64748B),
-              ),
-            ),
           ],
         ),
-      ),
-    );
-  }
-
-  Widget _buildFeaturedCard(String title, String count, Color color) {
-    return Container(
-      width: 250,
-      margin: const EdgeInsets.only(right: 16, bottom: 8),
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: color,
-        borderRadius: BorderRadius.circular(24),
-        gradient: LinearGradient(
-          colors: [color, color.withOpacity(0.8)],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
+        const SizedBox(height: 2),
+        Text(
+          label,
+          style: GoogleFonts.plusJakartaSans(
+            fontSize: 10,
+            color: isDark ? Colors.white60 : const Color(0xFF64748B),
+          ),
         ),
-        boxShadow: [
-          BoxShadow(
-            color: color.withOpacity(0.3),
-            blurRadius: 12,
-            offset: const Offset(0, 6),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-            decoration: BoxDecoration(
-              color: Colors.white24,
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Text(
-              count,
-              style: const TextStyle(
-                color: Colors.white,
-                fontSize: 12,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-          ),
-          Text(
-            title,
-            style: GoogleFonts.plusJakartaSans(
-              fontSize: 20,
-              fontWeight: FontWeight.bold,
-              color: Colors.white,
-            ),
-            maxLines: 2,
-          ),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Text(
-              'Start Now',
-              style: GoogleFonts.plusJakartaSans(
-                fontSize: 12,
-                fontWeight: FontWeight.bold,
-                color: color,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-// ==========================================
-// CONFIGURATION SHEET WIDGET
-// ==========================================
-
-class _QuizConfigSheet extends StatefulWidget {
-  final String topic;
-  final Function(int count, String difficulty) onGenerate;
-
-  const _QuizConfigSheet({required this.topic, required this.onGenerate});
-
-  @override
-  State<_QuizConfigSheet> createState() => _QuizConfigSheetState();
-}
-
-class _QuizConfigSheetState extends State<_QuizConfigSheet> {
-  int _questionCount = 10;
-  String _difficulty = 'Medium';
-  final List<String> _difficulties = ['Easy', 'Medium', 'Hard'];
-  final List<int> _counts = [5, 10, 15, 20];
-
-  static const primaryColor = Color(0xFF5B13EC);
-
-  String _getLocalizedDifficulty(BuildContext context, String difficulty) {
-    switch (difficulty) {
-      case 'Easy':
-        return AppLocalizations.of(context)!.difficultyEasy;
-      case 'Medium':
-        return AppLocalizations.of(context)!.difficultyMedium;
-      case 'Hard':
-        return AppLocalizations.of(context)!.difficultyHard;
-      default:
-        return difficulty;
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final localizations = AppLocalizations.of(context)!;
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final bgColor = isDark ? const Color(0xFF0F0F0F) : Colors.white;
-    final textColor = isDark ? Colors.white : const Color(0xFF1E293B);
-
-    return Container(
-      decoration: BoxDecoration(
-        color: bgColor,
-        borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
-      ),
-      padding: const EdgeInsets.all(24),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Center(
-            child: Container(
-              width: 40,
-              height: 4,
-              decoration: BoxDecoration(
-                color: isDark ? Colors.white24 : Colors.grey.shade300,
-                borderRadius: BorderRadius.circular(2),
-              ),
-            ),
-          ),
-          const SizedBox(height: 24),
-          Text(
-            localizations.configureQuizTitle,
-            style: GoogleFonts.plusJakartaSans(
-              fontSize: 22,
-              fontWeight: FontWeight.bold,
-              color: textColor,
-            ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            '${localizations.topicLabel}: ${widget.topic}',
-            style: GoogleFonts.plusJakartaSans(
-              fontSize: 14,
-              color: isDark ? Colors.white60 : Colors.black54,
-              fontWeight: FontWeight.w500,
-            ),
-          ),
-          const SizedBox(height: 32),
-
-          // Difficulty Selector
-          Text(
-            localizations.difficultyLabel,
-            style: GoogleFonts.plusJakartaSans(
-              fontSize: 16,
-              fontWeight: FontWeight.bold,
-              color: textColor,
-            ),
-          ),
-          const SizedBox(height: 12),
-          SizedBox(
-            width: double.infinity,
-            child: SegmentedButton<String>(
-              segments: _difficulties.map((diff) {
-                return ButtonSegment<String>(
-                  value: diff,
-                  label: Text(
-                    _getLocalizedDifficulty(context, diff),
-                    style: GoogleFonts.plusJakartaSans(
-                      fontSize: 13,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                );
-              }).toList(),
-              selected: {_difficulty},
-              onSelectionChanged: (Set<String> newSelection) {
-                setState(() {
-                  _difficulty = newSelection.first;
-                });
-              },
-              style: ButtonStyle(
-                backgroundColor: WidgetStateProperty.resolveWith<Color>((
-                  Set<WidgetState> states,
-                ) {
-                  if (states.contains(WidgetState.selected)) {
-                    return primaryColor;
-                  }
-                  return isDark ? Colors.white10 : Colors.grey.shade100;
-                }),
-                foregroundColor: WidgetStateProperty.resolveWith<Color>((
-                  Set<WidgetState> states,
-                ) {
-                  if (states.contains(WidgetState.selected)) {
-                    return Colors.white;
-                  }
-                  return textColor;
-                }),
-              ),
-              showSelectedIcon: false,
-            ),
-          ),
-
-          const SizedBox(height: 24),
-
-          // Question Count Selector
-          Text(
-            localizations.questionCountLabel,
-            style: GoogleFonts.plusJakartaSans(
-              fontSize: 16,
-              fontWeight: FontWeight.bold,
-              color: textColor,
-            ),
-          ),
-          const SizedBox(height: 12),
-          SizedBox(
-            width: double.infinity,
-            child: SegmentedButton<int>(
-              segments: _counts.map((count) {
-                return ButtonSegment<int>(
-                  value: count,
-                  label: Text(
-                    count.toString(),
-                    style: GoogleFonts.plusJakartaSans(
-                      fontSize: 13,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                );
-              }).toList(),
-              selected: {_questionCount},
-              onSelectionChanged: (Set<int> newSelection) {
-                setState(() {
-                  _questionCount = newSelection.first;
-                });
-              },
-              style: ButtonStyle(
-                backgroundColor: WidgetStateProperty.resolveWith<Color>((
-                  Set<WidgetState> states,
-                ) {
-                  if (states.contains(WidgetState.selected)) {
-                    return primaryColor;
-                  }
-                  return isDark ? Colors.white10 : Colors.grey.shade100;
-                }),
-                foregroundColor: WidgetStateProperty.resolveWith<Color>((
-                  Set<WidgetState> states,
-                ) {
-                  if (states.contains(WidgetState.selected)) {
-                    return Colors.white;
-                  }
-                  return textColor;
-                }),
-              ),
-              showSelectedIcon: false,
-            ),
-          ),
-
-          const SizedBox(height: 40),
-
-          // Generate Button
-          SizedBox(
-            width: double.infinity,
-            height: 56,
-            child: ElevatedButton(
-              onPressed: () => widget.onGenerate(_questionCount, _difficulty),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: primaryColor,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(16),
-                ),
-                elevation: 4,
-              ),
-              child: Text(
-                localizations.startGeneratingButton,
-                style: GoogleFonts.plusJakartaSans(
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.white,
-                ),
-              ),
-            ),
-          ),
-          const SizedBox(height: 16),
-        ],
-      ),
+      ],
     );
   }
 }

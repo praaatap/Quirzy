@@ -338,6 +338,11 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen>
         children: [
           Row(
             children: [
+              IconButton(
+                onPressed: () => Navigator.of(context).pop(),
+                icon: Icon(Icons.arrow_back_ios_new_rounded, color: textMain),
+              ),
+              const SizedBox(width: 4),
               Container(
                 width: 44,
                 height: 44,

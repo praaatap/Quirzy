@@ -485,6 +485,17 @@ class _ProfileSettingsScreenState extends ConsumerState<ProfileSettingsScreen>
       textMain: textMain,
       children: [
         _buildSettingTile(
+          icon: Icons.history_rounded,
+          title: 'Quiz History',
+          subtitle: 'View your past quiz results',
+          iconColor: primaryColor,
+          isDark: isDark,
+          surfaceColor: surfaceColor,
+          textMain: textMain,
+          textSub: textSub,
+          onTap: () => context.push(AppRoutes.history),
+        ),
+        _buildSettingTile(
           icon: Icons.download_rounded,
           title: 'Download My Data',
           subtitle: 'Export history as JSON',
