@@ -2,8 +2,10 @@ import 'package:flutter/material.dart';
 
 /// App Theme Configuration
 class AppTheme {
-  static const primaryColor = Color(0xFF4B06DB);
-  static const secondaryColor = Color(0xFF7C4DFF);
+  // Neural Bulb Theme: Electric Purple & Glowing Cyan
+  static const primaryColor = Color(0xFF6200EA); // Electric Violet
+  static const secondaryColor = Color(0xFF00E5FF); // Cyber Cyan
+  static const tertiaryColor = Color(0xFFFF2E63); // Idea Magenta
 
   static ThemeData createTheme({
     ColorScheme? colorScheme,
@@ -11,7 +13,13 @@ class AppTheme {
   }) {
     final scheme =
         colorScheme ??
-        ColorScheme.fromSeed(seedColor: primaryColor, brightness: brightness);
+        ColorScheme.fromSeed(
+          seedColor: primaryColor,
+          brightness: brightness,
+          primary: primaryColor,
+          secondary: secondaryColor,
+          tertiary: tertiaryColor,
+        );
 
     return ThemeData(
       useMaterial3: true,

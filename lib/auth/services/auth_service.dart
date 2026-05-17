@@ -4,7 +4,7 @@ import 'package:appwrite/appwrite.dart';
 import 'package:appwrite/models.dart';
 import 'package:flutter/foundation.dart';
 import 'package:google_sign_in/google_sign_in.dart';
-import '../../quiz/services/quiz_service.dart'; // Reuse AppwriteClient and Config
+import '../../features/quiz/services/services.dart'; // Reuse AppwriteClient and Config
 
 /// Auth Service using Appwrite
 class AuthService {
@@ -39,7 +39,6 @@ class AuthService {
         data: {
           'name': name,
           'email': email,
-          'password': password,
           'quizCount': 0,
           'createdAt': DateTime.now().toIso8601String(),
         },
@@ -186,7 +185,6 @@ class AuthService {
                 data: {
                   'name': name,
                   'email': email,
-                  'password': 'google-auth', // Don't store actual password
                   'quizCount': 0,
                   'createdAt': DateTime.now().toIso8601String(),
                 },
@@ -227,10 +225,6 @@ class AuthService {
     final user = await _account.get();
     debugPrint('AuthService: syncGoogleUser - got account: ${user.email}');
 
-    // Extract photoUrl from prefs if available (requires server-side sync or OAuth scope)
-    // For now, checks if it's there.
-    final String? photoUrl = user.prefs.data['photoUrl'];
-
     // 2. Try to sync with database, but don't fail if it doesn't work
     try {
       // Check if user document exists
@@ -254,7 +248,6 @@ class AuthService {
           data: {
             'name': user.name,
             'email': user.email,
-            'password': 'google-auth',
             'quizCount': 0,
             'createdAt': DateTime.now().toIso8601String(),
           },

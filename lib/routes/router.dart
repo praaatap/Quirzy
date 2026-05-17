@@ -2,21 +2,21 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'app_routes.dart';
-import '../auth/providers/auth_provider.dart';
+import '../features/auth/providers/auth_provider.dart';
 import '../shared/widgets/splash_screen.dart';
 
 // Screens
-import '../auth/screens/welcome_screen.dart';
-import '../auth/screens/login_screen.dart';
-import '../auth/screens/signup_screen.dart';
-import '../auth/screens/success_screen.dart';
-import '../home/screens/main_screen.dart';
-import '../quiz/screens/start_quiz_screen.dart';
-import '../flashcards/screens/flashcards_screen.dart';
-import '../profile/screens/history_screen.dart'; // Placeholder created
-import '../profile/screens/settings_screen.dart'; // Placeholder created
-import '../profile/screens/profile_screen.dart';
-import '../profile/screens/api_key_settings_screen.dart';
+import '../features/auth/screens/screens.dart';
+import '../features/home/screens/screens.dart';
+import '../features/quiz/screens/screens.dart';
+import '../features/flashcards/screens/screens.dart';
+import '../features/profile/screens/screens.dart';
+import '../features/quiz/screens/analytics_dashboard_screen.dart';
+import '../features/quiz/screens/study_notes_screen.dart';
+import '../features/quiz/screens/custom_quiz_creator_screen.dart';
+import '../features/quiz/screens/mock_test_setup_screen.dart';
+import '../features/quiz/screens/study_material_entry_screen.dart';
+import '../features/profile/screens/notification_settings_screen.dart';
 
 class AuthListenator extends ChangeNotifier {
   AuthListenator(this.ref) {
@@ -116,6 +116,30 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: AppRoutes.apiKeySettings,
         builder: (context, state) => const ApiKeySettingsScreen(),
+      ),
+      GoRoute(
+        path: AppRoutes.analytics,
+        builder: (context, state) => const AnalyticsDashboardScreen(),
+      ),
+      GoRoute(
+        path: AppRoutes.studyNotes,
+        builder: (context, state) => const StudyNotesScreen(),
+      ),
+      GoRoute(
+        path: AppRoutes.customQuizCreator,
+        builder: (context, state) => const CustomQuizCreatorScreen(),
+      ),
+      GoRoute(
+        path: AppRoutes.mockTestSetup,
+        builder: (context, state) => const MockTestSetupScreen(),
+      ),
+      GoRoute(
+        path: AppRoutes.studyMaterialEntry,
+        builder: (context, state) => const StudyMaterialEntryScreen(),
+      ),
+      GoRoute(
+        path: AppRoutes.notificationSettings,
+        builder: (context, state) => const NotificationSettingsScreen(),
       ),
     ],
   );

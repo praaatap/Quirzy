@@ -41,6 +41,17 @@
 
 ---
 
+## 🗺️ Project Flow Documentation
+
+To help interviewers and developers understand the internal logic, we have created dedicated flow guides for each layer:
+
+| Layer | Documentation | Focus |
+| :--- | :--- | :--- |
+| **📱 Frontend** | [**Frontend Flow Guide**](./README_FRONTEND.md) | UX, State Management, Animations, and App Logic |
+| **🚀 Backend** | [**Backend Flow Guide**](../quirzry-backend/README.md) | AI Orchestration, Security, and Database Flow |
+
+---
+
 ## Quick Links
 
 <p align="center">

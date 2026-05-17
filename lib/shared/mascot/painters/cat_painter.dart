@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import '../models/mascot_enums.dart'; // Import enums
 import 'mascot_painter_strategy.dart';
 
 class CatPainter extends MascotPainterStrategy {

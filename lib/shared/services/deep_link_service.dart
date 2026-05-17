@@ -2,7 +2,7 @@ import 'dart:async';
 import 'package:app_links/app_links.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:quirzy/auth/providers/auth_provider.dart';
+import 'package:quirzy/features/auth/providers/auth_provider.dart';
 
 /// Deep Link Service for handling OAuth callbacks and app links
 class DeepLinkService {

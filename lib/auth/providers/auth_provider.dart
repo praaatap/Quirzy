@@ -1,37 +1,31 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/legacy.dart';
-import 'package:appwrite/models.dart' as models;
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
-import '../services/auth_service.dart';
-
-/// Provider for AuthService singleton
-final authServiceProvider = Provider<AuthService>((ref) {
-  return AuthService();
-});
+import '../../domain/domain.dart';
 
 /// Auth state provider using AsyncNotifier for proper state management
-final authProvider = AsyncNotifierProvider<AuthNotifier, models.User?>(
+final authProvider = AsyncNotifierProvider<AuthNotifier, AuthUser?>(
   AuthNotifier.new,
 );
 
 /// Auth Notifier - handles login, signup, logout with proper state management
-class AuthNotifier extends AsyncNotifier<models.User?> {
+class AuthNotifier extends AsyncNotifier<AuthUser?> {
   static const _storage = FlutterSecureStorage();
 
   @override
-  Future<models.User?> build() async {
+  Future<AuthUser?> build() async {
     // Check for existing session on app start
-    final authService = ref.read(authServiceProvider);
-    return await authService.getCurrentUser();
+    return ref.read(getCurrentUserUseCaseProvider).call();
   }
 
   /// Login with email and password
   Future<void> login(String email, String password) async {
     state = const AsyncValue.loading();
     state = await AsyncValue.guard(() async {
-      final authService = ref.read(authServiceProvider);
-      final user = await authService.signIn(email: email, password: password);
+      final user = await ref
+          .read(loginUseCaseProvider)
+          .call(email: email, password: password);
       await _saveUserToStorage(user);
       return user;
     });
@@ -41,8 +35,7 @@ class AuthNotifier extends AsyncNotifier<models.User?> {
   Future<void> signUp(String email, String password, String name) async {
     state = const AsyncValue.loading();
     state = await AsyncValue.guard(() async {
-      final authService = ref.read(authServiceProvider);
-      final user = await authService.signUp(
+      final user = await ref.read(signUpUseCaseProvider).call(
         email: email,
         password: password,
         name: name,
@@ -56,10 +49,8 @@ class AuthNotifier extends AsyncNotifier<models.User?> {
   Future<void> googleSignIn() async {
     state = const AsyncValue.loading();
     state = await AsyncValue.guard(() async {
-      final authService = ref.read(authServiceProvider);
       debugPrint('AuthProvider: Starting native Google Sign-In...');
-      // Native Google Sign-In now returns User directly
-      final user = await authService.signInWithGoogle();
+      final user = await ref.read(signInWithGoogleUseCaseProvider).call();
       debugPrint('AuthProvider: Google Sign-In successful: ${user.email}');
       await _saveUserToStorage(user);
       return user;
@@ -70,8 +61,7 @@ class AuthNotifier extends AsyncNotifier<models.User?> {
   Future<void> logout() async {
     state = const AsyncValue.loading();
     state = await AsyncValue.guard(() async {
-      final authService = ref.read(authServiceProvider);
-      await authService.logout();
+      await ref.read(logoutUseCaseProvider).call();
       await _clearStorage();
       return null;
     });
@@ -79,9 +69,8 @@ class AuthNotifier extends AsyncNotifier<models.User?> {
 
   Future<void> refresh() async {
     try {
-      final authService = ref.read(authServiceProvider);
       debugPrint('AuthProvider: Refreshing auth state...');
-      final user = await authService.getCurrentUser();
+      final user = await ref.read(getCurrentUserUseCaseProvider).call();
       debugPrint('AuthProvider: Got user: ${user?.email ?? 'null'}');
       state = AsyncValue.data(user);
     } catch (e, st) {
@@ -91,15 +80,12 @@ class AuthNotifier extends AsyncNotifier<models.User?> {
   }
 
   /// Save user details to secure storage for quick access
-  Future<void> _saveUserToStorage(models.User user) async {
-    await _storage.write(key: 'user_id', value: user.$id);
+  Future<void> _saveUserToStorage(AuthUser user) async {
+    await _storage.write(key: 'user_id', value: user.id);
     await _storage.write(key: 'user_name', value: user.name);
     await _storage.write(key: 'user_email', value: user.email);
-    if (user.prefs.data['photoUrl'] != null) {
-      await _storage.write(
-        key: 'user_photo_url',
-        value: user.prefs.data['photoUrl'],
-      );
+    if (user.photoUrl != null) {
+      await _storage.write(key: 'user_photo_url', value: user.photoUrl);
     }
   }
 
@@ -112,9 +98,9 @@ class AuthNotifier extends AsyncNotifier<models.User?> {
 }
 
 /// Legacy providers for backward compatibility
-final authStateProvider = StreamProvider<models.User?>((ref) {
-  final authService = ref.watch(authServiceProvider);
-  return Stream.fromFuture(authService.getCurrentUser());
+final authStateProvider = StreamProvider<AuthUser?>((ref) {
+  final useCase = ref.watch(getCurrentUserUseCaseProvider);
+  return Stream.fromFuture(useCase.call());
 });
 
 final loadingProvider = StateProvider<bool>((ref) => false);

@@ -1,4 +1,0 @@
-storePassword=hannupratap@99coder
-keyPassword=hannupratap@99coder
-keyAlias=upload
-storeFile=upload-keystore.jks

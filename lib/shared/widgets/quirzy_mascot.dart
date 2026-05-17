@@ -15,7 +15,6 @@ export '../mascot/widgets/floating_companion.dart';
 import '../mascot/widgets/mascot_display.dart';
 import '../mascot/widgets/floating_companion.dart';
 import '../mascot/models/mascot_enums.dart';
-import 'package:flutter/material.dart';
 
 class QuirzyMascotV2 extends MascotDisplay {
   const QuirzyMascotV2({

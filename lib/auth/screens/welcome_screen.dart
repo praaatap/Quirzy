@@ -1,5 +1,5 @@
 import 'dart:math';
-import 'dart:ui'; // For ImageFilter
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -7,13 +7,12 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:showcaseview/showcaseview.dart';
 import 'package:go_router/go_router.dart';
 
-// --- REFACTORED IMPORTS ---
 import '../../routes/app_routes.dart';
 import '../providers/auth_provider.dart';
 import '../../shared/providers/providers.dart';
 import 'success_screen.dart';
-import '../../profile/screens/privacy_policy_screen.dart';
-import '../../l10n/app_localizations.dart';
+import '../../features/profile/screens/screens.dart';
+import '../../features/l10n/app_localizations.dart';
 
 class WelcomeScreen extends ConsumerStatefulWidget {
   const WelcomeScreen({super.key});
@@ -24,107 +23,80 @@ class WelcomeScreen extends ConsumerStatefulWidget {
 
 class _WelcomeScreenState extends ConsumerState<WelcomeScreen>
     with TickerProviderStateMixin {
-  // Animation Controllers
   late final AnimationController _entranceController;
-  late final AnimationController _backgroundController;
+  late final AnimationController _orbController;
   late final AnimationController _floatController;
   late final Animation<double> _floatAnimation;
 
-  // Staggered Animations
-  late final Animation<double> _fadeHero;
-  late final Animation<Offset> _slideHero;
-  late final Animation<double> _fadeText;
-  late final Animation<Offset> _slideText;
+  late final Animation<double> _fadeContent;
+  late final Animation<Offset> _slideContent;
   late final Animation<double> _fadeButtons;
   late final Animation<Offset> _slideButtons;
 
-  // Local State
   bool _isPrivacyPolicyAccepted = false;
   bool _isGoogleLoading = false;
   bool _hasShowcaseBeenShown = false;
 
-  // Keys
   final GlobalKey _checkboxKey = GlobalKey();
 
-  // Colors
-  static const primaryColor = Color(0xFF5B13EC);
-  static const primaryLight = Color(0xFFEFE9FD);
+  static const _purple = Color(0xFF5B13EC);
+  static const _blue = Color(0xFF2563EB);
+  static const _cyan = Color(0xFF06B6D4);
+  static const _pink = Color(0xFFEC4899);
 
   @override
   void initState() {
     super.initState();
 
-    // 1. Entrance Controller (Staggered)
     _entranceController = AnimationController(
-      duration: const Duration(milliseconds: 1200),
+      duration: const Duration(milliseconds: 1000),
       vsync: this,
     );
 
-    _fadeHero = CurvedAnimation(
+    _fadeContent = CurvedAnimation(
       parent: _entranceController,
-      curve: const Interval(0.0, 0.6, curve: Curves.easeOut),
+      curve: const Interval(0.0, 0.7, curve: Curves.easeOut),
     );
-    _slideHero = Tween<Offset>(begin: const Offset(0, 0.1), end: Offset.zero)
-        .animate(
-          CurvedAnimation(
-            parent: _entranceController,
-            curve: const Interval(0.0, 0.6, curve: Curves.easeOutCubic),
-          ),
-        );
-
-    _fadeText = CurvedAnimation(
+    _slideContent = Tween<Offset>(begin: const Offset(0, 0.15), end: Offset.zero)
+        .animate(CurvedAnimation(
       parent: _entranceController,
-      curve: const Interval(0.3, 0.8, curve: Curves.easeOut),
-    );
-    _slideText = Tween<Offset>(begin: const Offset(0, 0.2), end: Offset.zero)
-        .animate(
-          CurvedAnimation(
-            parent: _entranceController,
-            curve: const Interval(0.3, 0.8, curve: Curves.easeOutCubic),
-          ),
-        );
+      curve: const Interval(0.0, 0.7, curve: Curves.easeOutCubic),
+    ));
 
     _fadeButtons = CurvedAnimation(
       parent: _entranceController,
-      curve: const Interval(0.6, 1.0, curve: Curves.easeOut),
+      curve: const Interval(0.4, 1.0, curve: Curves.easeOut),
     );
-    _slideButtons = Tween<Offset>(begin: const Offset(0, 0.3), end: Offset.zero)
-        .animate(
-          CurvedAnimation(
-            parent: _entranceController,
-            curve: const Interval(0.6, 1.0, curve: Curves.easeOutCubic),
-          ),
-        );
+    _slideButtons = Tween<Offset>(begin: const Offset(0, 0.25), end: Offset.zero)
+        .animate(CurvedAnimation(
+      parent: _entranceController,
+      curve: const Interval(0.4, 1.0, curve: Curves.easeOutCubic),
+    ));
 
-    _entranceController.forward();
-
-    // 2. Background Animation
-    _backgroundController = AnimationController(
-      duration: const Duration(seconds: 10),
+    _orbController = AnimationController(
+      duration: const Duration(seconds: 8),
       vsync: this,
     )..repeat(reverse: true);
 
-    // 3. Floating Animation
     _floatController = AnimationController(
-      duration: const Duration(seconds: 5),
+      duration: const Duration(seconds: 4),
       vsync: this,
     )..repeat(reverse: true);
 
-    _floatAnimation = Tween<double>(begin: -10, end: 10).animate(
+    _floatAnimation = Tween<double>(begin: -8, end: 8).animate(
       CurvedAnimation(parent: _floatController, curve: Curves.easeInOutSine),
     );
-    // Showcase is now triggered in build method with correct context
+
+    _entranceController.forward();
   }
 
   @override
   void dispose() {
     _entranceController.dispose();
-    _backgroundController.dispose();
+    _orbController.dispose();
     _floatController.dispose();
     super.dispose();
   }
-
-  // --- LOGIC ---
 
   void _showConsentRequiredMessage() {
     HapticFeedback.lightImpact();
@@ -154,15 +126,12 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen>
   }
 
   void _triggerShowcase(BuildContext showcaseContext) {
-    if (mounted) {
-      ShowCaseWidget.of(showcaseContext).startShowCase([_checkboxKey]);
-    }
+    if (mounted) ShowCaseWidget.of(showcaseContext).startShowCase([_checkboxKey]);
   }
 
   Future<void> _handleGoogleSignIn(BuildContext showcaseContext) async {
     if (!_isPrivacyPolicyAccepted) {
       _showConsentRequiredMessage();
-      // Highlight the checkbox again if they missed it
       _triggerShowcase(showcaseContext);
       return;
     }
@@ -176,7 +145,6 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen>
       if (!mounted) return;
 
       if (ref.read(authProvider).value != null) {
-        // Try getting FCM token
         try {
           await ref.read(notificationProvider.notifier).sendTokenAfterLogin();
         } catch (e) {
@@ -190,20 +158,18 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen>
           context,
           MaterialPageRoute(
             builder: (context) => SuccessScreen(
-              onComplete: () {
-                context.go(AppRoutes.home);
-              },
+              onComplete: () => context.go(AppRoutes.home),
               message: 'Signed In!',
-              subtitle: 'Welcome back to Quirzy',
+              subtitle: 'Welcome back to ExamAI',
             ),
           ),
         );
       }
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('Google Sign-in failed: $e')));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Google Sign-in failed: $e')),
+      );
     } finally {
       if (mounted) setState(() => _isGoogleLoading = false);
     }
@@ -213,27 +179,20 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen>
     return PageRouteBuilder(
       transitionDuration: const Duration(milliseconds: 300),
       pageBuilder: (context, animation, secondaryAnimation) => page,
-      transitionsBuilder: (context, animation, secondaryAnimation, child) {
-        return FadeTransition(opacity: animation, child: child);
-      },
+      transitionsBuilder: (context, animation, secondaryAnimation, child) =>
+          FadeTransition(opacity: animation, child: child),
     );
   }
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     final size = MediaQuery.of(context).size;
-
-    // Only watch isLoading for better performance
     final isAuthLoading = ref.watch(authProvider.select((s) => s.isLoading));
     final isProcessing = isAuthLoading || _isGoogleLoading;
 
     return ShowCaseWidget(
       builder: (showcaseContext) {
-        // Trigger showcase on first build if policy not accepted
-        // Trigger showcase AFTER animation completes (1200ms + buffer)
-        // This prevents the showcase from highlighting the wrong position while the widget is sliding up
         if (!_hasShowcaseBeenShown && !_isPrivacyPolicyAccepted) {
           _hasShowcaseBeenShown = true;
           WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -246,150 +205,234 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen>
         }
 
         return Scaffold(
-          backgroundColor: isDark ? const Color(0xFF0F0F0F) : Colors.white,
+          backgroundColor: isDark ? const Color(0xFF080814) : const Color(0xFFF5F3FF),
           body: Stack(
             children: [
-              // 1. Animated Radial Background
+              // ── ANIMATED COLOR ORB BACKGROUND ───────────────────────────
               AnimatedBuilder(
-                animation: _backgroundController,
-                builder: (context, child) {
-                  return CustomPaint(
-                    painter: _BackgroundPainter(
-                      animationValue: _backgroundController.value,
-                      isDark: isDark,
-                      primaryColor: primaryColor,
-                    ),
-                    size: Size.infinite,
+                animation: _orbController,
+                builder: (context, _) {
+                  final t = _orbController.value;
+                  return Stack(
+                    children: [
+                      // Top-left: purple orb
+                      Positioned(
+                        left: -80 + sin(t * pi) * 40,
+                        top: -60 + cos(t * pi) * 30,
+                        child: _blurOrb(320, _purple, isDark ? 0.55 : 0.35),
+                      ),
+                      // Top-right: cyan orb
+                      Positioned(
+                        right: -60 + cos(t * pi) * 35,
+                        top: size.height * 0.05 + sin(t * pi) * 25,
+                        child: _blurOrb(260, _cyan, isDark ? 0.40 : 0.25),
+                      ),
+                      // Center-left: pink orb
+                      Positioned(
+                        left: -40 + sin(t * pi * 1.3) * 30,
+                        top: size.height * 0.38 + cos(t * pi * 1.3) * 20,
+                        child: _blurOrb(220, _pink, isDark ? 0.35 : 0.20),
+                      ),
+                      // Bottom-right: blue orb
+                      Positioned(
+                        right: -50 + cos(t * pi * 0.8) * 25,
+                        bottom: size.height * 0.12 + sin(t * pi * 0.8) * 20,
+                        child: _blurOrb(300, _blue, isDark ? 0.45 : 0.28),
+                      ),
+                      // Bottom-center: purple small
+                      Positioned(
+                        left: size.width * 0.3,
+                        bottom: -40 + sin(t * pi * 1.5) * 20,
+                        child: _blurOrb(180, _purple, isDark ? 0.30 : 0.18),
+                      ),
+                    ],
                   );
                 },
               ),
 
-              // 2. Content
+              // ── FROSTED GLASS OVERLAY ────────────────────────────────────
+              BackdropFilter(
+                filter: ImageFilter.blur(sigmaX: 60, sigmaY: 60),
+                child: Container(
+                  color: isDark
+                      ? Colors.black.withOpacity(0.45)
+                      : Colors.white.withOpacity(0.30),
+                ),
+              ),
+
+              // ── CONTENT ──────────────────────────────────────────────────
               SafeArea(
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 24.0),
-                  child: Column(
-                    children: [
-                      // Language Switcher
-                      Align(
-                        alignment: Alignment.topRight,
-                        child: _buildLanguageButton(isDark, ref),
+                child: Column(
+                  children: [
+                    // Language button
+                    Align(
+                      alignment: Alignment.topRight,
+                      child: Padding(
+                        padding: const EdgeInsets.only(right: 16, top: 8),
+                        child: _buildLanguageButton(isDark),
                       ),
-                      const Spacer(flex: 1),
+                    ),
 
-                      // --- HERO SECTION ---
-                      FadeTransition(
-                        opacity: _fadeHero,
-                        child: SlideTransition(
-                          position: _slideHero,
-                          child: _buildHeroSection(size, isDark),
-                        ),
-                      ),
+                    Expanded(
+                      child: SingleChildScrollView(
+                        padding: const EdgeInsets.symmetric(horizontal: 28),
+                        child: Column(
+                          children: [
+                            const SizedBox(height: 32),
 
-                      const Spacer(flex: 1),
-
-                      // --- TEXT SECTION ---
-                      FadeTransition(
-                        opacity: _fadeText,
-                        child: SlideTransition(
-                          position: _slideText,
-                          child: Column(
-                            children: [
-                              Text(
-                                AppLocalizations.of(context)!.welcomeTitle,
-                                textAlign: TextAlign.center,
-                                style: GoogleFonts.plusJakartaSans(
-                                  fontSize: 32,
-                                  fontWeight: FontWeight.bold,
-                                  color: isDark
-                                      ? Colors.white
-                                      : const Color(0xFF1E293B),
-                                  height: 1.2,
-                                  letterSpacing: -0.5,
-                                ),
-                              ),
-                              const SizedBox(height: 16),
-                              Text(
-                                AppLocalizations.of(context)!.welcomeSubtitle,
-                                textAlign: TextAlign.center,
-                                style: GoogleFonts.plusJakartaSans(
-                                  fontSize: 16,
-                                  color: isDark
-                                      ? const Color(0xFF94A3B8)
-                                      : const Color(0xFF64748B),
-                                  height: 1.5,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-
-                      const Spacer(flex: 2),
-
-                      // --- BOTTOM SECTION ---
-                      FadeTransition(
-                        opacity: _fadeButtons,
-                        child: SlideTransition(
-                          position: _slideButtons,
-                          child: Column(
-                            children: [
-                              _buildPrivacyCheckbox(isDark),
-                              const SizedBox(height: 24),
-
-                              // Google Button
-                              _AnimatedButton(
-                                onPressed: isProcessing
-                                    ? null
-                                    : () =>
-                                          _handleGoogleSignIn(showcaseContext),
-                                backgroundColor: isDark
-                                    ? const Color(0xFF1A1A1A)
-                                    : Colors.white,
-                                borderColor: isDark
-                                    ? const Color(0xFF262626)
-                                    : const Color(0xFFE2E8F0),
-                                child: isProcessing
-                                    ? SizedBox(
-                                        height: 20,
-                                        width: 20,
-                                        child: CircularProgressIndicator(
-                                          strokeWidth: 2,
-                                          color: primaryColor,
+                            // ── LOGO + HEADLINE ───────────────────────────
+                            FadeTransition(
+                              opacity: _fadeContent,
+                              child: SlideTransition(
+                                position: _slideContent,
+                                child: Column(
+                                  children: [
+                                    // App icon badge
+                                    Container(
+                                      width: 72,
+                                      height: 72,
+                                      decoration: BoxDecoration(
+                                        gradient: const LinearGradient(
+                                          colors: [_purple, Color(0xFF9333EA)],
+                                          begin: Alignment.topLeft,
+                                          end: Alignment.bottomRight,
                                         ),
-                                      )
-                                    : Row(
-                                        mainAxisAlignment:
-                                            MainAxisAlignment.center,
-                                        children: [
-                                          Image.asset(
-                                            'assets/icon/google_icon.png',
-                                            height: 22,
-                                          ),
-                                          const SizedBox(width: 12),
-                                          Text(
-                                            AppLocalizations.of(
-                                              context,
-                                            )!.continueWithGoogle,
-                                            style: GoogleFonts.plusJakartaSans(
-                                              fontWeight: FontWeight.bold,
-                                              fontSize: 16,
-                                              color: isDark
-                                                  ? Colors.white
-                                                  : const Color(0xFF1E293B),
-                                            ),
+                                        borderRadius: BorderRadius.circular(20),
+                                        boxShadow: [
+                                          BoxShadow(
+                                            color: _purple.withOpacity(0.5),
+                                            blurRadius: 24,
+                                            offset: const Offset(0, 8),
                                           ),
                                         ],
                                       ),
-                              ),
+                                      child: const Icon(
+                                        Icons.school_rounded,
+                                        color: Colors.white,
+                                        size: 38,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 20),
 
-                              const SizedBox(height: 24),
-                            ],
-                          ),
+                                    // App name
+                                    ShaderMask(
+                                      shaderCallback: (bounds) =>
+                                          const LinearGradient(
+                                        colors: [_purple, _cyan, _pink],
+                                        stops: [0.0, 0.5, 1.0],
+                                      ).createShader(bounds),
+                                      child: Text(
+                                        'ExamAI',
+                                        style: GoogleFonts.plusJakartaSans(
+                                          fontSize: 48,
+                                          fontWeight: FontWeight.w900,
+                                          color: Colors.white,
+                                          letterSpacing: -1.5,
+                                          height: 1.0,
+                                        ),
+                                      ),
+                                    ),
+                                    const SizedBox(height: 10),
+
+                                    Text(
+                                      AppLocalizations.of(context)!.welcomeTitle,
+                                      textAlign: TextAlign.center,
+                                      style: GoogleFonts.plusJakartaSans(
+                                        fontSize: 17,
+                                        fontWeight: FontWeight.w600,
+                                        color: isDark
+                                            ? Colors.white.withOpacity(0.85)
+                                            : const Color(0xFF1E1B4B),
+                                        height: 1.35,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 8),
+                                    Text(
+                                      AppLocalizations.of(context)!.welcomeSubtitle,
+                                      textAlign: TextAlign.center,
+                                      style: GoogleFonts.plusJakartaSans(
+                                        fontSize: 13.5,
+                                        color: isDark
+                                            ? Colors.white54
+                                            : const Color(0xFF64748B),
+                                        height: 1.5,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+
+                            const SizedBox(height: 36),
+
+                            // ── FLOATING FEATURE CARDS ────────────────────
+                            FadeTransition(
+                              opacity: _fadeContent,
+                              child: AnimatedBuilder(
+                                animation: _floatAnimation,
+                                builder: (context, _) {
+                                  return Row(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      _featureChip(
+                                        Icons.assignment_turned_in_rounded,
+                                        'Mock Tests',
+                                        _blue,
+                                        isDark,
+                                        offset: _floatAnimation.value * 0.8,
+                                      ),
+                                      const SizedBox(width: 10),
+                                      _featureChip(
+                                        Icons.auto_awesome_rounded,
+                                        'AI Quizzes',
+                                        _purple,
+                                        isDark,
+                                        offset: -_floatAnimation.value * 0.6,
+                                      ),
+                                      const SizedBox(width: 10),
+                                      _featureChip(
+                                        Icons.menu_book_rounded,
+                                        'Study Sets',
+                                        _cyan,
+                                        isDark,
+                                        offset: _floatAnimation.value,
+                                      ),
+                                    ],
+                                  );
+                                },
+                              ),
+                            ),
+
+                            const SizedBox(height: 32),
+
+                            // ── EXAM BADGES ───────────────────────────────
+                            FadeTransition(
+                              opacity: _fadeContent,
+                              child: Wrap(
+                                spacing: 8,
+                                runSpacing: 8,
+                                alignment: WrapAlignment.center,
+                                children: ['JEE', 'NEET', 'CAT', 'GRE', 'CUET', 'GMAT', 'IELTS']
+                                    .map((exam) => _examBadge(exam, isDark))
+                                    .toList(),
+                              ),
+                            ),
+
+                            const SizedBox(height: 48),
+                          ],
                         ),
                       ),
-                    ],
-                  ),
+                    ),
+
+                    // ── BOTTOM SIGN-IN SECTION ────────────────────────────
+                    FadeTransition(
+                      opacity: _fadeButtons,
+                      child: SlideTransition(
+                        position: _slideButtons,
+                        child: _buildBottomSection(isDark, isProcessing, showcaseContext),
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ],
@@ -399,175 +442,178 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen>
     );
   }
 
-  Widget _buildHeroSection(Size size, bool isDark) {
-    return SizedBox(
-      height: size.height * 0.35,
-      width: double.infinity,
-      child: Stack(
-        alignment: Alignment.center,
-        children: [
-          // Background Glow
-          Container(
-            width: size.width * 0.7,
-            height: size.width * 0.7,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              gradient: RadialGradient(
-                colors: [primaryColor.withOpacity(0.4), Colors.transparent],
-                stops: const [0.0, 0.7],
-              ),
-            ),
-            child: BackdropFilter(
-              filter: ImageFilter.blur(sigmaX: 50, sigmaY: 50),
-              child: const SizedBox(),
-            ),
-          ),
-
-          // Main Image Container
-          Transform.rotate(
-            angle: -0.05,
-            child: Container(
-              width: size.width * 0.8,
-              height: size.width * 0.8, // Square aspect ratio
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(40),
-                color: isDark ? const Color(0xFF1A1A1A) : Colors.white,
-                boxShadow: [
-                  BoxShadow(
-                    color: primaryColor.withOpacity(0.25),
-                    blurRadius: 30,
-                    offset: const Offset(0, 15),
-                  ),
-                ],
-                border: Border.all(
-                  color: Colors.white.withOpacity(isDark ? 0.1 : 0.8),
-                  width: 4,
-                ),
-              ),
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(36),
-                child: Stack(
-                  fit: StackFit.expand,
-                  children: [
-                    Image.asset('assets/welcome_brain.png', fit: BoxFit.cover),
-                    Container(
-                      decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          begin: Alignment.topCenter,
-                          end: Alignment.bottomCenter,
-                          colors: [
-                            Colors.transparent,
-                            (isDark ? const Color(0xFF0F0A18) : Colors.white)
-                                .withOpacity(0.2),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ),
-
-          // Floating Badge
-          AnimatedBuilder(
-            animation: _floatAnimation,
-            builder: (context, child) {
-              return Positioned(
-                bottom: 40 + _floatAnimation.value,
-                right: 30,
-                child: Transform.rotate(angle: 0.1, child: child!),
-              );
-            },
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-              decoration: BoxDecoration(
-                color: isDark ? const Color(0xFF262626) : Colors.white,
-                borderRadius: BorderRadius.circular(20),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.1),
-                    blurRadius: 20,
-                    offset: const Offset(0, 10),
-                  ),
-                ],
-              ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(8),
-                    decoration: BoxDecoration(
-                      color: primaryLight,
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: const Icon(
-                      Icons.auto_awesome_rounded,
-                      color: primaryColor,
-                      size: 20,
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        "AI Gen",
-                        style: GoogleFonts.plusJakartaSans(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 14,
-                          color: isDark
-                              ? Colors.white
-                              : const Color(0xFF1E293B),
-                        ),
-                      ),
-                      Text(
-                        "Latest Tech",
-                        style: GoogleFonts.plusJakartaSans(
-                          fontWeight: FontWeight.w500,
-                          fontSize: 12,
-                          color: isDark
-                              ? const Color(0xFF94A3B8)
-                              : const Color(0xFF64748B),
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ],
+  Widget _blurOrb(double size, Color color, double opacity) {
+    return Container(
+      width: size,
+      height: size,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        gradient: RadialGradient(
+          colors: [color.withOpacity(opacity), Colors.transparent],
+          stops: const [0.0, 1.0],
+        ),
       ),
     );
   }
 
-  Widget _buildLanguageButton(bool isDark, WidgetRef ref) {
-    final currentLang = ref.watch(settingsProvider.select((s) => s.language));
-    return Container(
-      decoration: BoxDecoration(
-        color: isDark
-            ? Colors.white.withOpacity(0.1)
-            : Colors.black.withOpacity(0.05),
-        borderRadius: BorderRadius.circular(20),
-      ),
-      child: IconButton(
-        icon: Text(
-          currentLang == 'English' ? 'EN' : 'HI',
-          style: GoogleFonts.plusJakartaSans(
-            fontWeight: FontWeight.bold,
-            color: isDark ? Colors.white : Colors.black,
+  Widget _featureChip(IconData icon, String label, Color color, bool isDark,
+      {required double offset}) {
+    return Transform.translate(
+      offset: Offset(0, offset),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(16),
+        child: BackdropFilter(
+          filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+            decoration: BoxDecoration(
+              color: isDark
+                  ? Colors.white.withOpacity(0.08)
+                  : Colors.white.withOpacity(0.65),
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(
+                color: color.withOpacity(0.25),
+                width: 1,
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: color.withOpacity(0.15),
+                  blurRadius: 16,
+                  offset: const Offset(0, 4),
+                ),
+              ],
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: color.withOpacity(0.15),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: Icon(icon, color: color, size: 22),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  label,
+                  style: GoogleFonts.plusJakartaSans(
+                    fontSize: 11,
+                    fontWeight: FontWeight.bold,
+                    color: isDark ? Colors.white : const Color(0xFF1E1B4B),
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
-        onPressed: () {
-          final newLang = currentLang == 'English' ? 'Hindi' : 'English';
-          ref.read(settingsProvider.notifier).setLanguage(newLang);
-        },
       ),
     );
   }
 
-  Widget _buildPrivacyCheckbox(bool isDark) {
+  Widget _examBadge(String name, bool isDark) {
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(20),
+      child: BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 8, sigmaY: 8),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+          decoration: BoxDecoration(
+            color: isDark
+                ? Colors.white.withOpacity(0.07)
+                : Colors.white.withOpacity(0.55),
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(
+              color: _purple.withOpacity(0.18),
+              width: 1,
+            ),
+          ),
+          child: Text(
+            name,
+            style: GoogleFonts.plusJakartaSans(
+              fontSize: 12,
+              fontWeight: FontWeight.w700,
+              color: isDark ? Colors.white70 : const Color(0xFF4C1D95),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildBottomSection(bool isDark, bool isProcessing, BuildContext showcaseContext) {
+    return ClipRRect(
+      borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
+      child: BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
+        child: Container(
+          padding: const EdgeInsets.fromLTRB(24, 28, 24, 32),
+          decoration: BoxDecoration(
+            color: isDark
+                ? Colors.white.withOpacity(0.06)
+                : Colors.white.withOpacity(0.72),
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
+            border: Border(
+              top: BorderSide(
+                color: isDark
+                    ? Colors.white.withOpacity(0.1)
+                    : Colors.white.withOpacity(0.8),
+                width: 1,
+              ),
+            ),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // Handle
+              Container(
+                width: 36,
+                height: 4,
+                margin: const EdgeInsets.only(bottom: 24),
+                decoration: BoxDecoration(
+                  color: isDark ? Colors.white24 : Colors.black12,
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+
+              Text(
+                'Start your journey',
+                style: GoogleFonts.plusJakartaSans(
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                  color: isDark ? Colors.white : const Color(0xFF1E1B4B),
+                ),
+              ),
+              const SizedBox(height: 6),
+              Text(
+                'Free to start. Pro for unlimited access.',
+                style: GoogleFonts.plusJakartaSans(
+                  fontSize: 13,
+                  color: isDark ? Colors.white54 : const Color(0xFF64748B),
+                ),
+              ),
+              const SizedBox(height: 24),
+
+              // Privacy checkbox
+              _buildPrivacyCheckbox(isDark, showcaseContext),
+              const SizedBox(height: 20),
+
+              // Google sign-in button
+              _GoogleSignInButton(
+                isLoading: isProcessing,
+                isDark: isDark,
+                onTap: () => _handleGoogleSignIn(showcaseContext),
+              ),
+
+              const SizedBox(height: 16),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildPrivacyCheckbox(bool isDark, BuildContext showcaseContext) {
     return Showcase(
       key: _checkboxKey,
       title: AppLocalizations.of(context)!.required,
@@ -581,70 +627,59 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen>
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
           decoration: BoxDecoration(
-            color: isDark ? const Color(0xFF1A1A1A) : const Color(0xFFF8FAFC),
-            borderRadius: BorderRadius.circular(16),
+            color: _isPrivacyPolicyAccepted
+                ? _purple.withOpacity(isDark ? 0.15 : 0.06)
+                : (isDark
+                    ? Colors.white.withOpacity(0.05)
+                    : const Color(0xFFF8FAFC)),
+            borderRadius: BorderRadius.circular(14),
             border: Border.all(
               color: _isPrivacyPolicyAccepted
-                  ? primaryColor
-                  : (isDark
-                        ? const Color(0xFF262626)
-                        : const Color(0xFFE2E8F0)),
+                  ? _purple.withOpacity(0.5)
+                  : (isDark ? Colors.white12 : const Color(0xFFE2E8F0)),
               width: 1.5,
             ),
           ),
           child: Row(
             children: [
-              Container(
-                width: 24,
-                height: 24,
+              AnimatedContainer(
+                duration: const Duration(milliseconds: 200),
+                width: 22,
+                height: 22,
                 decoration: BoxDecoration(
-                  color: _isPrivacyPolicyAccepted
-                      ? primaryColor
-                      : Colors.transparent,
-                  borderRadius: BorderRadius.circular(8),
+                  color: _isPrivacyPolicyAccepted ? _purple : Colors.transparent,
+                  borderRadius: BorderRadius.circular(7),
                   border: Border.all(
                     color: _isPrivacyPolicyAccepted
-                        ? primaryColor
-                        : (isDark
-                              ? const Color(0xFF475569)
-                              : const Color(0xFFCBD5E1)),
+                        ? _purple
+                        : (isDark ? Colors.white38 : const Color(0xFFCBD5E1)),
                     width: 2,
                   ),
                 ),
                 child: _isPrivacyPolicyAccepted
-                    ? const Icon(
-                        Icons.check_rounded,
-                        color: Colors.white,
-                        size: 16,
-                      )
+                    ? const Icon(Icons.check_rounded, color: Colors.white, size: 14)
                     : null,
               ),
               const SizedBox(width: 12),
               Expanded(
                 child: GestureDetector(
-                  onTap: () => Navigator.of(
-                    context,
-                  ).push(_createRoute(const PrivacyPolicyScreen())),
+                  onTap: () => Navigator.of(context)
+                      .push(_createRoute(const PrivacyPolicyScreen())),
                   child: RichText(
                     text: TextSpan(
                       style: GoogleFonts.plusJakartaSans(
-                        fontSize: 13,
-                        color: isDark
-                            ? Colors.white70
-                            : const Color(0xFF64748B),
+                        fontSize: 12.5,
+                        color:
+                            isDark ? Colors.white60 : const Color(0xFF64748B),
                         height: 1.4,
                       ),
                       children: [
-                        TextSpan(
-                          text: AppLocalizations.of(context)!.iAgreeToThe,
-                        ),
+                        TextSpan(text: AppLocalizations.of(context)!.iAgreeToThe),
                         TextSpan(
                           text: AppLocalizations.of(context)!.privacyPolicy,
                           style: TextStyle(
                             fontWeight: FontWeight.bold,
-                            color: isDark
-                                ? Colors.white
-                                : const Color(0xFF1E293B),
+                            color: isDark ? Colors.white : const Color(0xFF1E1B4B),
                           ),
                         ),
                         TextSpan(text: AppLocalizations.of(context)!.and),
@@ -652,9 +687,7 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen>
                           text: AppLocalizations.of(context)!.terms,
                           style: TextStyle(
                             fontWeight: FontWeight.bold,
-                            color: isDark
-                                ? Colors.white
-                                : const Color(0xFF1E293B),
+                            color: isDark ? Colors.white : const Color(0xFF1E1B4B),
                           ),
                         ),
                       ],
@@ -668,137 +701,158 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen>
       ),
     );
   }
-}
 
-class _AnimatedButton extends StatefulWidget {
-  final VoidCallback? onPressed;
-  final Widget child;
-  final Color backgroundColor;
-  final Color? borderColor;
-
-  const _AnimatedButton({
-    required this.onPressed,
-    required this.child,
-    required this.backgroundColor,
-    this.borderColor,
-  });
-
-  @override
-  State<_AnimatedButton> createState() => _AnimatedButtonState();
-}
-
-class _AnimatedButtonState extends State<_AnimatedButton>
-    with SingleTickerProviderStateMixin {
-  late AnimationController _controller;
-  late Animation<double> _scaleAnimation;
-
-  @override
-  void initState() {
-    super.initState();
-    _controller = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 100),
-    );
-    _scaleAnimation = Tween<double>(
-      begin: 1.0,
-      end: 0.98,
-    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeInOut));
-  }
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTapDown: (_) => _controller.forward(),
-      onTapUp: (_) {
-        _controller.reverse();
-        widget.onPressed?.call();
-      },
-      onTapCancel: () => _controller.reverse(),
-      child: ScaleTransition(
-        scale: _scaleAnimation,
+  Widget _buildLanguageButton(bool isDark) {
+    final currentLang = ref.watch(settingsProvider.select((s) => s.language));
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(20),
+      child: BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
         child: Container(
-          height: 56,
-          width: double.infinity,
           decoration: BoxDecoration(
-            color: widget.backgroundColor,
-            borderRadius: BorderRadius.circular(16),
-            border: widget.borderColor != null
-                ? Border.all(color: widget.borderColor!)
-                : null,
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withOpacity(0.05),
-                blurRadius: 10,
-                offset: const Offset(0, 4),
-              ),
-            ],
+            color: isDark
+                ? Colors.white.withOpacity(0.1)
+                : Colors.white.withOpacity(0.5),
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(
+              color: isDark ? Colors.white12 : Colors.white60,
+            ),
           ),
-          alignment: Alignment.center,
-          child: widget.child,
+          child: IconButton(
+            iconSize: 18,
+            icon: Text(
+              currentLang == 'English' ? 'EN' : 'HI',
+              style: GoogleFonts.plusJakartaSans(
+                fontWeight: FontWeight.bold,
+                fontSize: 13,
+                color: isDark ? Colors.white : const Color(0xFF1E1B4B),
+              ),
+            ),
+            onPressed: () {
+              final newLang = currentLang == 'English' ? 'Hindi' : 'English';
+              ref.read(settingsProvider.notifier).setLanguage(newLang);
+            },
+          ),
         ),
       ),
     );
   }
 }
 
-class _BackgroundPainter extends CustomPainter {
-  final double animationValue;
-  final bool isDark;
-  final Color primaryColor;
+// ── GOOGLE SIGN-IN BUTTON ──────────────────────────────────────────────────
 
-  _BackgroundPainter({
-    required this.animationValue,
+class _GoogleSignInButton extends StatefulWidget {
+  final bool isLoading;
+  final bool isDark;
+  final VoidCallback onTap;
+
+  const _GoogleSignInButton({
+    required this.isLoading,
     required this.isDark,
-    required this.primaryColor,
+    required this.onTap,
   });
 
   @override
-  void paint(Canvas canvas, Size size) {
-    final paint = Paint();
+  State<_GoogleSignInButton> createState() => _GoogleSignInButtonState();
+}
 
-    // Base Blob 1
-    final colors1 = [
-      primaryColor.withOpacity(isDark ? 0.15 : 0.08),
-      Colors.transparent,
-    ];
-    // Move slightly with animation
-    final offset1 = Offset(
-      size.width * 0.8 + (sin(animationValue * 2 * pi) * 20),
-      size.height * 0.1 + (cos(animationValue * 2 * pi) * 20),
-    );
-    paint.shader = RadialGradient(
-      colors: colors1,
-      stops: const [0.0, 1.0],
-    ).createShader(Rect.fromCircle(center: offset1, radius: 250));
-    canvas.drawCircle(offset1, 250, paint);
+class _GoogleSignInButtonState extends State<_GoogleSignInButton>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _pressController;
+  late final Animation<double> _scaleAnim;
 
-    // Base Blob 2
-    final colors2 = [
-      (isDark ? const Color(0xFF9333EA) : const Color(0xFFC084FC)).withOpacity(
-        isDark ? 0.15 : 0.08,
-      ),
-      Colors.transparent,
-    ];
-    final offset2 = Offset(
-      size.width * 0.1 + (cos(animationValue * 2 * pi) * 20),
-      size.height * 0.9 + (sin(animationValue * 2 * pi) * 20),
+  @override
+  void initState() {
+    super.initState();
+    _pressController = AnimationController(
+      duration: const Duration(milliseconds: 120),
+      vsync: this,
     );
-    paint.shader = RadialGradient(
-      colors: colors2,
-      stops: const [0.0, 1.0],
-    ).createShader(Rect.fromCircle(center: offset2, radius: 300));
-    canvas.drawCircle(offset2, 300, paint);
+    _scaleAnim = Tween<double>(begin: 1.0, end: 0.97).animate(
+      CurvedAnimation(parent: _pressController, curve: Curves.easeInOut),
+    );
   }
 
   @override
-  bool shouldRepaint(_BackgroundPainter oldDelegate) {
-    return oldDelegate.animationValue != animationValue ||
-        oldDelegate.isDark != isDark;
+  void dispose() {
+    _pressController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTapDown: (_) => _pressController.forward(),
+      onTapUp: (_) {
+        _pressController.reverse();
+        widget.onTap();
+      },
+      onTapCancel: () => _pressController.reverse(),
+      child: ScaleTransition(
+        scale: _scaleAnim,
+        child: Container(
+          height: 58,
+          width: double.infinity,
+          decoration: BoxDecoration(
+            gradient: widget.isDark
+                ? null
+                : const LinearGradient(
+                    colors: [Color(0xFF5B13EC), Color(0xFF9333EA)],
+                    begin: Alignment.centerLeft,
+                    end: Alignment.centerRight,
+                  ),
+            color: widget.isDark ? const Color(0xFF1A1A2E) : null,
+            borderRadius: BorderRadius.circular(18),
+            border: widget.isDark
+                ? Border.all(color: Colors.white.withOpacity(0.12), width: 1)
+                : null,
+            boxShadow: [
+              BoxShadow(
+                color: const Color(0xFF5B13EC).withOpacity(widget.isDark ? 0.3 : 0.4),
+                blurRadius: 20,
+                offset: const Offset(0, 8),
+                spreadRadius: -4,
+              ),
+            ],
+          ),
+          alignment: Alignment.center,
+          child: widget.isLoading
+              ? SizedBox(
+                  width: 22,
+                  height: 22,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2.5,
+                    color: widget.isDark ? Colors.white70 : Colors.white,
+                  ),
+                )
+              : Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    // Google G logo
+                    Container(
+                      width: 32,
+                      height: 32,
+                      padding: const EdgeInsets.all(6),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Image.asset('assets/icon/google_icon.png'),
+                    ),
+                    const SizedBox(width: 14),
+                    Text(
+                      AppLocalizations.of(context)!.continueWithGoogle,
+                      style: GoogleFonts.plusJakartaSans(
+                        fontSize: 15,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                        letterSpacing: 0.2,
+                      ),
+                    ),
+                  ],
+                ),
+        ),
+      ),
+    );
   }
 }

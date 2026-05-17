@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:dynamic_color/dynamic_color.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
-import 'l10n/app_localizations.dart';
+import 'features/l10n/app_localizations.dart';
 import 'routes/router.dart';
 import 'shared/theme/app_theme.dart';
 import 'shared/services/settings_service.dart';
@@ -51,7 +51,7 @@ class _QuirzyAppState extends ConsumerState<QuirzyApp> {
         return DynamicColorBuilder(
           builder: (lightDynamic, darkDynamic) {
             return MaterialApp.router(
-              title: 'Quirzy',
+              title: 'ExamAI',
               theme: AppTheme.createTheme(
                 colorScheme: lightDynamic,
                 brightness: Brightness.light,

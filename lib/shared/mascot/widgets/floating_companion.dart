@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 import 'dart:async';
 import 'dart:math';
 import 'package:google_fonts/google_fonts.dart';
@@ -37,7 +36,6 @@ class _FloatingCompanionWidgetState
     extends ConsumerState<FloatingCompanionWidget> {
   bool _showMessage = true;
   Timer? _messageTimer;
-  String _currentMessage = '';
   final Random _random = Random();
 
   final List<({String text, MascotMood mood, String? action})> _smartDialogue =
@@ -117,7 +115,6 @@ class _FloatingCompanionWidgetState
   void _cycleTip() {
     setState(() {
       _currentDialogueIndex = _random.nextInt(_smartDialogue.length);
-      _currentMessage = _smartDialogue[_currentDialogueIndex].text;
     });
   }
 

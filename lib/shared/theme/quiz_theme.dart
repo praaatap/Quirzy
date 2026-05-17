@@ -2,9 +2,10 @@ import 'package:flutter/material.dart';
 
 class QuizTheme {
   // Brand Colors
-  static const Color primary = Color(0xFF6C5CE7);
-  static const Color secondary = Color(0xFFA29BFE);
-  static const Color accent = Color(0xFFE17055);
+  // Brand Colors (Neural Bulb Palette)
+  static const Color primary = Color(0xFF6200EA); // Electric Violet
+  static const Color secondary = Color(0xFF00E5FF); // Cyber Cyan
+  static const Color accent = Color(0xFFFF2E63); // Idea Magenta
   static const Color success = Color(0xFF00B894);
   static const Color warning = Color(0xFFFDCB6E);
   static const Color error = Color(0xFFFF7675);
@@ -16,13 +17,13 @@ class QuizTheme {
 
   // Surface Colors
   static const Color surfaceLight = Colors.white;
-  static const Color surfaceDark = Color(0xFF2D3436);
-  static const Color backgroundDark = Color(0xFF1E1E2E);
+  static const Color surfaceDark = Color(0xFF1E1E2E);
+  static const Color backgroundDark = Color(0xFF120E1A); // Deep Void Purple
 
   // Gradients
   static const List<Color> primaryGradient = [
-    Color(0xFF6C5CE7),
-    Color(0xFFA29BFE),
+    Color(0xFF6200EA),
+    Color(0xFF7C4DFF), // Lighter Violet for gradient
   ];
   static const List<Color> successGradient = [
     Color(0xFF00B894),
